@@ -31,7 +31,10 @@
       "Bash(mkdir -p /home/nthuobs/nthuobs-website/src/app/[locale]/dashboard)",
       "Bash(ls /home/nthuobs/nthuobs-website/src/app/[locale]/)",
       "Bash(head:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npx ts-node -e \":*)",
+      "Bash(psql postgresql://nthuobs:nthuobs2018@localhost:5432/nthuobs -c 'SELECT email, role, \"\"createdAt\"\" FROM \"\"User\"\";')",
+      "Bash(psql:*)"
     ]
   }
 }

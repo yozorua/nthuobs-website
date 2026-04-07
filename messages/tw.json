@@ -6,6 +6,7 @@
     "calendar": "行事曆",
     "visit": "參觀申請",
     "portal": "成員入口",
+    "admin": "管理後台",
     "signIn": "登入",
     "activate": "帳號啟用",
     "signOut": "登出"
@@ -223,6 +224,19 @@
     "save": "儲存排程",
     "saving": "儲存中…",
     "cancel": "取消"
+  },
+  "admin": {
+    "label": "系統管理",
+    "title": "管理後台",
+    "totalUsers": "總用戶數",
+    "pending": "待啟用",
+    "members": "成員",
+    "admins": "管理員",
+    "userManagement": "用戶管理",
+    "colName": "姓名",
+    "colEmail": "電子郵件",
+    "colJoined": "加入日期",
+    "colRole": "身份"
   },
   "activate": {
     "label": "帳號啟用",

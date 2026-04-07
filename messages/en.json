@@ -6,6 +6,7 @@
     "calendar": "Calendar",
     "visit": "Visit",
     "portal": "Portal",
+    "admin": "Admin",
     "signIn": "Login",
     "activate": "Activate Account",
     "signOut": "Sign out"
@@ -223,6 +224,19 @@
     "save": "Save Session",
     "saving": "Saving…",
     "cancel": "Cancel"
+  },
+  "admin": {
+    "label": "Administration",
+    "title": "Admin Panel",
+    "totalUsers": "Total Users",
+    "pending": "Pending",
+    "members": "Members",
+    "admins": "Admins",
+    "userManagement": "User Management",
+    "colName": "Name",
+    "colEmail": "Email",
+    "colJoined": "Joined",
+    "colRole": "Role"
   },
   "activate": {
     "label": "Account Activation",

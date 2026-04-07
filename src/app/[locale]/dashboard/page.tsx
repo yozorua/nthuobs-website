@@ -14,6 +14,12 @@ export default async function DashboardPage({
 
   if (!session?.user) redirect(`/${locale}`);
 
+  const dbUser = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+  if (!dbUser || dbUser.role === 'PENDING') redirect(`/${locale}/activate`);
+
   const t = await getTranslations({ locale, namespace: 'dashboard' });
 
   const schedules = await db.schedule.findMany({

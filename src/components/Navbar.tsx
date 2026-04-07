@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Session } from 'next-auth';
 import { signIn, signOut } from 'next-auth/react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
@@ -19,7 +19,9 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const navLinks = [
     { href: `/${locale}`, label: t('home') },
@@ -36,6 +38,19 @@ export default function Navbar({ session, locale }: NavbarProps) {
   };
 
   const isActive = (href: string) => pathname === href;
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const role = (session?.user as { role?: string })?.role;
+  const isAdmin = role === 'ADMIN';
 
   return (
     <header className="sticky top-0 z-50" style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
@@ -81,7 +96,6 @@ export default function Navbar({ session, locale }: NavbarProps) {
             {locale === 'en' ? '中文' : 'EN'}
           </button>
 
-          {/* Divider */}
           <span style={{ color: 'var(--line)' }}>|</span>
 
           {/* Dark mode toggle */}
@@ -96,43 +110,82 @@ export default function Navbar({ session, locale }: NavbarProps) {
             {theme === 'dark' ? '○' : '●'}
           </button>
 
-          {/* Divider */}
           <span style={{ color: 'var(--line)' }}>|</span>
 
           {/* Auth */}
           {session?.user ? (
-            <div className="flex items-center gap-3">
-              <Link
-                href={`/${locale}/dashboard`}
-                className="text-xs tracking-ultra uppercase transition-colors duration-150"
-                style={{ color: 'var(--ink-faint)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-faint)')}
-              >
-                {t('portal')}
-              </Link>
+            <div className="relative" ref={userMenuRef}>
               <button
-                onClick={() => signOut()}
-                className="text-xs tracking-ultra uppercase transition-colors duration-150"
-                style={{ color: 'var(--ink-faint)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-faint)')}
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center transition-opacity duration-150"
+                style={{ opacity: userMenuOpen ? 1 : 0.7 }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                onMouseLeave={e => { if (!userMenuOpen) e.currentTarget.style.opacity = '0.7'; }}
               >
-                {t('signOut')}
+                {session.user.image ? (
+                  <Image
+                    src={session.user.image}
+                    alt={session.user.name ?? 'User'}
+                    width={26}
+                    height={26}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium"
+                    style={{ background: 'var(--ink-faint)', color: 'var(--bg)' }}
+                  >
+                    {session.user.name?.[0]?.toUpperCase() ?? '?'}
+                  </div>
+                )}
               </button>
-              {session.user.image && (
-                <Image
-                  src={session.user.image}
-                  alt={session.user.name ?? 'User'}
-                  width={26}
-                  height={26}
-                  className="rounded-full"
-                />
+
+              {userMenuOpen && (
+                <div
+                  className="absolute right-0 top-9 w-48 py-1 z-50"
+                  style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
+                >
+                  <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--line)' }}>
+                    <p className="text-xs font-medium truncate" style={{ color: 'var(--ink)' }}>
+                      {session.user.name}
+                    </p>
+                    <p className="text-xs truncate mt-0.5" style={{ color: 'var(--ink-faint)' }}>
+                      {session.user.email}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/${locale}/dashboard`}
+                    onClick={() => setUserMenuOpen(false)}
+                    className="hover-bg block px-4 py-2 text-xs tracking-ultra uppercase"
+                    style={{ color: 'var(--ink-secondary)' }}
+                  >
+                    {t('portal')}
+                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href={`/${locale}/admin`}
+                      onClick={() => setUserMenuOpen(false)}
+                      className="hover-bg block px-4 py-2 text-xs tracking-ultra uppercase"
+                      style={{ color: 'var(--ink-secondary)' }}
+                    >
+                      {t('admin')}
+                    </Link>
+                  )}
+                  <div style={{ borderTop: '1px solid var(--line)', marginTop: '0.25rem' }}>
+                    <button
+                      onClick={() => { setUserMenuOpen(false); signOut(); }}
+                      className="hover-bg w-full text-left px-4 py-2 text-xs tracking-ultra uppercase"
+                      style={{ color: 'var(--ink-secondary)' }}
+                    >
+                      {t('signOut')}
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           ) : (
             <button
-              onClick={() => signIn('google')}
+              onClick={() => signIn('google', { callbackUrl: `/${locale}/dashboard` })}
               className="text-xs tracking-ultra uppercase transition-colors duration-150"
               style={{ color: 'var(--ink-faint)' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
@@ -180,11 +233,20 @@ export default function Navbar({ session, locale }: NavbarProps) {
           <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
             {session?.user ? (
               <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2.5 mb-1">
+                  {session.user.image && (
+                    <Image src={session.user.image} alt={session.user.name ?? 'User'} width={22} height={22} className="rounded-full" />
+                  )}
+                  <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{session.user.name}</span>
+                </div>
                 <Link href={`/${locale}/dashboard`} onClick={() => setMenuOpen(false)} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('portal')}</Link>
+                {isAdmin && (
+                  <Link href={`/${locale}/admin`} onClick={() => setMenuOpen(false)} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('admin')}</Link>
+                )}
                 <button onClick={() => signOut()} className="text-left text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('signOut')}</button>
               </div>
             ) : (
-              <button onClick={() => signIn('google')} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('signIn')}</button>
+              <button onClick={() => signIn('google', { callbackUrl: `/${locale}/dashboard` })} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('signIn')}</button>
             )}
           </div>
         </div>

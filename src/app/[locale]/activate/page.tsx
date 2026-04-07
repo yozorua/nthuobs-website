@@ -28,9 +28,8 @@ export default function ActivatePage() {
 
     if (res.ok) {
       setStatus('success');
-      // Force session refresh so role updates to MEMBER
       await update();
-      setTimeout(() => router.push(`/${locale}/dashboard`), 1200);
+      setTimeout(() => { window.location.href = `/${locale}/dashboard`; }, 1200);
     } else {
       setStatus('error');
     }
