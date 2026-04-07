@@ -34,7 +34,9 @@
       "Bash(grep:*)",
       "Bash(npx ts-node -e \":*)",
       "Bash(psql postgresql://nthuobs:nthuobs2018@localhost:5432/nthuobs -c 'SELECT email, role, \"\"createdAt\"\" FROM \"\"User\"\";')",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(node -e \"require\\('react-image-crop'\\); console.log\\('ok'\\)\")",
+      "Bash(npx tsc:*)"
     ]
   }
 }

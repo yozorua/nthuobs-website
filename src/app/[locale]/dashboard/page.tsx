@@ -22,8 +22,8 @@ export default async function DashboardPage({
   if (!dbUser || dbUser.role === 'PENDING') redirect(`/${locale}/activate`);
 
   const displayName = locale === 'tw'
-    ? (dbUser.lastNameZh && dbUser.firstNameZh ? `${dbUser.lastNameZh}${dbUser.firstNameZh}` : session.user.name)
-    : (dbUser.firstNameEn ? dbUser.firstNameEn : session.user.name?.split(' ')[0]);
+    ? (dbUser.firstNameZh ?? session.user.name)
+    : (dbUser.firstNameEn ?? session.user.name?.split(' ')[0]);
 
   const t = await getTranslations({ locale, namespace: 'dashboard' });
 

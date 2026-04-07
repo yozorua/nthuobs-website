@@ -35,10 +35,11 @@ export default async function LocaleLayout({
   if (session?.user?.id) {
     const dbUser = await db.user.findUnique({
       where: { id: session.user.id },
-      select: { role: true, firstNameEn: true, lastNameEn: true, firstNameZh: true, lastNameZh: true },
+      select: { role: true, image: true, firstNameEn: true, lastNameEn: true, firstNameZh: true, lastNameZh: true },
     });
     if (dbUser) {
       (session.user as { role?: string }).role = dbUser.role;
+      if (dbUser.image) (session.user as { image?: string | null }).image = dbUser.image;
       const displayName = locale === 'tw'
         ? (dbUser.lastNameZh && dbUser.firstNameZh ? `${dbUser.lastNameZh}${dbUser.firstNameZh}` : null)
         : (dbUser.firstNameEn && dbUser.lastNameEn ? `${dbUser.firstNameEn} ${dbUser.lastNameEn}` : null);

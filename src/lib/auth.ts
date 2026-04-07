@@ -20,11 +20,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user || trigger === "update") {
         const dbUser = await db.user.findUnique({
           where: { email: (user?.email ?? token.email) as string },
-          select: { role: true, id: true },
+          select: { role: true, id: true, image: true },
         });
         if (dbUser) {
           token.role = dbUser.role;
           token.id = dbUser.id;
+          if (dbUser.image) token.picture = dbUser.image;
         }
       }
       return token;

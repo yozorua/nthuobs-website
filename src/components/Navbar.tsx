@@ -3,9 +3,9 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Session } from 'next-auth';
-import { signIn, signOut } from 'next-auth/react';
-import { useState, useRef, useEffect } from 'react';
+import { signIn, signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useTheme } from 'next-themes';
 
@@ -21,6 +21,9 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
+  const { data: clientSession } = useSession();
+  // Use live client session image so avatar updates immediately after upload
+  const avatarImage = clientSession?.user?.image ?? session?.user?.image;
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const navLinks = [
@@ -132,13 +135,12 @@ export default function Navbar({ session, locale }: NavbarProps) {
                 onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
                 onMouseLeave={e => { if (!userMenuOpen) e.currentTarget.style.opacity = '0.7'; }}
               >
-                {session.user.image ? (
-                  <Image
-                    src={session.user.image}
+                {avatarImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarImage}
                     alt={session.user.name ?? 'User'}
-                    width={26}
-                    height={26}
-                    className="rounded-full"
+                    style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover' }}
                   />
                 ) : (
                   <div
@@ -155,15 +157,33 @@ export default function Navbar({ session, locale }: NavbarProps) {
                   className="absolute right-0 top-9 w-48 py-1 z-50"
                   style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
                 >
-                  <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--line)' }}>
-                    <p className="text-xs font-medium truncate" style={{ color: 'var(--ink)' }}>
-                      {session.user.name}
-                    </p>
-                    {roleLabel && (
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>
-                        {roleLabel}
-                      </p>
+                  <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: '1px solid var(--line)' }}>
+                    {avatarImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={avatarImage}
+                        alt={session.user.name ?? 'User'}
+                        className="rounded-full flex-shrink-0"
+                        style={{ width: 32, height: 32, objectFit: 'cover' }}
+                      />
+                    ) : (
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
+                        style={{ background: 'var(--ink-faint)', color: 'var(--bg)' }}
+                      >
+                        {session.user.name?.[0]?.toUpperCase() ?? '?'}
+                      </div>
                     )}
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium truncate" style={{ color: 'var(--ink)' }}>
+                        {session.user.name}
+                      </p>
+                      {roleLabel && (
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>
+                          {roleLabel}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <Link
                     href={`/${locale}/dashboard`}
@@ -256,8 +276,9 @@ export default function Navbar({ session, locale }: NavbarProps) {
             {session?.user ? (
               <div className="flex flex-col gap-3">
                 <div className="flex items-center gap-2.5 mb-1">
-                  {session.user.image && (
-                    <Image src={session.user.image} alt={session.user.name ?? 'User'} width={22} height={22} className="rounded-full" />
+                  {avatarImage && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarImage} alt={session.user.name ?? 'User'} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
                   )}
                   <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{session.user.name}</span>
                 </div>
