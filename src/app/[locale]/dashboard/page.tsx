@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import ProfileEditButton from '@/components/ProfileEditButton';
 
 export default async function DashboardPage({
   params,
@@ -16,9 +17,13 @@ export default async function DashboardPage({
 
   const dbUser = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { role: true },
+    select: { role: true, firstNameEn: true, lastNameEn: true, firstNameZh: true, lastNameZh: true },
   });
   if (!dbUser || dbUser.role === 'PENDING') redirect(`/${locale}/activate`);
+
+  const displayName = locale === 'tw'
+    ? (dbUser.lastNameZh && dbUser.firstNameZh ? `${dbUser.lastNameZh}${dbUser.firstNameZh}` : session.user.name)
+    : (dbUser.firstNameEn ? dbUser.firstNameEn : session.user.name?.split(' ')[0]);
 
   const t = await getTranslations({ locale, namespace: 'dashboard' });
 
@@ -31,13 +36,14 @@ export default async function DashboardPage({
 
   const totalSchedules = await db.schedule.count();
 
-  const roleKeyMap: Record<string, 'roleMember' | 'roleOperator' | 'roleManager'> = {
+  const roleKeyMap: Record<string, 'roleVisitor' | 'roleMember' | 'roleOperator' | 'roleManager'> = {
+    PENDING: 'roleVisitor',
     MEMBER: 'roleMember',
     OPERATOR: 'roleOperator',
     MANAGER: 'roleManager',
     ADMIN: 'roleManager',
   };
-  const roleDisplay = t(roleKeyMap[dbUser.role] ?? 'roleMember');
+  const roleDisplay = t(roleKeyMap[dbUser.role] ?? 'roleVisitor');
 
   const links = t.raw('links') as Array<{ label: string; desc: string }>;
   const linkHrefs = [
@@ -57,11 +63,14 @@ export default async function DashboardPage({
   return (
     <div className="page-enter max-w-5xl mx-auto px-6 py-16">
       {/* Header */}
-      <div className="mb-14 pb-8" style={{ borderBottom: '1px solid var(--line)' }}>
-        <p className="label mb-3">{t('label')}</p>
-        <h1 className="text-3xl font-light tracking-wider" style={{ color: 'var(--ink)' }}>
-          {t('welcome')}, {session.user.name?.split(' ')[0]}
-        </h1>
+      <div className="mb-14 pb-8 flex items-end justify-between" style={{ borderBottom: '1px solid var(--line)' }}>
+        <div>
+          <p className="label mb-3">{t('label')}</p>
+          <h1 className="text-3xl font-light tracking-wider" style={{ color: 'var(--ink)' }}>
+            {t('welcome')}, {displayName}
+          </h1>
+        </div>
+        <ProfileEditButton />
       </div>
 
       {/* Stats row */}

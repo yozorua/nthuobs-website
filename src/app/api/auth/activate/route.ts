@@ -15,10 +15,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid access code' }, { status: 403 });
   }
 
-  await db.user.update({
-    where: { id: session.user.id },
-    data: { role: 'MEMBER' },
-  });
-
   return NextResponse.json({ ok: true });
 }

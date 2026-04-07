@@ -11,6 +11,8 @@
     "signIn": "登入",
     "activate": "帳號啟用",
     "signOut": "登出",
+    "editProfile": "編輯資料",
+    "roleVisitor": "訪客",
     "roleMember": "成員",
     "roleOperator": "觀測員",
     "roleManager": "管理員"
@@ -39,12 +41,30 @@
     "visitCta": "參觀辦法與申請",
     "contactUs": "聯絡我們",
     "services": [
-      { "title": "團體導覽", "desc": "開放教育機構申請參觀，每團10至25人，採預約制，請提前一個月申請。" },
-      { "title": "不定期開放日", "desc": "不定期舉辦開放日，讓民眾近距離接觸望遠鏡與天文儀器。" },
-      { "title": "天氣監測", "desc": "透過全天魚眼相機與氣象站，提供即時天氣資料，輔助觀測規劃。" },
-      { "title": "天文教育", "desc": "支援清華大學天文教學，作為台灣天文科普教育的重要推動機構。" },
-      { "title": "觀測活動", "desc": "定期使用25公分折射鏡、16吋卡塞格林鏡及兩架 Celestron 8 進行觀測。" },
-      { "title": "新聞與影像", "desc": "定期更新觀測新聞、活動資訊及天文攝影成果。" }
+      {
+        "title": "團體導覽",
+        "desc": "開放教育機構申請參觀，每團10至25人，採預約制，請提前一個月申請。"
+      },
+      {
+        "title": "不定期開放日",
+        "desc": "不定期舉辦開放日，讓民眾近距離接觸望遠鏡與天文儀器。"
+      },
+      {
+        "title": "天氣監測",
+        "desc": "透過全天魚眼相機與氣象站，提供即時天氣資料，輔助觀測規劃。"
+      },
+      {
+        "title": "天文教育",
+        "desc": "支援清華大學天文教學，作為台灣天文科普教育的重要推動機構。"
+      },
+      {
+        "title": "觀測活動",
+        "desc": "定期使用25公分折射鏡、16吋卡塞格林鏡及兩架 Celestron 8 進行觀測。"
+      },
+      {
+        "title": "新聞與影像",
+        "desc": "定期更新觀測新聞、活動資訊及天文攝影成果。"
+      }
     ]
   },
   "about": {
@@ -68,27 +88,68 @@
     "timelineLabel": "創社年表 · 1971",
     "timelineNote": "資料來源：謝立宜訪談黃銘爵，民國69年",
     "timeline": [
-      { "date": "3 月初", "event": "丘宏義教授回國" },
-      { "date": "4 月中", "event": "磨製8吋牛頓式望遠鏡" },
-      { "date": "7 月中", "event": "8吋牛頓式完成，磨鏡機完成" },
-      { "date": "8 月初", "event": "籌備磨製16吋卡式望遠鏡" },
-      { "date": "8 月底", "event": "8吋尋星鏡完成，16吋鏡片運到" },
-      { "date": "11 月底", "event": "16吋全部架設，調整完；舉辦天文社成立大會" }
+      {
+        "date": "3 月初",
+        "event": "丘宏義教授回國"
+      },
+      {
+        "date": "4 月中",
+        "event": "磨製8吋牛頓式望遠鏡"
+      },
+      {
+        "date": "7 月中",
+        "event": "8吋牛頓式完成，磨鏡機完成"
+      },
+      {
+        "date": "8 月初",
+        "event": "籌備磨製16吋卡式望遠鏡"
+      },
+      {
+        "date": "8 月底",
+        "event": "8吋尋星鏡完成，16吋鏡片運到"
+      },
+      {
+        "date": "11 月底",
+        "event": "16吋全部架設，調整完；舉辦天文社成立大會"
+      }
     ],
     "photosLabel": "歷史照片",
     "photos": [
-      { "caption": "舊物理館屋頂上的原始天文台。" },
-      { "caption": "1971年建造的原始圓頂。" },
-      { "caption": "16吋手工卡塞格林反射鏡與開放式叉型赤道儀。" },
-      { "caption": "從美國進口的兩架 Celestron 8 望遠鏡。" }
+      {
+        "caption": "舊物理館屋頂上的原始天文台。"
+      },
+      {
+        "caption": "1971年建造的原始圓頂。"
+      },
+      {
+        "caption": "16吋手工卡塞格林反射鏡與開放式叉型赤道儀。"
+      },
+      {
+        "caption": "從美國進口的兩架 Celestron 8 望遠鏡。"
+      }
     ],
     "equipmentLabel": "儀器設備",
     "equipment": [
-      { "name": "25 公分折射鏡", "detail": "全國最大口徑折射望遠鏡，固定安裝於天文台。" },
-      { "name": "16 吋卡塞格林反射鏡", "detail": "1971年由學生手工打造，開放式叉型赤道儀架台。" },
-      { "name": "Celestron 8（兩架）", "detail": "從美國進口的施密特-卡塞格林望遠鏡。" },
-      { "name": "全天魚眼相機", "detail": "拍攝全天空影像，即時監測雲量與天氣狀況。" },
-      { "name": "氣象站", "detail": "監測溫度、濕度、風速、氣壓及降雨量。" }
+      {
+        "name": "25 公分折射鏡",
+        "detail": "全國最大口徑折射望遠鏡，固定安裝於天文台。"
+      },
+      {
+        "name": "16 吋卡塞格林反射鏡",
+        "detail": "1971年由學生手工打造，開放式叉型赤道儀架台。"
+      },
+      {
+        "name": "Celestron 8（兩架）",
+        "detail": "從美國進口的施密特-卡塞格林望遠鏡。"
+      },
+      {
+        "name": "全天魚眼相機",
+        "detail": "拍攝全天空影像，即時監測雲量與天氣狀況。"
+      },
+      {
+        "name": "氣象站",
+        "detail": "監測溫度、濕度、風速、氣壓及降雨量。"
+      }
     ],
     "refsLabel": "參考資料"
   },
@@ -102,9 +163,21 @@
     "joinDesc": "有興趣加入天文台管理團隊嗎？歡迎對天文與科普推廣有熱忱的清華學生，透過電子郵件與我們聯絡，了解目前的職缺資訊。",
     "contactUs": "聯絡我們",
     "roles": [
-      { "role": "天文台管理員", "roleZh": "Observatory Manager", "desc": "負責天文台日常事務管理與觀測活動協調。" },
-      { "role": "天文台觀測員", "roleZh": "Observatory Operator", "desc": "負責觀測期間望遠鏡與儀器的操作。" },
-      { "role": "天文台解說員", "roleZh": "Observatory Guide", "desc": "負責帶領導覽解說及教學參觀活動。" }
+      {
+        "role": "天文台管理員",
+        "roleZh": "Observatory Manager",
+        "desc": "負責天文台日常事務管理與觀測活動協調。"
+      },
+      {
+        "role": "天文台觀測員",
+        "roleZh": "Observatory Operator",
+        "desc": "負責觀測期間望遠鏡與儀器的操作。"
+      },
+      {
+        "role": "天文台解說員",
+        "roleZh": "Observatory Guide",
+        "desc": "負責帶領導覽解說及教學參觀活動。"
+      }
     ]
   },
   "calendar": {
@@ -190,6 +263,7 @@
     "role": "您的身份",
     "status": "天文台狀態",
     "active": "運作中",
+    "roleVisitor": "訪客",
     "roleMember": "成員",
     "roleOperator": "觀測員",
     "roleManager": "管理員",
@@ -198,10 +272,22 @@
     "noSessions": "目前沒有排定的觀測活動。",
     "quickLinks": "快速連結",
     "links": [
-      { "label": "排程管理", "desc": "查看與管理觀測排程" },
-      { "label": "公開行事曆", "desc": "查看即將舉行的公開活動" },
-      { "label": "參觀申請", "desc": "辦法說明與申請表單" },
-      { "label": "聯絡我們", "desc": "nthuobs@gmail.com" }
+      {
+        "label": "排程管理",
+        "desc": "查看與管理觀測排程"
+      },
+      {
+        "label": "公開行事曆",
+        "desc": "查看即將舉行的公開活動"
+      },
+      {
+        "label": "參觀申請",
+        "desc": "辦法說明與申請表單"
+      },
+      {
+        "label": "聯絡我們",
+        "desc": "nthuobs@gmail.com"
+      }
     ]
   },
   "schedule": {
@@ -251,9 +337,37 @@
     "title": "輸入存取碼",
     "desc": "您的帳號已建立，但需要存取碼才能啟用。請輸入天文台管理團隊提供的存取碼。",
     "placeholder": "存取碼",
-    "submit": "啟用帳號",
-    "submitting": "啟用中…",
+    "submit": "繼續",
+    "submitting": "驗證中…",
     "error": "存取碼無效，請聯絡天文台管理團隊。",
-    "success": "帳號已啟用！正在跳轉…"
+    "cancel": "取消",
+    "profileLabel": "個人資料設定",
+    "profileTitle": "完成個人資料",
+    "profileDesc": "請填寫以下資料以完成帳號註冊。",
+    "lastNameZh": "姓氏",
+    "firstNameZh": "名字",
+    "firstNameEn": "First Name",
+    "lastNameEn": "Last Name",
+    "contactEmail": "信箱",
+    "phone": "電話",
+    "confirm": "確認送出",
+    "confirming": "送出中…",
+    "profileError": "資料儲存失敗，請再試一次。",
+    "back": "返回"
+  },
+  "profile": {
+    "title": "編輯個人資料",
+    "loading": "載入中…",
+    "lastNameZh": "姓氏",
+    "firstNameZh": "名字",
+    "firstNameEn": "英文名",
+    "lastNameEn": "英文姓",
+    "contactEmail": "信箱",
+    "phone": "電話",
+    "save": "儲存",
+    "saving": "儲存中…",
+    "saved": "已儲存",
+    "error": "儲存失敗，請再試一次。",
+    "cancel": "取消"
   }
 }

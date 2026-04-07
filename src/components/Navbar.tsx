@@ -53,13 +53,14 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const isAdmin = role === 'ADMIN';
   const isManager = role === 'MANAGER';
 
-  const roleDisplayKey: Record<string, 'roleMember' | 'roleOperator' | 'roleManager'> = {
+  const roleDisplayKey: Record<string, 'roleVisitor' | 'roleMember' | 'roleOperator' | 'roleManager'> = {
+    PENDING: 'roleVisitor',
     MEMBER: 'roleMember',
     OPERATOR: 'roleOperator',
     MANAGER: 'roleManager',
     ADMIN: 'roleManager',
   };
-  const roleLabel = role ? t(roleDisplayKey[role] ?? 'roleMember') : null;
+  const roleLabel = role ? t(roleDisplayKey[role] ?? 'roleVisitor') : null;
 
   return (
     <header className="sticky top-0 z-50" style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
@@ -157,9 +158,6 @@ export default function Navbar({ session, locale }: NavbarProps) {
                   <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--line)' }}>
                     <p className="text-xs font-medium truncate" style={{ color: 'var(--ink)' }}>
                       {session.user.name}
-                    </p>
-                    <p className="text-xs truncate mt-0.5" style={{ color: 'var(--ink-faint)' }}>
-                      {session.user.email}
                     </p>
                     {roleLabel && (
                       <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>
