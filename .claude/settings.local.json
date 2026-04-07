@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:yozora39.com)",
+      "Bash(npm install:*)",
+      "Read(//usr/local/**)",
+      "Bash(command -v node)",
+      "Bash(curl -fsSL https://deb.nodesource.com/setup_20.x)",
+      "Bash(sudo -E bash -)",
+      "Bash(sudo apt-get:*)",
+      "Bash(sudo -S apt-get install -y nodejs npm)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash(source \"$NVM_DIR/nvm.sh\")",
+      "Bash(npx prisma:*)",
+      "Bash(npm run:*)",
+      "Bash(cp /home/nthuobs/nthuobs-website-old/static/homepage/images/logo_icon.png /home/nthuobs/nthuobs-website/public/logo_icon.png)",
+      "Bash(cp /home/nthuobs/nthuobs-website-old/static/homepage/images/dome_view.png /home/nthuobs/nthuobs-website/public/dome_view.png)",
+      "Bash(cp /home/nthuobs/nthuobs-website-old/static/homepage/images/header.jpg /home/nthuobs/nthuobs-website/public/header.jpg)",
+      "Bash(cp /home/nthuobs/nthuobs-website-old/static/homepage/images/slide01.jpg /home/nthuobs/nthuobs-website/public/slide01.jpg)",
+      "Bash(cp /home/nthuobs/nthuobs-website-old/static/homepage/images/slide02.jpg /home/nthuobs/nthuobs-website/public/slide02.jpg)",
+      "Bash(cp /home/nthuobs/nthuobs-website-old/static/homepage/images/logo_icon.png /home/nthuobs/nthuobs-website/public/)",
+      "Bash(cp /home/nthuobs/nthuobs-website-old/static/homepage/images/dome_view.png /home/nthuobs/nthuobs-website/public/)",
+      "Bash(cp /home/nthuobs/nthuobs-website-old/static/homepage/images/header.jpg /home/nthuobs/nthuobs-website/public/)",
+      "Bash(cp /home/nthuobs/nthuobs-website-old/static/homepage/images/slide01.jpg /home/nthuobs/nthuobs-website/public/)",
+      "Bash(cp /home/nthuobs/nthuobs-website-old/static/homepage/images/slide02.jpg /home/nthuobs/nthuobs-website/public/)",
+      "Bash(source \"$HOME/.nvm/nvm.sh\")",
+      "Bash(mkdir -p /home/nthuobs/nthuobs-website/src/app/[locale]/about)",
+      "Bash(mkdir -p /home/nthuobs/nthuobs-website/src/app/[locale]/calendar)",
+      "Bash(mkdir -p /home/nthuobs/nthuobs-website/src/app/[locale]/people)",
+      "Bash(mkdir -p /home/nthuobs/nthuobs-website/src/app/[locale]/visit)",
+      "Bash(mkdir -p /home/nthuobs/nthuobs-website/src/app/[locale]/dashboard)",
+      "Bash(ls /home/nthuobs/nthuobs-website/src/app/[locale]/)",
+      "Bash(head:*)",
+      "Bash(grep:*)"
+    ]
+  }
+}
