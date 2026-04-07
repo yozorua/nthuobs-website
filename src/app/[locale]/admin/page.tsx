@@ -2,6 +2,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import Link from 'next/link';
 import UserRoleRow from '@/components/admin/UserRoleRow';
 
 export default async function AdminPage({
@@ -54,6 +55,19 @@ export default async function AdminPage({
             <p className="text-xs mb-2" style={{ color: 'var(--ink-faint)' }}>{s.label}</p>
             <p className="text-xl font-light" style={{ color: 'var(--ink)' }}>{s.value}</p>
           </div>
+        ))}
+      </div>
+
+      {/* Sections */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-px mb-14" style={{ background: 'var(--line)' }}>
+        {[
+          { href: `/${locale}/admin/schedule`, label: 'Schedule Management', desc: 'View all sessions, create and assign observation schedules to members.' },
+          { href: `/${locale}/admin/events`, label: 'Event Management', desc: 'Create and manage public events shown on the calendar.' },
+        ].map(item => (
+          <Link key={item.href} href={item.href} className="hover-bg block px-6 py-5" style={{ background: 'var(--bg)' }}>
+            <p className="text-sm mb-1" style={{ color: 'var(--ink)' }}>{item.label}</p>
+            <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>{item.desc}</p>
+          </Link>
         ))}
       </div>
 

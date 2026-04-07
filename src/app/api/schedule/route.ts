@@ -44,6 +44,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    const isAdminUser = (session.user as { role?: string }).role === 'ADMIN';
+    const assignedUserId = isAdminUser && body.userId ? body.userId : session.user.id;
+
     const schedule = await db.schedule.create({
       data: {
         title,
@@ -53,7 +56,7 @@ export async function POST(req: NextRequest) {
         endTime,
         telescope: telescope || null,
         isPublic: isPublic ?? false,
-        userId: session.user.id,
+        userId: assignedUserId,
       },
       include: {
         user: {

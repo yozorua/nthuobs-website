@@ -77,8 +77,9 @@ export default function Navbar({ session, locale }: NavbarProps) {
           </span>
         </Link>
 
-        {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-7">
+        {/* Desktop links + Right controls */}
+        <div className="hidden md:flex items-center gap-4">
+          {/* Nav links */}
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -89,10 +90,9 @@ export default function Navbar({ session, locale }: NavbarProps) {
               {link.label}
             </Link>
           ))}
-        </div>
 
-        {/* Right controls */}
-        <div className="hidden md:flex items-center gap-4">
+          <span style={{ color: 'var(--line)' }}>|</span>
+
           {/* Lang toggle */}
           <button
             onClick={switchLocale}
@@ -161,7 +161,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
                       {session.user.email}
                     </p>
                     {roleLabel && (
-                      <p className="text-xs tracking-ultra uppercase mt-1.5" style={{ color: 'var(--ink-faint)' }}>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>
                         {roleLabel}
                       </p>
                     )}

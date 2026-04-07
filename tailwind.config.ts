@@ -34,9 +34,9 @@ const config: Config = {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
       letterSpacing: {
-        wider: "0.08em",
-        widest: "0.16em",
-        ultra: "0.24em",
+        wider: "0.01em",
+        widest: "0.03em",
+        ultra: "0.18em",
       },
       animation: {
         "fade-in": "fadeIn 0.6s ease-out",
