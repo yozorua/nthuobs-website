@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Light mode variables ─────────────────────────────────── */
+:root {
+  --bg: #ffffff;
+  --bg-warm: #fafaf8;
+  --bg-muted: #f5f5f3;
+  --ink: #111111;
+  --ink-secondary: #555555;
+  --ink-muted: #999999;
+  --ink-faint: #aaaaaa;
+  --line: #e8e8e6;
+  --line-dark: #d0d0ce;
+  --accent: #1a3a5c;
+}
+
+/* ── Dark mode variables ──────────────────────────────────── */
+.dark {
+  --bg: #111111;
+  --bg-warm: #181818;
+  --bg-muted: #1f1f1f;
+  --ink: #e8e8e6;
+  --ink-secondary: #aaaaaa;
+  --ink-muted: #666666;
+  --ink-faint: #555555;
+  --line: #2a2a2a;
+  --line-dark: #333333;
+  --accent: #5a8fbf;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+::selection {
+  background: rgba(26, 58, 92, 0.15);
+  color: var(--ink);
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-dark); border-radius: 2px; }
+
+@layer components {
+  .label {
+    @apply text-xs font-normal tracking-ultra uppercase;
+    color: var(--ink-faint);
+  }
+
+  .rule { @apply block w-full border-0 border-t; border-color: var(--line); }
+
+  .btn {
+    @apply inline-block px-6 py-2.5 text-sm font-normal tracking-wider transition-colors duration-200;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    background: transparent;
+  }
+  .btn:hover {
+    background: var(--ink);
+    color: var(--bg);
+  }
+
+  .btn-outline {
+    @apply inline-block px-6 py-2.5 text-sm font-normal tracking-wider transition-colors duration-200;
+    border: 1px solid var(--line);
+    color: var(--ink-secondary);
+  }
+  .btn-outline:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .card {
+    @apply p-6 transition-all duration-200;
+    border: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .card:hover {
+    border-color: var(--line-dark);
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  }
+
+  .input {
+    @apply w-full px-3 py-2 text-sm transition-colors duration-150;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .input::placeholder { color: var(--ink-faint); }
+  .input:focus { border-color: var(--ink); outline: none; }
+
+  .nav-link {
+    @apply text-xs tracking-ultra uppercase transition-colors duration-150;
+    color: var(--ink-faint);
+  }
+  .nav-link:hover, .nav-link.active { color: var(--ink); }
+
+  .section { @apply py-20 px-6 max-w-5xl mx-auto; }
+
+  /* Grid divider pattern */
+  .grid-divide {
+    @apply grid gap-px;
+    background: var(--line);
+  }
+  .grid-divide > * {
+    background: var(--bg);
+  }
+  .grid-divide > *:hover {
+    background: var(--bg-warm);
+  }
+
+  /* Hover utilities for server components (no JS handlers needed) */
+  .hover-bg {
+    background: var(--bg);
+    transition: background 0.15s;
+  }
+  .hover-bg:hover { background: var(--bg-warm); }
+
+  .hover-link {
+    color: var(--ink-secondary);
+    transition: color 0.15s;
+  }
+  .hover-link:hover { color: var(--ink); }
+
+  .hover-faint {
+    color: var(--ink-faint);
+    transition: color 0.15s;
+  }
+  .hover-faint:hover { color: var(--ink); }
+}
+
+.page-enter {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
