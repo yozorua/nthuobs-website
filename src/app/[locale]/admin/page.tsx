@@ -34,7 +34,7 @@ export default async function AdminPage({
   const stats = [
     { label: t('totalUsers'), value: counts.total },
     { label: t('pending'), value: counts.pending },
-    { label: t('members'), value: counts.member + counts.operator + counts.manager },
+    { label: t('members'), value: counts.member + counts.operator + counts.manager + counts.admin },
     { label: t('admins'), value: counts.admin },
   ];
 

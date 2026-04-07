@@ -9,7 +9,10 @@
     "admin": "Admin",
     "signIn": "Login",
     "activate": "Activate Account",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "roleMember": "Member",
+    "roleOperator": "Operator",
+    "roleManager": "Manager"
   },
   "home": {
     "established": "Est. 1971",
@@ -174,7 +177,9 @@
     "location": "Location",
     "contact": "Contact",
     "locationText": "Room 801, Physics Building\nNational Tsing Hua University\nNo. 101, Sec. 2, Guangfu Rd.\nHsinchu City 30013, Taiwan",
-    "rights": "All rights reserved."
+    "rights": "All rights reserved.",
+    "visit": "Visit",
+    "calendar": "Calendar"
   },
   "dashboard": {
     "label": "Member Portal",
@@ -183,8 +188,10 @@
     "upcomingSessions": "Upcoming Sessions",
     "role": "Your Role",
     "status": "Observatory",
-    "member": "Member",
     "active": "Active",
+    "roleMember": "Member",
+    "roleOperator": "Operator",
+    "roleManager": "Manager",
     "upcomingLabel": "Upcoming Sessions",
     "viewAll": "View all →",
     "noSessions": "No upcoming sessions scheduled.",

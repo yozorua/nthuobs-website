@@ -31,6 +31,14 @@ export default async function DashboardPage({
 
   const totalSchedules = await db.schedule.count();
 
+  const roleKeyMap: Record<string, 'roleMember' | 'roleOperator' | 'roleManager'> = {
+    MEMBER: 'roleMember',
+    OPERATOR: 'roleOperator',
+    MANAGER: 'roleManager',
+    ADMIN: 'roleManager',
+  };
+  const roleDisplay = t(roleKeyMap[dbUser.role] ?? 'roleMember');
+
   const links = t.raw('links') as Array<{ label: string; desc: string }>;
   const linkHrefs = [
     `/${locale}/schedule`,
@@ -42,7 +50,7 @@ export default async function DashboardPage({
   const stats = [
     { label: t('totalSchedules'), value: totalSchedules },
     { label: t('upcomingSessions'), value: schedules.length },
-    { label: t('role'), value: t('member') },
+    { label: t('role'), value: roleDisplay },
     { label: t('status'), value: t('active') },
   ];
 

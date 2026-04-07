@@ -52,6 +52,14 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const role = (session?.user as { role?: string })?.role;
   const isAdmin = role === 'ADMIN';
 
+  const roleDisplayKey: Record<string, 'roleMember' | 'roleOperator' | 'roleManager'> = {
+    MEMBER: 'roleMember',
+    OPERATOR: 'roleOperator',
+    MANAGER: 'roleManager',
+    ADMIN: 'roleManager',
+  };
+  const roleLabel = role ? t(roleDisplayKey[role] ?? 'roleMember') : null;
+
   return (
     <header className="sticky top-0 z-50" style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
       <nav className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -152,6 +160,11 @@ export default function Navbar({ session, locale }: NavbarProps) {
                     <p className="text-xs truncate mt-0.5" style={{ color: 'var(--ink-faint)' }}>
                       {session.user.email}
                     </p>
+                    {roleLabel && (
+                      <p className="text-xs tracking-ultra uppercase mt-1.5" style={{ color: 'var(--ink-faint)' }}>
+                        {roleLabel}
+                      </p>
+                    )}
                   </div>
                   <Link
                     href={`/${locale}/dashboard`}

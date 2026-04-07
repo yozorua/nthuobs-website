@@ -56,8 +56,8 @@ export default function Footer() {
           <div className="flex gap-5">
             {[
               { href: `/${locale}/about`, label: t('observatory') },
-              { href: `/${locale}/visit`, label: 'Visit' },
-              { href: `/${locale}/calendar`, label: 'Calendar' },
+              { href: `/${locale}/visit`, label: t('visit') },
+              { href: `/${locale}/calendar`, label: t('calendar') },
             ].map(link => (
               <Link
                 key={link.href}

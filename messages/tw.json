@@ -9,7 +9,10 @@
     "admin": "管理後台",
     "signIn": "登入",
     "activate": "帳號啟用",
-    "signOut": "登出"
+    "signOut": "登出",
+    "roleMember": "成員",
+    "roleOperator": "觀測員",
+    "roleManager": "管理員"
   },
   "home": {
     "established": "創立於 1971 年",
@@ -174,7 +177,9 @@
     "location": "地址",
     "contact": "聯絡方式",
     "locationText": "物理館 801 室\n國立清華大學\n光復路二段 101 號\n新竹市 30013 台灣",
-    "rights": "版權所有。"
+    "rights": "版權所有。",
+    "visit": "參觀申請",
+    "calendar": "行事曆"
   },
   "dashboard": {
     "label": "成員入口",
@@ -183,8 +188,10 @@
     "upcomingSessions": "即將到來",
     "role": "您的身份",
     "status": "天文台狀態",
-    "member": "成員",
     "active": "運作中",
+    "roleMember": "成員",
+    "roleOperator": "觀測員",
+    "roleManager": "管理員",
     "upcomingLabel": "即將到來的排程",
     "viewAll": "查看全部 →",
     "noSessions": "目前沒有排定的觀測活動。",
