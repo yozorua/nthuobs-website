@@ -60,15 +60,10 @@ export default async function AdminPage({
 
       {/* Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-px mb-14" style={{ background: 'var(--line)' }}>
-        {[
-          { href: `/${locale}/admin/schedule`, label: 'Schedule Management', desc: 'View all sessions, create and assign observation schedules to members.' },
-          { href: `/${locale}/admin/events`, label: 'Event Management', desc: 'Create and manage public events shown on the calendar.' },
-        ].map(item => (
-          <Link key={item.href} href={item.href} className="hover-bg block px-6 py-5" style={{ background: 'var(--bg)' }}>
-            <p className="text-sm mb-1" style={{ color: 'var(--ink)' }}>{item.label}</p>
-            <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>{item.desc}</p>
-          </Link>
-        ))}
+        <Link href={`/${locale}/admin/events`} className="hover-bg block px-6 py-5" style={{ background: 'var(--bg)' }}>
+          <p className="text-sm mb-1" style={{ color: 'var(--ink)' }}>Event Management</p>
+          <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>Create and manage public events shown on the calendar.</p>
+        </Link>
       </div>
 
       {/* User Management */}

@@ -13,7 +13,7 @@ export default async function AdminEventsPage({
   const { locale } = await params;
 
   const role = (session?.user as { role?: string })?.role;
-  if (!session?.user || role !== 'ADMIN') redirect(`/${locale}/dashboard`);
+  if (!session?.user || !['ADMIN', 'MANAGER'].includes(role ?? '')) redirect(`/${locale}/dashboard`);
 
   const events = await db.event.findMany({ orderBy: { date: 'asc' } });
 

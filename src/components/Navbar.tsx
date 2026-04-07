@@ -51,6 +51,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
 
   const role = (session?.user as { role?: string })?.role;
   const isAdmin = role === 'ADMIN';
+  const isManager = role === 'MANAGER';
 
   const roleDisplayKey: Record<string, 'roleMember' | 'roleOperator' | 'roleManager'> = {
     MEMBER: 'roleMember',
@@ -184,6 +185,16 @@ export default function Navbar({ session, locale }: NavbarProps) {
                       {t('admin')}
                     </Link>
                   )}
+                  {isManager && (
+                    <Link
+                      href={`/${locale}/admin/events`}
+                      onClick={() => setUserMenuOpen(false)}
+                      className="hover-bg block px-4 py-2 text-xs tracking-ultra uppercase"
+                      style={{ color: 'var(--ink-secondary)' }}
+                    >
+                      {t('events')}
+                    </Link>
+                  )}
                   <div style={{ borderTop: '1px solid var(--line)', marginTop: '0.25rem' }}>
                     <button
                       onClick={() => { setUserMenuOpen(false); signOut(); }}
@@ -255,6 +266,9 @@ export default function Navbar({ session, locale }: NavbarProps) {
                 <Link href={`/${locale}/dashboard`} onClick={() => setMenuOpen(false)} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('portal')}</Link>
                 {isAdmin && (
                   <Link href={`/${locale}/admin`} onClick={() => setMenuOpen(false)} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('admin')}</Link>
+                )}
+                {isManager && (
+                  <Link href={`/${locale}/admin/events`} onClick={() => setMenuOpen(false)} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('events')}</Link>
                 )}
                 <button onClick={() => signOut()} className="text-left text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('signOut')}</button>
               </div>

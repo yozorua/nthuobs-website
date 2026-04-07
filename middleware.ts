@@ -27,8 +27,15 @@ export default async function middleware(request: NextRequest) {
     if (role === 'PENDING') {
       return NextResponse.redirect(new URL(`/${locale}/activate`, request.url));
     }
-    if (isAdminPath && role !== 'ADMIN') {
-      return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+    if (isAdminPath) {
+      const isEventsPath = pathnameWithoutLocale.startsWith('/admin/events');
+      const canAccessEvents = role === 'ADMIN' || role === 'MANAGER';
+      if (isEventsPath && !canAccessEvents) {
+        return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+      }
+      if (!isEventsPath && role !== 'ADMIN') {
+        return NextResponse.redirect(new URL(`/${locale}/dashboard`, request.url));
+      }
     }
   }
 
