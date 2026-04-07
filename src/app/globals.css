@@ -37,6 +37,7 @@ body {
   background-color: var(--bg);
   color: var(--ink);
   font-weight: 400;
+  letter-spacing: 0em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color 0.2s ease, color 0.2s ease;

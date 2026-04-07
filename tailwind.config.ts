@@ -31,12 +31,15 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        sans: [
+          "-apple-system", "BlinkMacSystemFont", "SF Pro Display", "SF Pro Text",
+          "Helvetica Neue", "Arial", "sans-serif",
+        ],
       },
       letterSpacing: {
-        wider: "0.01em",
-        widest: "0.03em",
-        ultra: "0.18em",
+        wider: "-0.003em",
+        widest: "-0.015em",
+        ultra: "0.08em",
       },
       animation: {
         "fade-in": "fadeIn 0.6s ease-out",
