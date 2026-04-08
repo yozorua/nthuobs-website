@@ -97,17 +97,13 @@
   "people": {
     "teamLabel": "Team",
     "title": "People",
-    "facultyLabel": "Faculty",
-    "studentLabel": "Student Management Team",
-    "studentDesc": "The observatory is operated by a student team from the Institute of Astronomy at NTHU. The team is renewed each academic year and is responsible for all day-to-day operations, guided visits, and public outreach activities.",
+    "managersLabel": "Managers",
+    "operatorsLabel": "Operators",
+    "membersLabel": "Members",
+    "noMembers": "No members listed.",
     "joinLabel": "Join the Team",
     "joinDesc": "Interested in joining the observatory management team? We welcome NTHU students with a passion for astronomy and public outreach. Reach out via email to learn about current openings.",
-    "contactUs": "Contact Us",
-    "roles": [
-      { "role": "Observatory Manager", "roleZh": "天文台管理員", "desc": "Oversees daily operations and coordinates observation sessions." },
-      { "role": "Observatory Operator", "roleZh": "天文台觀測員", "desc": "Operates telescopes and equipment during observation sessions." },
-      { "role": "Observatory Member", "roleZh": "天文台解說員", "desc": "Leads guided tours and educational visits for groups." }
-    ]
+    "contactUs": "Contact Us"
   },
   "calendar": {
     "label": "Events & Schedule",
@@ -122,7 +118,7 @@
     "addCalendar": "Add to Calendar"
   },
   "visit": {
-    "label": "Live and learn",
+    "label": "Observe and Learn",
     "title": "Visit Registration",
     "s1Label": "1 · Opening Rules",
     "policyTitle": "Opening Policy",

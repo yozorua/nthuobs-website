@@ -141,20 +141,6 @@ export default function CalendarClient({ entries }: { entries: Entry[] }) {
             <p className="text-xs leading-relaxed pt-1" style={{ color: 'var(--ink-faint)' }}>{t('hoursNote')}</p>
           </div>
 
-          {/* Subscribe */}
-          <div className="p-5" style={{ border: '1px solid var(--line)' }}>
-            <p className="label mb-3">{t('subscribeLabel')}</p>
-            <p className="text-xs leading-relaxed mb-4" style={{ color: 'var(--ink-secondary)' }}>{t('subscribeDesc')}</p>
-            <a
-              href="https://calendar.google.com/calendar/r?cid=nthuobs@gmail.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn text-xs"
-            >
-              {t('addCalendar')}
-            </a>
-          </div>
-
           {/* Selected date events */}
           {selected && (
             <div className="p-5" style={{ border: '1px solid var(--line)' }}>

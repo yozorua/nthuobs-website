@@ -13,7 +13,7 @@
     "signOut": "登出",
     "editProfile": "編輯資料",
     "roleVisitor": "訪客",
-    "roleMember": "成員",
+    "roleMember": "解說員",
     "roleOperator": "觀測員",
     "roleManager": "管理員"
   },
@@ -156,29 +156,13 @@
   "people": {
     "teamLabel": "團隊",
     "title": "成員",
-    "facultyLabel": "指導教授",
-    "studentLabel": "學生管理團隊",
-    "studentDesc": "天文台由國立清華大學天文研究所的學生團隊負責營運，每學年更新。團隊負責日常管理、導覽參觀及科普推廣等所有事務。",
+    "managersLabel": "管理員",
+    "operatorsLabel": "觀測員",
+    "membersLabel": "解說員",
+    "noMembers": "尚無成員資料。",
     "joinLabel": "加入團隊",
     "joinDesc": "有興趣加入天文台管理團隊嗎？歡迎對天文與科普推廣有熱忱的清華學生，透過電子郵件與我們聯絡，了解目前的職缺資訊。",
-    "contactUs": "聯絡我們",
-    "roles": [
-      {
-        "role": "天文台管理員",
-        "roleZh": "Observatory Manager",
-        "desc": "負責天文台日常事務管理與觀測活動協調。"
-      },
-      {
-        "role": "天文台觀測員",
-        "roleZh": "Observatory Operator",
-        "desc": "負責觀測期間望遠鏡與儀器的操作。"
-      },
-      {
-        "role": "天文台解說員",
-        "roleZh": "Observatory Member",
-        "desc": "負責帶領導覽解說及教學參觀活動。"
-      }
-    ]
+    "contactUs": "聯絡我們"
   },
   "calendar": {
     "label": "活動與行程",
@@ -193,7 +177,7 @@
     "addCalendar": "加入行事曆"
   },
   "visit": {
-    "label": "活到老學到老",
+    "label": "觀測與學習",
     "title": "參觀申請",
     "s1Label": "一、開放規則",
     "policyTitle": "開放方式",
@@ -264,7 +248,7 @@
     "status": "天文台狀態",
     "active": "運作中",
     "roleVisitor": "訪客",
-    "roleMember": "成員",
+    "roleMember": "解說員",
     "roleOperator": "觀測員",
     "roleManager": "管理員",
     "upcomingLabel": "即將到來的排程",

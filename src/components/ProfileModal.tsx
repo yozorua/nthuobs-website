@@ -127,7 +127,18 @@ export default function ProfileModal({ open, onClose }: Props) {
               <form onSubmit={handleSave} className="space-y-4">
                 {/* Avatar */}
                 <div className="flex items-center gap-4 pb-4" style={{ borderBottom: '1px solid var(--line)' }}>
-                  <div className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0" style={{ background: 'var(--line)' }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  <div
+                    className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 group"
+                    style={{ background: 'var(--line)', cursor: uploadingAvatar ? 'default' : 'pointer' }}
+                    onClick={() => !uploadingAvatar && fileInputRef.current?.click()}
+                  >
                     {currentAvatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -141,20 +152,20 @@ export default function ProfileModal({ open, onClose }: Props) {
                         {form.firstNameEn?.[0]?.toUpperCase() ?? '?'}
                       </div>
                     )}
-                    {uploadingAvatar && (
+                    {uploadingAvatar ? (
                       <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.4)' }}>
                         <span className="text-xs text-white">…</span>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150" style={{ background: 'rgba(0,0,0,0.45)' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                          <circle cx="12" cy="13" r="4"/>
+                        </svg>
                       </div>
                     )}
                   </div>
                   <div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png"
-                      className="hidden"
-                      onChange={handleFileChange}
-                    />
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
