@@ -69,9 +69,22 @@ export default function CalendarClient({ entries }: { entries: Entry[] }) {
         <div className="lg:col-span-2">
           <div className="flex items-center justify-between mb-8">
             <button onClick={prev} className="text-sm px-3 py-1 transition-colors hover-faint">←</button>
-            <h2 className="text-lg font-light tracking-wider" style={{ color: 'var(--ink)' }}>
-              {MONTHS[month]} {year}
-            </h2>
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-light tracking-wider" style={{ color: 'var(--ink)' }}>{MONTHS[month]}</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setYear(y => y - 1)}
+                  className="text-xs px-1.5 py-0.5 transition-colors hover-faint"
+                  style={{ color: 'var(--ink-faint)' }}
+                >−</button>
+                <span className="text-lg font-light tracking-wider" style={{ color: 'var(--ink)' }}>{year}</span>
+                <button
+                  onClick={() => setYear(y => y + 1)}
+                  className="text-xs px-1.5 py-0.5 transition-colors hover-faint"
+                  style={{ color: 'var(--ink-faint)' }}
+                >+</button>
+              </div>
+            </div>
             <button onClick={next} className="text-sm px-3 py-1 transition-colors hover-faint">→</button>
           </div>
 

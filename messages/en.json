@@ -106,7 +106,7 @@
     "roles": [
       { "role": "Observatory Manager", "roleZh": "天文台管理員", "desc": "Oversees daily operations and coordinates observation sessions." },
       { "role": "Observatory Operator", "roleZh": "天文台觀測員", "desc": "Operates telescopes and equipment during observation sessions." },
-      { "role": "Observatory Guide", "roleZh": "天文台解說員", "desc": "Leads guided tours and educational visits for groups." }
+      { "role": "Observatory Member", "roleZh": "天文台解說員", "desc": "Leads guided tours and educational visits for groups." }
     ]
   },
   "calendar": {

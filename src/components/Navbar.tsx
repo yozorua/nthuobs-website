@@ -83,13 +83,13 @@ export default function Navbar({ session, locale }: NavbarProps) {
         </Link>
 
         {/* Desktop links + Right controls */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden md:flex items-center gap-6">
           {/* Nav links */}
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-xs tracking-ultra uppercase transition-colors duration-150"
+              className="text-sm tracking-wide transition-colors duration-150"
               style={{ color: isActive(link.href) ? 'var(--ink)' : 'var(--ink-faint)' }}
             >
               {link.label}
@@ -101,7 +101,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
           {/* Lang toggle */}
           <button
             onClick={switchLocale}
-            className="text-xs tracking-ultra uppercase transition-colors duration-150"
+            className="text-sm tracking-wide transition-colors duration-150"
             style={{ color: 'var(--ink-faint)' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-faint)')}
@@ -114,7 +114,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
           {/* Dark mode toggle */}
           <button
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className="text-xs tracking-ultra uppercase transition-colors duration-150"
+            className="text-sm tracking-wide transition-colors duration-150"
             style={{ color: 'var(--ink-faint)' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-faint)')}
@@ -175,7 +175,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
                       </div>
                     )}
                     <div className="min-w-0">
-                      <p className="text-xs font-medium truncate" style={{ color: 'var(--ink)' }}>
+                      <p className="text-sm font-medium truncate" style={{ color: 'var(--ink)' }}>
                         {session.user.name}
                       </p>
                       {roleLabel && (
@@ -188,7 +188,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
                   <Link
                     href={`/${locale}/dashboard`}
                     onClick={() => setUserMenuOpen(false)}
-                    className="hover-bg block px-4 py-2 text-xs tracking-ultra uppercase"
+                    className="hover-bg block px-4 py-2 text-sm tracking-wide"
                     style={{ color: 'var(--ink-secondary)' }}
                   >
                     {t('portal')}
@@ -197,7 +197,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
                     <Link
                       href={`/${locale}/admin`}
                       onClick={() => setUserMenuOpen(false)}
-                      className="hover-bg block px-4 py-2 text-xs tracking-ultra uppercase"
+                      className="hover-bg block px-4 py-2 text-sm tracking-wide"
                       style={{ color: 'var(--ink-secondary)' }}
                     >
                       {t('admin')}
@@ -207,7 +207,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
                     <Link
                       href={`/${locale}/admin/events`}
                       onClick={() => setUserMenuOpen(false)}
-                      className="hover-bg block px-4 py-2 text-xs tracking-ultra uppercase"
+                      className="hover-bg block px-4 py-2 text-sm tracking-wide"
                       style={{ color: 'var(--ink-secondary)' }}
                     >
                       {t('events')}
@@ -216,7 +216,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
                   <div style={{ borderTop: '1px solid var(--line)', marginTop: '0.25rem' }}>
                     <button
                       onClick={() => { setUserMenuOpen(false); signOut(); }}
-                      className="hover-bg w-full text-left px-4 py-2 text-xs tracking-ultra uppercase"
+                      className="hover-bg w-full text-left px-4 py-2 text-sm tracking-wide"
                       style={{ color: 'var(--ink-secondary)' }}
                     >
                       {t('signOut')}
@@ -228,7 +228,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
           ) : (
             <button
               onClick={() => signIn('google', { callbackUrl: `/${locale}/dashboard` })}
-              className="text-xs tracking-ultra uppercase transition-colors duration-150"
+              className="text-sm tracking-wide transition-colors duration-150"
               style={{ color: 'var(--ink-faint)' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-faint)')}
@@ -258,17 +258,17 @@ export default function Navbar({ session, locale }: NavbarProps) {
               key={link.href}
               href={link.href}
               onClick={() => setMenuOpen(false)}
-              className="text-xs tracking-ultra uppercase"
+              className="text-sm tracking-wide"
               style={{ color: 'var(--ink-secondary)' }}
             >
               {link.label}
             </Link>
           ))}
           <div className="flex items-center gap-4 pt-2" style={{ borderTop: '1px solid var(--line)' }}>
-            <button onClick={switchLocale} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>
+            <button onClick={switchLocale} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>
               {locale === 'en' ? '中文' : 'EN'}
             </button>
-            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>
+            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>
               {theme === 'dark' ? 'Light' : 'Dark'}
             </button>
           </div>
@@ -280,19 +280,19 @@ export default function Navbar({ session, locale }: NavbarProps) {
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={avatarImage} alt={session.user.name ?? 'User'} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
                   )}
-                  <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{session.user.name}</span>
+                  <span className="text-sm" style={{ color: 'var(--ink-secondary)' }}>{session.user.name}</span>
                 </div>
-                <Link href={`/${locale}/dashboard`} onClick={() => setMenuOpen(false)} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('portal')}</Link>
+                <Link href={`/${locale}/dashboard`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('portal')}</Link>
                 {isAdmin && (
-                  <Link href={`/${locale}/admin`} onClick={() => setMenuOpen(false)} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('admin')}</Link>
+                  <Link href={`/${locale}/admin`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('admin')}</Link>
                 )}
                 {isManager && (
-                  <Link href={`/${locale}/admin/events`} onClick={() => setMenuOpen(false)} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('events')}</Link>
+                  <Link href={`/${locale}/admin/events`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('events')}</Link>
                 )}
-                <button onClick={() => signOut()} className="text-left text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('signOut')}</button>
+                <button onClick={() => signOut()} className="text-left text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('signOut')}</button>
               </div>
             ) : (
-              <button onClick={() => signIn('google', { callbackUrl: `/${locale}/dashboard` })} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{t('signIn')}</button>
+              <button onClick={() => signIn('google', { callbackUrl: `/${locale}/dashboard` })} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('signIn')}</button>
             )}
           </div>
         </div>
