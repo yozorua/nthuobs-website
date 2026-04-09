@@ -36,7 +36,22 @@
       "Bash(psql postgresql://nthuobs:nthuobs2018@localhost:5432/nthuobs -c 'SELECT email, role, \"\"createdAt\"\" FROM \"\"User\"\";')",
       "Bash(psql:*)",
       "Bash(node -e \"require\\('react-image-crop'\\); console.log\\('ok'\\)\")",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(file /home/nthuobs/website/weather_station/stream/roof/*)",
+      "Bash(sqlite3 /home/nthuobs/website/weather_station/data/weather.db \".schema weather_data\")",
+      "Bash(sqlite3 /home/nthuobs/website/weather_station/data/weather.db \"PRAGMA table_info\\(weather_data\\);\")",
+      "Bash(wc:*)",
+      "Bash(ls /home/nthuobs/nthuobs-website/src/app/[locale]/about/)",
+      "Bash(cat /home/nthuobs/nthuobs-website/src/app/[locale]/about/page.tsx)",
+      "Bash(cat:*)",
+      "Bash(npx tsx:*)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npx next:*)",
+      "Bash(curl -s http://localhost:3001/api/weather/latest)",
+      "Bash(curl -s http://192.168.0.113:8888/data)",
+      "Bash(curl -s http://192.168.0.203:8888/data)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f\\\\\"Temp: {d['outsideTempC']}°C  Humidity: {d['outsideHumidityPercent']}%  Wind: {d['windSpeedMs']} m/s  Time: {d['consoleTime']}\\\\\"\\)\")",
+      "Bash(python3 -c ':*)"
     ]
   }
 }

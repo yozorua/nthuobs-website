@@ -87,6 +87,76 @@ model Event {
   updatedAt   DateTime @updatedAt
 }
 
+model WeatherReading {
+  id                           String   @id @default(cuid())
+  scriptTimestamp              DateTime @default(now())
+  consoleTime                  DateTime @unique
+  stationDate                  String
+  stationTime                  String
+
+  // Sensor readings
+  outsideTempC                 Float?
+  insideTempC                  Float?
+  outsideHumidityPercent       Float?
+  insideHumidityPercent        Float?
+  barometerHpa                 Float?
+  windSpeedMs                  Float?
+  windDirectionDeg             Float?
+  windDirectionText            String?
+  windGustMs                   Float?
+  windGustDirDeg               Float?
+  rainRateMmHr                 Float?
+  dailyRainMm                  Float?
+  stormRainMm                  Float?
+  monthlyRainMm                Float?
+  yearlyRainMm                 Float?
+  lastHourRainMm               Float?
+  last15MinRainMm              Float?
+  last24hrRainMm               Float?
+  dewpointC                    Float?
+  heatIndexC                   Float?
+  windChillC                   Float?
+  thswIndexC                   Float?
+  consoleBatteryV              Float?
+  avgWind2minMs                Float?
+
+  // Station hi/lo
+  outTempDayHighC              Float?
+  outTempDayLowC               Float?
+  inTempDayHighC               Float?
+  inTempDayLowC                Float?
+  baroDayHighHpa               Float?
+  baroDayLowHpa                Float?
+  windDayHighMs                Float?
+  windMonthHighMs              Float?
+  windYearHighMs               Float?
+  windChillDayLowC             Float?
+  heatIndexDayHighC            Float?
+  rainRateDayHighMmHr          Float?
+  rainRateHourHighMmHr         Float?
+
+  // Astronomical
+  sunrise                      String?
+  sunset                       String?
+
+  // Daemon-calculated rolling stats
+  avgWind1MinMs                Float?
+  avgWind10MinMs               Float?
+  hiWind10MinMs                Float?
+
+  // Meteoblue forecast (matched by hour)
+  cloudCoverHigh               Float?
+  cloudCoverMid                Float?
+  cloudCoverLow                Float?
+  seeing                       Float?
+  moonrise                     String?
+  moonset                      String?
+  moonPhase                    String?
+
+  @@index([consoleTime])
+  @@index([stationDate, consoleTime])
+}
+
 enum Role {
   PENDING
   MEMBER

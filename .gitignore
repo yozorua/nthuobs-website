@@ -44,3 +44,7 @@ prisma/dev.db-journal
 .vercel
 *.pem
 public/avatars/*
+
+# AI
+.claude
+.claude/settings.local.json

@@ -5,6 +5,7 @@
     "people": "成員",
     "calendar": "行事曆",
     "visit": "參觀申請",
+    "weather": "天氣",
     "portal": "成員入口",
     "admin": "管理後台",
     "events": "活動管理",
@@ -338,6 +339,64 @@
     "confirming": "送出中…",
     "profileError": "資料儲存失敗，請再試一次。",
     "back": "返回"
+  },
+  "weather": {
+    "pageTitle": "氣象站",
+    "lastUpdate": "最後更新",
+    "stationLocation": "緯度: 24° 47′ 39″ N · 經度: 120° 59′ 31″ E · 海拔: 70 m",
+
+    "outdoorTemp": "室外氣溫",
+    "indoorTemp": "室內氣溫",
+    "outdoorHumidity": "室外濕度",
+    "indoorHumidity": "室內濕度",
+    "barometer": "氣壓",
+    "condition": "現況",
+
+    "wind": "風速",
+    "windBeaufort": "蒲福風級: {force} 級",
+    "windGust": "陣風: {speed} m/s（{force} 級）",
+    "windAvg1m": "1 分鐘平均: {speed} m/s",
+    "windAvg10m": "10 分鐘平均: {speed} m/s",
+    "windHigh10m": "10 分鐘最高: {speed} m/s",
+
+    "dailyRain": "今日雨量",
+    "rainRate": "降雨率: {rate} mm/hr",
+    "rainLastHour": "近 1 小時: {amount} mm",
+    "rainLast15min": "近 15 分鐘: {amount} mm",
+
+    "sunMoon": "日月資訊",
+    "sunrise": "日出",
+    "sunset": "日落",
+    "moonrise": "月出",
+    "moonset": "月落",
+    "moonPhase": "月相",
+
+    "cwaForecast": "中央氣象署預報",
+    "cwaLoading": "載入預報中…",
+    "cwaError": "預報暫時無法取得",
+
+    "cloudSeeing": "雲量與視相預報",
+    "cloudHigh": "高雲",
+    "cloudMid": "中雲",
+    "cloudLow": "低雲",
+    "seeing": "視相",
+
+    "dataTrends": "資料趨勢",
+
+    "windMap": "風場地圖",
+    "satellite": "衛星雲圖",
+    "allSkyCamera": "全天空相機",
+    "allSkyCameraPlaceholder": "全天空相機即將上線",
+
+    "conditions": {
+      "Clear": "晴",
+      "PartlyCloudy": "多雲時晴",
+      "Cloudy": "多雲",
+      "Rainy": "雨",
+      "Foggy": "霧",
+      "Windy": "強風",
+      "Unknown": "不明"
+    }
   },
   "profile": {
     "title": "編輯個人資料",

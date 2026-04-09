@@ -126,7 +126,7 @@ export default async function PeoplePage({
   ];
 
   return (
-    <div className="page-enter max-w-5xl mx-auto px-6 py-16">
+    <div className="page-enter max-w-5xl mx-auto px-6 pt-8 pb-16">
       {/* Header */}
       <div className="mb-14 pb-8" style={{ borderBottom: '1px solid var(--line)' }}>
         <p className="label mb-3">{t('teamLabel')}</p>

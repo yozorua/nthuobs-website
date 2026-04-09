@@ -32,6 +32,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
     { href: `/${locale}/people`, label: t('people') },
     { href: `/${locale}/calendar`, label: t('calendar') },
     { href: `/${locale}/visit`, label: t('visit') },
+    { href: `/${locale}/weather`, label: t('weather') },
   ];
 
   const switchLocale = () => {

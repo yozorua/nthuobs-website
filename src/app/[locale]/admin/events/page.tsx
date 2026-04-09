@@ -18,7 +18,7 @@ export default async function AdminEventsPage({
   const events = await db.event.findMany({ orderBy: { date: 'asc' } });
 
   return (
-    <div className="page-enter max-w-5xl mx-auto px-6 py-16">
+    <div className="page-enter max-w-5xl mx-auto px-6 pt-8 pb-16">
       <div className="mb-10 pb-8 flex items-center justify-between" style={{ borderBottom: '1px solid var(--line)' }}>
         <div>
           <p className="label mb-3">Administration · Events</p>

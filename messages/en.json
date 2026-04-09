@@ -5,6 +5,7 @@
     "people": "People",
     "calendar": "Calendar",
     "visit": "Visit",
+    "weather": "Weather",
     "portal": "Portal",
     "admin": "Admin",
     "events": "Events",
@@ -267,6 +268,64 @@
     "confirming": "Confirming…",
     "profileError": "Failed to save profile. Please try again.",
     "back": "Back"
+  },
+  "weather": {
+    "pageTitle": "Weather Station",
+    "lastUpdate": "Last Update",
+    "stationLocation": "Lat: 24° 47′ 39″ N · Lon: 120° 59′ 31″ E · Elev: 70 m",
+
+    "outdoorTemp": "Outdoor Temperature",
+    "indoorTemp": "Indoor Temperature",
+    "outdoorHumidity": "Outdoor Humidity",
+    "indoorHumidity": "Indoor Humidity",
+    "barometer": "Barometer",
+    "condition": "Condition",
+
+    "wind": "Wind",
+    "windBeaufort": "Beaufort: force {force}",
+    "windGust": "Gust: {speed} m/s (force {force})",
+    "windAvg1m": "Avg. (1 min): {speed} m/s",
+    "windAvg10m": "Avg. (10 min): {speed} m/s",
+    "windHigh10m": "High (10 min): {speed} m/s",
+
+    "dailyRain": "Daily Rain",
+    "rainRate": "Rate: {rate} mm/hr",
+    "rainLastHour": "Last 1 hr: {amount} mm",
+    "rainLast15min": "Last 15 min: {amount} mm",
+
+    "sunMoon": "Sun & Moon",
+    "sunrise": "Sunrise",
+    "sunset": "Sunset",
+    "moonrise": "Moonrise",
+    "moonset": "Moonset",
+    "moonPhase": "Phase",
+
+    "cwaForecast": "CWA Forecast",
+    "cwaLoading": "Loading forecast…",
+    "cwaError": "Forecast unavailable",
+
+    "cloudSeeing": "Cloud & Seeing Forecast",
+    "cloudHigh": "High Cloud",
+    "cloudMid": "Mid Cloud",
+    "cloudLow": "Low Cloud",
+    "seeing": "Seeing",
+
+    "dataTrends": "Data Trends",
+
+    "windMap": "Wind Map",
+    "satellite": "Satellite",
+    "allSkyCamera": "All-Sky Camera",
+    "allSkyCameraPlaceholder": "All-sky camera coming soon",
+
+    "conditions": {
+      "Clear": "Clear",
+      "PartlyCloudy": "Partly Cloudy",
+      "Cloudy": "Cloudy",
+      "Rainy": "Rainy",
+      "Foggy": "Foggy",
+      "Windy": "Windy",
+      "Unknown": "N/A"
+    }
   },
   "profile": {
     "title": "Edit Profile",
