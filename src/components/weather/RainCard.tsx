@@ -9,7 +9,7 @@ export default function RainCard({ reading }: { reading: WeatherReading | null }
   const t = useTranslations('weather');
 
   return (
-    <div className="card p-5" style={{ borderColor: 'var(--line)' }}>
+    <div className="card p-5">
       <p className="label mb-3">{t('dailyRain')}</p>
 
       <div className="flex items-baseline gap-2 mb-1">

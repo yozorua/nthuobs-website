@@ -5,10 +5,6 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    localPatterns: [
-      { pathname: '/avatars/**', search: '' },
-      { pathname: '/avatars/**', search: 't=*' },
-    ],
     remotePatterns: [
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
       { protocol: 'https', hostname: '*.googleusercontent.com' },

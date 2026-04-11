@@ -9,7 +9,15 @@ export default function Footer() {
   const locale = (params.locale as string) || 'en';
 
   return (
-    <footer style={{ borderTop: '1px solid var(--line)', marginTop: 'auto' }}>
+    <footer
+      style={{
+        borderTop: '1px solid var(--nav-border)',
+        marginTop: 'auto',
+        background: 'var(--nav-bg)',
+        backdropFilter: 'blur(24px) saturate(200%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+      }}
+    >
       <div className="max-w-5xl mx-auto px-6 py-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
           <div>

@@ -54,13 +54,15 @@ interface Props {
   forecast: MeteoblueForecastEntry[];
   stationDate: string;
   stationTime: string;
+  forceDark?: boolean;
 }
 
 const BLOCK_W = 24; // px
 
-export default function CloudSeeingGrid({ forecast, stationDate, stationTime }: Props) {
+export default function CloudSeeingGrid({ forecast, stationDate, stationTime, forceDark }: Props) {
   const t = useTranslations('weather');
-  const dark = useIsDark();
+  const isDark = useIsDark();
+  const dark = forceDark ?? isDark;
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentRef = useRef<HTMLDivElement>(null);
 
@@ -156,7 +158,7 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime }: 
   ];
 
   return (
-    <div className="card p-5" style={{ borderColor: 'var(--line)' }}>
+    <div className="card p-5">
       <p className="label mb-4">{t('cloudSeeing')}</p>
 
       <div className="flex gap-2">

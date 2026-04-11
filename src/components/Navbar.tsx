@@ -67,7 +67,15 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const roleLabel = role ? t(roleDisplayKey[role] ?? 'roleVisitor') : null;
 
   return (
-    <header className="sticky top-0 z-50" style={{ background: 'var(--bg)', borderBottom: '1px solid var(--line)' }}>
+    <header
+      className="sticky top-0 z-50"
+      style={{
+        background: 'var(--nav-bg)',
+        borderBottom: '1px solid var(--nav-border)',
+        backdropFilter: 'blur(24px) saturate(200%)',
+        WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+      }}
+    >
       <nav className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
         {/* Logo */}
         <Link href={`/${locale}`} className="flex items-center gap-2.5 group">
@@ -253,7 +261,15 @@ export default function Navbar({ session, locale }: NavbarProps) {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden px-6 py-5 flex flex-col gap-4" style={{ borderTop: '1px solid var(--line)', background: 'var(--bg)' }}>
+        <div
+          className="md:hidden px-6 py-5 flex flex-col gap-4"
+          style={{
+            borderTop: '1px solid var(--nav-border)',
+            background: 'var(--nav-bg)',
+            backdropFilter: 'blur(24px) saturate(200%)',
+            WebkitBackdropFilter: 'blur(24px) saturate(200%)',
+          }}
+        >
           {navLinks.map((link) => (
             <Link
               key={link.href}

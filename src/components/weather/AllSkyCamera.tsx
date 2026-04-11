@@ -21,26 +21,32 @@ export default function AllSkyCamera() {
   }, []);
 
   return (
-    <div className="card p-5" style={{ borderColor: 'var(--line)' }}>
-      <p className="label mb-3">{t('allSkyCamera')}</p>
-      <div
-        className="flex items-center justify-center overflow-hidden"
-        style={{ background: 'var(--bg-muted)', minHeight: 200 }}
-      >
-        {error ? (
+    <div className="card p-5">
+      <div className="flex items-center justify-between mb-3">
+        <p className="label">{t('allSkyCamera')}</p>
+        <span className="text-[10px]" style={{ color: 'var(--ink-faint)' }}>
+          {Math.round(ALLSKY_REFRESH_INTERVAL_MS / 1000)}s refresh
+        </span>
+      </div>
+
+      {error ? (
+        <div
+          className="flex items-center justify-center py-12"
+          style={{ background: 'var(--bg-muted)' }}
+        >
           <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>
             {t('allSkyCameraPlaceholder')}
           </p>
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={src}
-            alt={t('allSkyCamera')}
-            className="w-full object-contain"
-            onError={() => setError(true)}
-          />
-        )}
-      </div>
+        </div>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt={t('allSkyCamera')}
+          className="w-full h-auto block"
+          onError={() => setError(true)}
+        />
+      )}
     </div>
   );
 }

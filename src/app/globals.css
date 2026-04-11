@@ -14,6 +14,11 @@
   --line: #e8e8e6;
   --line-dark: #d0d0ce;
   --accent: #1a3a5c;
+  --nav-bg: rgba(255, 255, 255, 0.78);
+  --nav-border: rgba(232, 232, 230, 0.6);
+  --card-bg: var(--bg);
+  --card-border: var(--line);
+  --card-glass: none;
 }
 
 /* ── Dark mode variables ──────────────────────────────────── */
@@ -28,6 +33,11 @@
   --line: #2a2a2a;
   --line-dark: #333333;
   --accent: #5a8fbf;
+  --nav-bg: rgba(17, 17, 17, 0.80);
+  --nav-border: rgba(42, 42, 42, 0.7);
+  --card-bg: var(--bg);
+  --card-border: var(--line);
+  --card-glass: none;
 }
 
 * { box-sizing: border-box; }
@@ -83,8 +93,10 @@ body {
 
   .card {
     @apply p-6 transition-all duration-200;
-    border: 1px solid var(--line);
-    background: var(--bg);
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+    backdrop-filter: var(--card-glass);
+    -webkit-backdrop-filter: var(--card-glass);
   }
   .card:hover {
     border-color: var(--line-dark);

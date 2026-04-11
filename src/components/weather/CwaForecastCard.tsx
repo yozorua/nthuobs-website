@@ -18,7 +18,7 @@ export default function CwaForecastCard({ periods }: Props) {
   const t = useTranslations('weather');
 
   return (
-    <div className="card p-5" style={{ borderColor: 'var(--line)' }}>
+    <div className="card p-5">
       <p className="label mb-3">{t('cwaForecast')}</p>
 
       {periods.length === 0 ? (

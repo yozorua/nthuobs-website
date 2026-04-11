@@ -88,7 +88,7 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
   const nightAreas = buildNightAreas(data, sunrise, sunset);
 
   return (
-    <div className="card p-5" style={{ borderColor: 'var(--line)' }}>
+    <div className="card p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
         <p className="label">{t('dataTrends')}</p>
@@ -158,10 +158,11 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
 
             <Tooltip
               contentStyle={{
-                background: 'var(--bg)',
-                border: '1px solid var(--line)',
+                background: 'var(--card-bg)',
+                border: '1px solid var(--card-border)',
                 borderRadius: 0,
                 fontSize: 11,
+                backdropFilter: 'var(--card-glass)',
               }}
               labelFormatter={(v) => formatTime(v as string, hours)}
               formatter={(value, name) => {

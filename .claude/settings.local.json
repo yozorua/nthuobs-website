@@ -51,7 +51,8 @@
       "Bash(curl -s http://192.168.0.113:8888/data)",
       "Bash(curl -s http://192.168.0.203:8888/data)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f\\\\\"Temp: {d['outsideTempC']}°C  Humidity: {d['outsideHumidityPercent']}%  Wind: {d['windSpeedMs']} m/s  Time: {d['consoleTime']}\\\\\"\\)\")",
-      "Bash(python3 -c ':*)"
+      "Bash(python3 -c ':*)",
+      "Bash(git checkout:*)"
     ]
   }
 }

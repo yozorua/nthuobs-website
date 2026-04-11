@@ -45,7 +45,7 @@ export default function SunMoonCard({ reading }: { reading: WeatherReading | nul
   const t = useTranslations('weather');
 
   return (
-    <div className="card p-5" style={{ borderColor: 'var(--line)' }}>
+    <div className="card p-5">
       <p className="label mb-3">{t('sunMoon')}</p>
 
       <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
