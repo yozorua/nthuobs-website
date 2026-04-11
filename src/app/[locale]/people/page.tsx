@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import Image from 'next/image';
 import { db } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -39,7 +38,8 @@ function Avatar({
   if (image) {
     return (
       <div className="w-16 h-16 shrink-0 overflow-hidden" style={{ border: '1px solid var(--line)' }}>
-        <Image src={image} alt="" width={64} height={64} className="w-full h-full object-cover" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={image} alt="" width={64} height={64} className="w-full h-full object-cover" />
       </div>
     );
   }
