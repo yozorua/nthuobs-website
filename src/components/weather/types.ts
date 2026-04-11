@@ -61,6 +61,7 @@ export interface WeatherReading {
 }
 
 export interface ChartRow {
+  scriptTimestamp: string;
   consoleTime: string;
   outsideTempC: number | null;
   insideTempC: number | null;

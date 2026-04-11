@@ -43,13 +43,13 @@ function buildNightAreas(data: ChartRow[], sunrise?: string | null, sunset?: str
   const areas: Array<{ x1: string; x2: string }> = [];
 
   // Group data by date
-  const dates = [...new Set(data.map(r => r.consoleTime.slice(0, 10)))];
+  const dates = [...new Set(data.map(r => r.scriptTimestamp.slice(0, 10)))];
   for (const date of dates) {
-    const dayRows = data.filter(r => r.consoleTime.startsWith(date));
+    const dayRows = data.filter(r => r.scriptTimestamp.startsWith(date));
     if (!dayRows.length) continue;
 
-    const firstTs = dayRows[0].consoleTime;
-    const lastTs = dayRows[dayRows.length - 1].consoleTime;
+    const firstTs = dayRows[0].scriptTimestamp;
+    const lastTs = dayRows[dayRows.length - 1].scriptTimestamp;
 
     // Night before sunrise
     const sunriseTs = `${date}T${sunrise.padStart(5, '0')}:00+08:00`;
@@ -76,7 +76,7 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
   const t = useTranslations('weather');
 
   const chartData = data.map(r => ({
-    time: r.consoleTime,
+    time: r.scriptTimestamp,
     outTemp: r.outsideTempC,
     inTemp: r.insideTempC,
     outHumid: r.outsideHumidityPercent,

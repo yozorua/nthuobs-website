@@ -25,6 +25,7 @@ export default function WeatherDashboard() {
   const [chartData, setChartData] = useState<ChartRow[]>([]);
   const [chartHours, setChartHours] = useState(12);
   const [loading, setLoading] = useState(true);
+  const [fetchTime, setFetchTime] = useState<Date | null>(null);
 
   const fetchLatest = async () => {
     try {
@@ -32,6 +33,7 @@ export default function WeatherDashboard() {
       if (res.ok) {
         const data = await res.json() as WeatherReading;
         setLatest(data);
+        setFetchTime(new Date());
         setLoading(false);
       }
     } catch { /* silent */ }
@@ -86,8 +88,8 @@ export default function WeatherDashboard() {
     fetchChart(chartHours);
   }, [chartHours]);
 
-  const lastUpdate = latest
-    ? new Date(latest.consoleTime).toLocaleTimeString('en-GB', {
+  const lastUpdate = fetchTime
+    ? fetchTime.toLocaleTimeString('en-GB', {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
@@ -104,9 +106,9 @@ export default function WeatherDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Last update */}
+      {/* Station meta */}
       <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
-        {t('lastUpdate')}: {lastUpdate}
+        {t('stationLocation')} · {t('lastUpdate')}: {lastUpdate}
       </p>
 
       {/* Current conditions */}

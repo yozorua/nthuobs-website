@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
     const rows = await db.weatherReading.findMany({
       where: { consoleTime: { gte: since } },
       select: {
+        scriptTimestamp: true,
         consoleTime: true,
         outsideTempC: true,
         insideTempC: true,

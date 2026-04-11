@@ -77,6 +77,17 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime }: 
 
   if (forecast.length === 0) return null;
 
+  // Group consecutive entries by date for the date-banner row
+  const dateGroups: { date: string; count: number }[] = [];
+  for (const e of forecast) {
+    const last = dateGroups[dateGroups.length - 1];
+    if (last && last.date === e.date) {
+      last.count++;
+    } else {
+      dateGroups.push({ date: e.date, count: 1 });
+    }
+  }
+
   const rows: {
     key: string;
     label: string;
@@ -151,7 +162,7 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime }: 
       <div className="flex gap-2">
         {/* ── Label column (doesn't scroll) ── */}
         <div className="shrink-0 flex flex-col" style={{ gap: 2 }}>
-          <div style={{ height: 20 }} /> {/* spacer for time row */}
+          <div style={{ height: 34 }} /> {/* spacer for date banner + hour row */}
           {rows.map((row) => (
             <div
               key={row.key}
@@ -174,8 +185,37 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime }: 
         <div ref={scrollRef} className="overflow-x-auto flex-1" style={{ scrollbarWidth: 'thin' }}>
           <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
 
-            {/* Time axis */}
-            <div className="flex" style={{ gap: 2, height: 20 }}>
+            {/* Date banner row */}
+            <div className="flex" style={{ gap: 2, height: 16, marginBottom: 2 }}>
+              {dateGroups.map((g, gi) => {
+                // width spans all blocks for this day: n*BLOCK_W + (n-1)*gap
+                const w = g.count * BLOCK_W + (g.count - 1) * 2;
+                return (
+                  <div
+                    key={gi}
+                    style={{
+                      width: w,
+                      height: 16,
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      paddingLeft: 3,
+                      borderLeft: gi > 0 ? '1px solid var(--line-dark)' : undefined,
+                    }}
+                  >
+                    <span
+                      className="text-[10px] leading-none font-medium"
+                      style={{ color: 'var(--ink-secondary)', letterSpacing: '0.02em' }}
+                    >
+                      {g.date.slice(5).replace('-', '/')}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Hour axis */}
+            <div className="flex" style={{ gap: 2, height: 16 }}>
               {forecast.map((e, i) => {
                 const hour = parseInt(e.time, 10);
                 const isCurrent = e.date === stationDate && hour === currentHour;
@@ -186,7 +226,7 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime }: 
                     ref={isCurrent ? currentRef : undefined}
                     style={{
                       width: BLOCK_W,
-                      height: 20,
+                      height: 16,
                       flexShrink: 0,
                       display: 'flex',
                       alignItems: 'center',
@@ -195,16 +235,16 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime }: 
                       background: isCurrent ? 'var(--bg-muted)' : undefined,
                       borderRadius: 2,
                     }}
-                    title={isDayStart ? e.date : `${e.date} ${e.time}:00`}
+                    title={`${e.date} ${e.time}:00`}
                   >
                     <span
                       className="text-[10px] leading-none"
                       style={{
-                        color: isCurrent ? 'var(--ink)' : isDayStart ? 'var(--ink-secondary)' : 'var(--ink-faint)',
-                        fontWeight: isCurrent || isDayStart ? 600 : 400,
+                        color: isCurrent ? 'var(--ink)' : 'var(--ink-faint)',
+                        fontWeight: isCurrent ? 600 : 400,
                       }}
                     >
-                      {isDayStart ? e.date.slice(5) : e.time}
+                      {e.time}
                     </span>
                   </div>
                 );
@@ -228,7 +268,7 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime }: 
                       style={{
                         width: BLOCK_W,
                         flexShrink: 0,
-                        borderLeft: isDayStart ? '1px solid var(--line-dark)' : undefined,
+                        borderLeft: isDayStart && i > 0 ? '1px solid var(--line-dark)' : undefined,
                         outline: isCurrent ? '1px solid var(--ink-muted)' : undefined,
                         outlineOffset: -1,
                         borderRadius: 2,
