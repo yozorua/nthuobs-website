@@ -127,6 +127,7 @@ export default function WeatherDashboard() {
         <CloudSeeingGrid
           forecast={cloudForecast}
           stationDate={latest?.stationDate ?? ''}
+          stationTime={latest?.stationTime ?? ''}
         />
       )}
 
