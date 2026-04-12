@@ -122,13 +122,18 @@ vec3 atmosphere(
 }
 
 void main() {
-  // Map 2D screen position to a 3D view ray.
-  // skyY: bottom of screen (y=-1) → horizon (0), top (y=+1) → ~58° above horizon.
-  // skyX: aspect-corrected so angular coverage per pixel is equal in x and y,
-  //        keeping the sun disc circular on any screen shape (portrait/landscape).
-  float skyY = (vPosition.y + 1.0) * 0.8;
-  float skyX = vPosition.x * 0.8 * uAspect;
-  vec3 r = normalize(vec3(skyX, skyY, -1.0));
+  // Map 2D screen position to a 3D view ray via equidistant angular projection.
+  // Equal angle per pixel in both axes keeps the sun disc circular at all elevations
+  // (perspective projection stretches it horizontally at high sun altitude).
+  // Equidistant angular projection — equal angle per pixel in both axes,
+  // so the sun disc stays circular at any elevation (unlike perspective).
+  // HALF_VFOV = 0.65 rad ≈ 37°: screen bottom = horizon, top ≈ 74° elevation.
+  const float HALF_VFOV = 0.65;
+  float thetaV = (vPosition.y + 1.0) * HALF_VFOV;          // 0 (horizon) … 2*HALF_VFOV (top)
+  float thetaH = vPosition.x * HALF_VFOV * uAspect;         // aspect-corrected horizontal angle
+  vec3 r = vec3(sin(thetaH) * cos(thetaV),
+                sin(thetaV),
+               -cos(thetaH) * cos(thetaV));
 
   vec3 color = atmosphere(
     r,
@@ -141,7 +146,7 @@ void main() {
     21e-6 * uMieMult,                     // Mie (scaled by weather condition)
     8e3,                                  // Rayleigh scale height
     1.2e3,                                // Mie scale height
-    0.758                                 // Mie anisotropy
+    0.980                                 // Mie anisotropy — high g = tight sun disc
   );
 
   // Exposure / tone-mapping
@@ -282,17 +287,18 @@ export default function AtmosphereCanvas({ sunElevation, sunAzimuth, condition }
     const { gl, program, uSunPos, uMieMult, uSunIntensity } = state;
     const { mieMult, sunIntensity } = conditionParams(condition);
 
-    // pSun: direction vector toward the sun (normalised inside the shader).
-    // sunElevation is the true altitude in radians, so tan(elevation) gives the
-    // correct y/z ratio for the direction vector pSun = (sunX, sunY, -1):
-    //   elevation =  0 rad → sunY = 0   (sun exactly at horizon)
-    //   elevation =  1.1 rad (~65°, equinox noon) → sunY ≈ 2.1
-    //   elevation = -0.3 rad (below horizon) → sunY ≈ -0.31
-    const sunX = sunAzimuth * 0.5;
-    const sunY = Math.tan(sunElevation);
+    // pSun: unit-sphere direction toward the sun.
+    // sunAzimuth is now the true solar azimuth in radians (from south, +east),
+    // sunElevation is the true altitude in radians.
+    const el = sunElevation;
+    const az = sunAzimuth;
 
     gl.useProgram(program);
-    gl.uniform3f(uSunPos,       sunX, sunY, -1.0);
+    gl.uniform3f(uSunPos,
+      Math.sin(az) * Math.cos(el),   // x: east(+) / west(-)
+      Math.sin(el),                  // y: up
+     -Math.cos(az) * Math.cos(el),   // z: into screen
+    );
     gl.uniform1f(uMieMult,      mieMult);
     gl.uniform1f(uSunIntensity, sunIntensity);
     needsRender.current = true;
@@ -335,7 +341,7 @@ function solarDeclination(dayOfYear: number): number {
  * Returns:
  *   elevation  actual solar altitude in **radians**
  *              negative = sun below horizon (night / twilight)
- *   azimuth    −1 (east/dawn) … 0 (south/noon) … +1 (west/dusk)
+ *   azimuth    true solar azimuth in **radians** from south; negative = east (dawn), positive = west (dusk)
  */
 export function computeSunPosition(
   currentMin: number,
@@ -364,9 +370,15 @@ export function computeSunPosition(
     Math.cos(NTHU_LAT) * Math.cos(decl) * Math.cos(hourAngle);
   const elevation = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
 
-  // Azimuth: sin(H) gives a smooth east(−1) → south(0) → west(+1) sweep.
-  // Negative H = morning = sun in the east = negative x on screen.
-  const azimuth = Math.sin(hourAngle);
+  // True solar azimuth: angle from south, positive toward west.
+  // atan2 numerator = cos(δ)·sin(H) → east component (positive in morning)
+  // atan2 denominator = (sin(δ) - sin(φ)·sin(alt)) / (cos(φ)·cos(alt)) → north component
+  // Negate so that east (morning) → negative x and west (afternoon) → positive x.
+  const cosAlt = Math.max(Math.cos(elevation), 1e-4);
+  const azimuth = -Math.atan2(
+    Math.cos(decl) * Math.sin(hourAngle) / cosAlt,
+    (Math.sin(decl) - Math.sin(NTHU_LAT) * Math.sin(elevation)) / (Math.cos(NTHU_LAT) * cosAlt),
+  );
 
   return { elevation, azimuth };
 }

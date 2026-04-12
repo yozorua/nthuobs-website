@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, startTransition } from 'react';
 import { useTranslations } from 'next-intl';
 import { WeatherReading, ChartRow, MeteoblueForecastEntry, CwaForecastPeriod } from './types';
 import InstrumentPanel from './InstrumentPanel';
@@ -11,6 +11,7 @@ import WeatherChart from './WeatherChart';
 import AllSkyCamera from './AllSkyCamera';
 import MeteogramEmbed from './MeteogramEmbed';
 import AtmosphereCanvas, { computeSunPosition, AtmosphereCondition } from './AtmosphereCanvas';
+import RainCanvas from './RainCanvas';
 
 const REFRESH_MS = 15_000;
 const CWA_REFRESH_MS = 10 * 60 * 1000;
@@ -412,9 +413,13 @@ export default function WeatherDashboard({ title }: Props) {
       const res = await fetch('/api/weather/latest');
       if (res.ok) {
         const data = await res.json() as WeatherReading;
-        setLatest(data);
-        setFetchTime(new Date());
-        setLoading(false);
+        // startTransition marks this as a low-priority update so React yields
+        // to the browser between reconciliation chunks, keeping animations smooth.
+        startTransition(() => {
+          setLatest(data);
+          setFetchTime(new Date());
+          setLoading(false);
+        });
       }
     } catch { /* silent */ }
   };
@@ -424,7 +429,7 @@ export default function WeatherDashboard({ title }: Props) {
       const res = await fetch('/api/weather/forecast/cwa');
       if (res.ok) {
         const data = await res.json() as { forecast: CwaForecastPeriod[] };
-        setCwaForecast(data.forecast ?? []);
+        startTransition(() => { setCwaForecast(data.forecast ?? []); });
       }
     } catch { /* silent */ }
   };
@@ -434,7 +439,7 @@ export default function WeatherDashboard({ title }: Props) {
       const res = await fetch('/api/weather/forecast/cloud');
       if (res.ok) {
         const data = await res.json() as MeteoblueForecastEntry[];
-        setCloudForecast(data);
+        startTransition(() => { setCloudForecast(data); });
       }
     } catch { /* silent */ }
   };
@@ -444,7 +449,7 @@ export default function WeatherDashboard({ title }: Props) {
       const res = await fetch(`/api/weather/chart?hours=${hours}`);
       if (res.ok) {
         const data = await res.json() as ChartRow[];
-        setChartData(data);
+        startTransition(() => { setChartData(data); });
       }
     } catch { /* silent */ }
   };
@@ -586,6 +591,11 @@ export default function WeatherDashboard({ title }: Props) {
         sunAzimuth={sunAzimuth}
         condition={atmosphereCondition}
       />
+      {/* Overcast veil + rain streaks — z-index 0, between sky (-1) and content (1) */}
+      <RainCanvas condition={atmosphereCondition} sunElevation={sunElevation} />
+
+      {/* z-index: 1 lifts all page content above the rain canvas (z: 0) */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
       <div className="max-w-5xl mx-auto px-6 pt-8 pb-16">
 
         <div className="mb-8 pb-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
@@ -654,6 +664,7 @@ export default function WeatherDashboard({ title }: Props) {
           />
         </div>
       </div>
+      </div> {/* end z-index: 1 content wrapper */}
     </div>
   );
 }
