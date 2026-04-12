@@ -193,6 +193,7 @@ export default function AtmosphereCanvas({ sunElevation, sunAzimuth, condition }
   const glStateRef  = useRef<GLState | null>(null);
   const rafRef      = useRef<number>(0);
   const needsRender = useRef(true);
+  const aspectRef   = useRef(1);
 
   // ── WebGL initialisation (runs once on mount) ────────────────────────────
   useEffect(() => {
@@ -253,9 +254,10 @@ export default function AtmosphereCanvas({ sunElevation, sunAzimuth, condition }
       canvas.height = Math.round(window.innerHeight * dpr);
       gl.viewport(0, 0, canvas.width, canvas.height);
       // Push updated aspect ratio so the sun disc stays circular
+      aspectRef.current = canvas.width / canvas.height;
       if (glStateRef.current) {
         gl.useProgram(glStateRef.current.program);
-        gl.uniform1f(glStateRef.current.uAspect, canvas.width / canvas.height);
+        gl.uniform1f(glStateRef.current.uAspect, aspectRef.current);
       }
       needsRender.current = true;
     };
@@ -288,14 +290,17 @@ export default function AtmosphereCanvas({ sunElevation, sunAzimuth, condition }
     const { mieMult, sunIntensity } = conditionParams(condition);
 
     // pSun: unit-sphere direction toward the sun.
-    // sunAzimuth is now the true solar azimuth in radians (from south, +east),
-    // sunElevation is the true altitude in radians.
+    // sunAzimuth is the true solar azimuth in radians from south (negative = east/morning,
+    // positive = west/afternoon). We compress it so equinox sunrise/sunset (az ≈ ±π/2)
+    // lands at ~80% of the screen edge rather than off-screen.
+    // Scale = 0.80 * HALF_VFOV * aspect / (π/2), where HALF_VFOV = 0.65 (shader constant).
     const el = sunElevation;
-    const az = sunAzimuth;
+    const azScale = (0.80 * 0.65 * aspectRef.current) / (Math.PI / 2);
+    const az = sunAzimuth * azScale;
 
     gl.useProgram(program);
     gl.uniform3f(uSunPos,
-      Math.sin(az) * Math.cos(el),   // x: east(+) / west(-)
+      Math.sin(az) * Math.cos(el),   // x: west(+) / east(-)
       Math.sin(el),                  // y: up
      -Math.cos(az) * Math.cos(el),   // z: into screen
     );
@@ -374,8 +379,9 @@ export function computeSunPosition(
   // atan2 numerator = cos(δ)·sin(H) → east component (positive in morning)
   // atan2 denominator = (sin(δ) - sin(φ)·sin(alt)) / (cos(φ)·cos(alt)) → north component
   // Negate so that east (morning) → negative x and west (afternoon) → positive x.
+  // atan2 sign convention: H < 0 (morning) → numerator negative → az negative → sun on left (east). ✓
   const cosAlt = Math.max(Math.cos(elevation), 1e-4);
-  const azimuth = -Math.atan2(
+  const azimuth = Math.atan2(
     Math.cos(decl) * Math.sin(hourAngle) / cosAlt,
     (Math.sin(decl) - Math.sin(NTHU_LAT) * Math.sin(elevation)) / (Math.cos(NTHU_LAT) * cosAlt),
   );
