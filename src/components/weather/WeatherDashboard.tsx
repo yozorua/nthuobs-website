@@ -10,6 +10,7 @@ import CloudSeeingGrid from './CloudSeeingGrid';
 import WeatherChart from './WeatherChart';
 import AllSkyCamera from './AllSkyCamera';
 import MeteogramEmbed from './MeteogramEmbed';
+import AtmosphereCanvas, { computeSunPosition, AtmosphereCondition } from './AtmosphereCanvas';
 
 const REFRESH_MS = 15_000;
 const CWA_REFRESH_MS = 10 * 60 * 1000;
@@ -472,7 +473,10 @@ export default function WeatherDashboard({ title }: Props) {
     return () => clearInterval(timer);
   }, [latest, simMinutes, debugCondition]);
 
-  // Push sky onto body so it shows through the transparent navbar & footer
+  // Push sky onto body so it shows through the transparent navbar & footer.
+  // The CSS gradient (`bg`) serves as a WebGL fallback — AtmosphereCanvas
+  // renders on top of it (z-index: -1 is above the body background layer)
+  // and replaces it visually whenever WebGL is available.
   useEffect(() => {
     if (!bg) return;
     document.body.style.background = bg;
@@ -541,6 +545,12 @@ export default function WeatherDashboard({ title }: Props) {
   const period = getTimePeriod(simMinutes ?? actualMinutes, riseMin, setMin);
   const condition = conditionKey(latest);
   const conditionLabel = t(`conditions.${condition}`);
+
+  // Physical atmosphere: derive sun position from today's solar arc
+  const currentMinForSun = simMinutes ?? actualMinutes;
+  const { elevation: sunElevation, azimuth: sunAzimuth } =
+    computeSunPosition(currentMinForSun, riseMin, setMin);
+  const atmosphereCondition = (debugCondition ?? condition) as AtmosphereCondition;
   const cloudForceDark = true; // weather page is always sky-mode (white text)
 
   if (loading) {
@@ -569,6 +579,13 @@ export default function WeatherDashboard({ title }: Props) {
         '--card-glass':  cardGlass,
       } as React.CSSProperties}
     >
+      {/* Physically-based sky — renders via WebGL portal into document.body.
+          Falls back to the CSS gradient on body when WebGL is unavailable. */}
+      <AtmosphereCanvas
+        sunElevation={sunElevation}
+        sunAzimuth={sunAzimuth}
+        condition={atmosphereCondition}
+      />
       <div className="max-w-5xl mx-auto px-6 pt-8 pb-16">
 
         <div className="mb-8 pb-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
