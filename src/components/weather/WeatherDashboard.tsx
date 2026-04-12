@@ -4,13 +4,10 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { WeatherReading, ChartRow, MeteoblueForecastEntry, CwaForecastPeriod } from './types';
 import InstrumentPanel from './InstrumentPanel';
-import WindCard from './WindCard';
-import RainCard from './RainCard';
 import SunMoonCard from './SunMoonCard';
 import CwaForecastCard from './CwaForecastCard';
 import CloudSeeingGrid from './CloudSeeingGrid';
 import WeatherChart from './WeatherChart';
-import MeteoblueEmbeds from './MeteoblueEmbeds';
 import AllSkyCamera from './AllSkyCamera';
 import MeteogramEmbed from './MeteogramEmbed';
 
@@ -583,7 +580,7 @@ export default function WeatherDashboard({ title }: Props) {
 
         <div className="space-y-4">
 
-          {/* Row 1: Condition hero + AllSkyCamera */}
+          {/* ── Current conditions + All-Sky Camera ── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <InstrumentPanel
@@ -596,18 +593,22 @@ export default function WeatherDashboard({ title }: Props) {
             <AllSkyCamera />
           </div>
 
-          {/* Row 2: Wind + Rain (the detailed cards, no duplicates) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <WindCard reading={latest} />
-            <RainCard reading={latest} />
-          </div>
+          {/* ── Recent history chart ── */}
+          <WeatherChart
+            data={chartData}
+            hours={chartHours}
+            onHoursChange={h => setChartHours(h)}
+            sunrise={latest?.sunrise}
+            sunset={latest?.sunset}
+          />
 
-          {/* Row 3: CWA forecast + Sun/Moon with phase */}
+          {/* ── Forecast + Sun & Moon ── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2"><CwaForecastCard periods={cwaForecast} /></div>
             <SunMoonCard reading={latest} />
           </div>
 
+          {/* ── Cloud & Seeing forecast ── */}
           {cloudForecast.length > 0 && (
             <CloudSeeingGrid
               forecast={cloudForecast}
@@ -617,20 +618,12 @@ export default function WeatherDashboard({ title }: Props) {
             />
           )}
 
-          <WeatherChart
-            data={chartData}
-            hours={chartHours}
-            onHoursChange={h => setChartHours(h)}
-            sunrise={latest?.sunrise}
-            sunset={latest?.sunset}
-          />
+          {/* ── 5-day meteogram ── */}
+          <MeteogramEmbed />
 
           <p className="text-[10px]" style={{ color: 'var(--ink-faint)', letterSpacing: '0.04em' }}>
             {t('stationLocation')}
           </p>
-
-          <MeteoblueEmbeds />
-          <MeteogramEmbed />
 
           <DebugPanel
             simMinutes={simMinutes}

@@ -7,150 +7,196 @@ function fmt(v: number | null, d = 1): string {
   return v != null ? v.toFixed(d) : '—';
 }
 
-// ── Condition icon (inline SVG, white stroke) ─────────────────────────────
+function beaufort(ms: number | null): number {
+  if (ms == null) return 0;
+  if (ms < 0.3) return 0; if (ms < 1.6) return 1; if (ms < 3.4) return 2;
+  if (ms < 5.5) return 3; if (ms < 8.0) return 4; if (ms < 10.8) return 5;
+  if (ms < 13.9) return 6; if (ms < 17.2) return 7; if (ms < 20.8) return 8;
+  if (ms < 24.5) return 9; if (ms < 28.5) return 10; if (ms < 32.7) return 11;
+  return 12;
+}
+
+function windDir(text: string | null | undefined, deg: number | null | undefined): string {
+  if (text) return text;
+  if (deg == null) return '—';
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+// ── Condition icons — 48×48 viewBox, white stroke, no fill ──────────────────
+// Each icon avoids ugly overlapping shapes: PartlyCloudy places sun and cloud
+// in separate regions; Cloudy draws a single clean cloud.
 function ConditionIcon({ cond, size = 64 }: { cond: string; size?: number }) {
-  const s = size;
-  const cx = s / 2, cy = s / 2;
-  const st = { stroke: 'rgba(255,255,255,0.90)', strokeWidth: s * 0.048, fill: 'none',
-               strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
+  const v = 48; // internal viewBox size
+  const st = {
+    stroke: 'rgba(255,255,255,0.88)',
+    strokeWidth: 2.2,
+    fill: 'none',
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+  };
+  const faint = { ...st, stroke: 'rgba(255,255,255,0.45)' };
 
-  // ---- reusable pieces ----
-  const sunCircle = <circle cx={cx} cy={cy} r={s * 0.175} {...st} />;
-  const sunRays = [0,45,90,135,180,225,270,315].map(a => {
-    const rad = a * Math.PI / 180;
-    const r1 = s * 0.265, r2 = s * 0.36;
-    return (
-      <line key={a}
-        x1={cx + r1 * Math.cos(rad)} y1={cy + r1 * Math.sin(rad)}
-        x2={cx + r2 * Math.cos(rad)} y2={cy + r2 * Math.sin(rad)}
-        {...st} />
-    );
-  });
+  // Sun centred at (cx,cy) with given radius and ray length
+  const Sun = ({ cx, cy, r, rl = 4, rays = 8, opacity = 1 }: {
+    cx: number; cy: number; r: number; rl?: number; rays?: number; opacity?: number;
+  }) => (
+    <g opacity={opacity}>
+      <circle cx={cx} cy={cy} r={r} {...st} />
+      {Array.from({ length: rays }).map((_, i) => {
+        const a = (i * 360 / rays - 90) * Math.PI / 180;
+        const r1 = r + 3, r2 = r + 3 + rl;
+        return <line key={i}
+          x1={cx + r1 * Math.cos(a)} y1={cy + r1 * Math.sin(a)}
+          x2={cx + r2 * Math.cos(a)} y2={cy + r2 * Math.sin(a)}
+          {...st} opacity={opacity} />;
+      })}
+    </g>
+  );
 
-  // Cloud path fits in a 48×48 grid, scaled to `s`
-  const sc = s / 48;
-  const cloudD = `M ${8*sc} ${34*sc} Q ${3*sc} ${34*sc} ${3*sc} ${28*sc} Q ${3*sc} ${21*sc} ${10*sc} ${21*sc} Q ${11*sc} ${13*sc} ${19*sc} ${13*sc} Q ${24*sc} ${7*sc} ${31*sc} ${13*sc} Q ${38*sc} ${11*sc} ${40*sc} ${18*sc} Q ${46*sc} ${18*sc} ${46*sc} ${25*sc} Q ${46*sc} ${32*sc} ${40*sc} ${33*sc} H ${8*sc} Z`;
+  // Cloud shape: smooth bezier, top-bumps then flat bottom
+  // Positions: left edge ~xl, right edge ~xr, top ~yt, bottom ~yb
+  const Cloud = ({ xl = 4, xr = 44, yt = 16, yb = 36, style = st }: {
+    xl?: number; xr?: number; yt?: number; yb?: number;
+    style?: typeof st;
+  }) => {
+    const w = xr - xl, h = yb - yt;
+    // Control points are fractions of width/height
+    const d = [
+      `M ${xl} ${yb}`,
+      // left wall
+      `Q ${xl} ${yt + h * 0.5} ${xl + w * 0.15} ${yt + h * 0.35}`,
+      // left bump
+      `Q ${xl + w * 0.18} ${yt} ${xl + w * 0.38} ${yt + h * 0.1}`,
+      // centre-top saddle
+      `Q ${xl + w * 0.45} ${yt - h * 0.18} ${xl + w * 0.62} ${yt + h * 0.05}`,
+      // right bump
+      `Q ${xl + w * 0.75} ${yt - h * 0.1} ${xl + w * 0.85} ${yt + h * 0.25}`,
+      // right wall
+      `Q ${xr} ${yt + h * 0.35} ${xr} ${yt + h * 0.6}`,
+      `Q ${xr} ${yb} ${xr - w * 0.1} ${yb}`,
+      // flat bottom back to start
+      `L ${xl} ${yb} Z`,
+    ].join(' ');
+    return <path d={d} {...style} />;
+  };
+
+  // Rain drops: 4 short diagonal lines below a cloud
+  const Drops = ({ baseY, xl = 10, xr = 38 }: { baseY: number; xl?: number; xr?: number }) => {
+    const xs = [xl, xl + (xr - xl) / 3, xl + (xr - xl) * 2 / 3, xr];
+    return <>{xs.map((x, i) => (
+      <line key={i} x1={x} y1={baseY} x2={x - 3} y2={baseY + 7} {...st} />
+    ))}</>;
+  };
+
+  let icon: React.ReactNode;
 
   switch (cond) {
     case 'Clear':
-      return (
-        <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-          {sunCircle}
-          {sunRays}
-        </svg>
-      );
+      icon = <Sun cx={24} cy={24} r={9} rl={5} rays={8} />;
+      break;
 
-    case 'PartlyCloudy': {
-      // Small sun in top-right corner
-      const scx = cx + s * 0.14, scy = cy - s * 0.16;
-      const sr = s * 0.12;
-      const sRays = [0,60,120,180,240,300].map(a => {
-        const rad = a * Math.PI / 180;
-        return <line key={a}
-          x1={scx + (sr+s*0.04)*Math.cos(rad)} y1={scy + (sr+s*0.04)*Math.sin(rad)}
-          x2={scx + (sr+s*0.10)*Math.cos(rad)} y2={scy + (sr+s*0.10)*Math.sin(rad)}
-          {...st} />;
-      });
-      // Cloud shifted down-left slightly
-      const cloud2sc = s / 48;
-      const off = s * 0.06;
-      const cloudD2 = `M ${(8*cloud2sc)+off} ${(36*cloud2sc)} Q ${(3*cloud2sc)+off} ${36*cloud2sc} ${(3*cloud2sc)+off} ${(29*cloud2sc)} Q ${(3*cloud2sc)+off} ${(22*cloud2sc)} ${(10*cloud2sc)+off} ${(22*cloud2sc)} Q ${(11*cloud2sc)+off} ${(15*cloud2sc)} ${(19*cloud2sc)+off} ${(15*cloud2sc)} Q ${(23*cloud2sc)+off} ${(10*cloud2sc)} ${(29*cloud2sc)+off} ${(15*cloud2sc)} Q ${(35*cloud2sc)+off} ${(13*cloud2sc)} ${(37*cloud2sc)+off} ${(19*cloud2sc)} Q ${(43*cloud2sc)+off} ${(19*cloud2sc)} ${(43*cloud2sc)+off} ${(26*cloud2sc)} Q ${(43*cloud2sc)+off} ${(33*cloud2sc)} ${(37*cloud2sc)+off} ${(34*cloud2sc)} H ${(8*cloud2sc)+off} Z`;
-      return (
-        <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-          <circle cx={scx} cy={scy} r={sr} {...st} />
-          {sRays}
-          <path d={cloudD2} {...st} />
-        </svg>
+    case 'PartlyCloudy':
+      // Sun sits in the upper-right; cloud is in the lower-left — no overlap
+      icon = (
+        <>
+          <Sun cx={34} cy={13} r={7} rl={4} rays={6} opacity={0.80} />
+          {/* Cloud sits lower, well below the sun */}
+          <Cloud xl={2} xr={40} yt={24} yb={42} />
+        </>
       );
-    }
+      break;
 
     case 'Cloudy':
-      return (
-        <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-          {/* Back cloud (faint) */}
-          <path d={`M ${10*sc} ${28*sc} Q ${5*sc} ${28*sc} ${5*sc} ${22*sc} Q ${5*sc} ${16*sc} ${11*sc} ${16*sc} Q ${13*sc} ${10*sc} ${20*sc} ${11*sc} Q ${25*sc} ${6*sc} ${31*sc} ${11*sc} Q ${37*sc} ${9*sc} ${39*sc} ${16*sc} Q ${44*sc} ${16*sc} ${44*sc} ${22*sc} Q ${44*sc} ${28*sc} ${38*sc} ${28*sc} H ${10*sc} Z`}
-            {...st} style={{ ...st, stroke: 'rgba(255,255,255,0.45)' }} />
-          {/* Front cloud */}
-          <path d={cloudD} {...st} />
-        </svg>
-      );
+      // Single prominent cloud, vertically centred
+      icon = <Cloud xl={2} xr={46} yt={12} yb={36} />;
+      break;
 
     case 'Rainy':
-      return (
-        <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-          <path d={cloudD} {...st} />
-          {/* Rain drops */}
-          {[13,20,27,34].map((x, i) => (
-            <line key={i}
-              x1={x*sc} y1={38*sc} x2={(x-3)*sc} y2={45*sc}
-              {...st} />
-          ))}
-        </svg>
+      icon = (
+        <>
+          <Cloud xl={3} xr={45} yt={8} yb={28} />
+          <Drops baseY={32} xl={10} xr={38} />
+        </>
       );
+      break;
 
     case 'Windy':
-      return (
-        <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-          {/* Three wind arcs */}
-          <path d={`M ${6*sc} ${16*sc} Q ${20*sc} ${12*sc} ${32*sc} ${16*sc} Q ${42*sc} ${20*sc} ${38*sc} ${24*sc} Q ${34*sc} ${28*sc} ${26*sc} ${24*sc}`} {...st} />
-          <path d={`M ${6*sc} ${26*sc} Q ${18*sc} ${22*sc} ${30*sc} ${26*sc} Q ${40*sc} ${30*sc} ${36*sc} ${34*sc} Q ${32*sc} ${38*sc} ${24*sc} ${34*sc}`} {...st} />
-          <path d={`M ${10*sc} ${36*sc} Q ${22*sc} ${32*sc} ${34*sc} ${36*sc} Q ${44*sc} ${40*sc} ${40*sc} ${44*sc}`} {...st} />
-        </svg>
+      // Three smooth arcs suggesting flowing wind
+      icon = (
+        <>
+          <path d="M 4 14 Q 16 10 28 14 Q 36 18 34 22 Q 32 26 24 22" {...st} />
+          <path d="M 4 24 Q 14 20 26 24 Q 36 28 34 32 Q 32 36 22 32" {...st} />
+          <path d="M 8 34 Q 20 30 32 34 Q 40 38 38 42" {...st} />
+        </>
       );
+      break;
 
     default:
-      return (
-        <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-          {[10,24,38].map(x => (
-            <circle key={x} cx={x*sc} cy={cy} r={s*0.06} fill="rgba(255,255,255,0.5)" />
-          ))}
-        </svg>
-      );
+      // Three dots — "Unknown"
+      icon = <>{[14, 24, 34].map(x => (
+        <circle key={x} cx={x} cy={24} r={2.5} fill="rgba(255,255,255,0.55)" stroke="none" />
+      ))}</>;
   }
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${v} ${v}`} style={{ flexShrink: 0 }}>
+      {icon}
+    </svg>
+  );
 }
 
-// ── Secondary metric cell ────────────────────────────────────────────────────
-function MetricCell({ label, value, unit, sub }: { label: string; value: string; unit: string; sub?: string }) {
+// ── Metric cell ──────────────────────────────────────────────────────────────
+function MetricCell({ label, value, unit, sub }: {
+  label: string; value: string; unit: string; sub?: string;
+}) {
   return (
-    <div className="flex-1 min-w-[90px] px-4 py-3" style={{ borderRight: '1px solid rgba(255,255,255,0.10)' }}>
-      <div className="text-[10px] uppercase tracking-widest mb-1.5" style={{ color: 'var(--ink-faint)' }}>{label}</div>
+    <div className="flex-1 min-w-[90px] px-4 py-3"
+         style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="text-[10px] uppercase tracking-widest mb-1.5"
+           style={{ color: 'var(--ink-faint)' }}>{label}</div>
       <div className="flex items-baseline gap-1">
-        <span className="text-xl font-light" style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+        <span className="text-lg font-light"
+              style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
         {unit && <span className="text-[11px]" style={{ color: 'var(--ink-muted)' }}>{unit}</span>}
       </div>
-      {sub && <div className="text-[10px] mt-1" style={{ color: 'var(--ink-faint)' }}>{sub}</div>}
+      {sub && <div className="text-[10px] mt-1 leading-tight"
+                   style={{ color: 'var(--ink-faint)' }}>{sub}</div>}
     </div>
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
+// ── Component ────────────────────────────────────────────────────────────────
 interface Props {
   reading: WeatherReading | null;
   lastUpdate: string;
-  condition: string;   // translated label
+  condition: string;    // translated label
   conditionKey: string; // 'Clear' | 'Cloudy' | …
 }
 
 export default function InstrumentPanel({ reading, lastUpdate, condition, conditionKey }: Props) {
-  const outTemp = reading?.outsideTempC ?? null;
-  const inTemp  = reading?.insideTempC  ?? null;
-  const humid   = reading?.outsideHumidityPercent ?? null;
-  const baro    = reading?.barometerHpa ?? null;
-  const dew     = reading?.dewpointC ?? null;
+  const r = reading;
+  const bf  = beaufort(r?.windSpeedMs ?? null);
+  const dir = windDir(r?.windDirectionText, r?.windDirectionDeg);
+
+  // Wind sub: direction · Beaufort · gust if available
+  const windSub = [
+    dir,
+    `Bf ${bf}`,
+    r?.windGustMs != null ? `G ${r.windGustMs.toFixed(1)}` : null,
+  ].filter(Boolean).join('  ');
 
   return (
-    <div
-      style={{
-        border: '1px solid var(--card-border)',
-        borderTop: '2px solid rgba(255,255,255,0.40)',
-        background: 'var(--card-bg)',
-        backdropFilter: 'var(--card-glass)',
-        WebkitBackdropFilter: 'var(--card-glass)',
-      }}
-    >
+    <div style={{
+      border: '1px solid var(--card-border)',
+      borderTop: '2px solid rgba(255,255,255,0.35)',
+      background: 'var(--card-bg)',
+      backdropFilter: 'var(--card-glass)',
+      WebkitBackdropFilter: 'var(--card-glass)',
+    }}>
       {/* Status bar */}
       <div className="flex items-center justify-between px-5 py-1.5"
-           style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', background: 'rgba(0,0,0,0.06)' }}>
+           style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.06)' }}>
         <span className="text-[10px]" style={{ color: 'var(--ink-faint)', letterSpacing: '0.05em' }}>
           24°47′N  120°59′E  EL 55 m
         </span>
@@ -159,51 +205,54 @@ export default function InstrumentPanel({ reading, lastUpdate, condition, condit
         </span>
       </div>
 
-      {/* Hero: icon + condition + big temp */}
+      {/* Hero: icon + condition + big outdoor temp */}
       <div className="flex items-center gap-5 px-6 py-5">
-        <ConditionIcon cond={conditionKey} size={64} />
+        <ConditionIcon cond={conditionKey} size={68} />
         <div className="flex-1">
-          <div className="text-base font-light tracking-widest uppercase mb-1"
+          <div className="text-sm font-light tracking-[0.18em] uppercase mb-1"
                style={{ color: 'var(--ink-muted)' }}>
             {condition}
           </div>
           <div className="flex items-start gap-1 leading-none">
-            <span className="text-6xl font-extralight" style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-              {outTemp != null ? outTemp.toFixed(1) : '—'}
+            <span className="text-6xl font-extralight"
+                  style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+              {r?.outsideTempC != null ? r.outsideTempC.toFixed(1) : '—'}
             </span>
             <span className="text-2xl mt-1" style={{ color: 'var(--ink-muted)' }}>°C</span>
           </div>
-          {(reading?.outTempDayHighC != null || reading?.outTempDayLowC != null) && (
+          {r?.outTempDayHighC != null && (
             <div className="text-xs mt-1.5" style={{ color: 'var(--ink-faint)' }}>
-              H {fmt(reading?.outTempDayHighC ?? null)}°  ·  L {fmt(reading?.outTempDayLowC ?? null)}°
+              H {fmt(r.outTempDayHighC)}°  ·  L {fmt(r.outTempDayLowC ?? null)}°
             </div>
           )}
         </div>
       </div>
 
-      {/* Secondary metrics */}
-      <div className="flex flex-wrap" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      {/* 5-metric row: indoor temp · humidity · pressure · wind · rain */}
+      <div className="flex flex-wrap" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         <MetricCell
-          label="In Temp"
-          value={fmt(inTemp)}
-          unit="°C"
-          sub={reading?.inTempDayHighC != null
-            ? `H ${reading.inTempDayHighC.toFixed(1)}  L ${reading.inTempDayLowC?.toFixed(1) ?? '—'}`
+          label="In Temp" value={fmt(r?.insideTempC ?? null)} unit="°C"
+          sub={r?.inTempDayHighC != null
+            ? `H ${r.inTempDayHighC.toFixed(1)}  L ${r.inTempDayLowC?.toFixed(1) ?? '—'}`
             : undefined}
         />
         <MetricCell
-          label="Humidity"
-          value={fmt(humid, 0)}
-          unit="%"
-          sub={dew != null ? `Dew ${dew.toFixed(1)}°C` : undefined}
+          label="Humidity" value={fmt(r?.outsideHumidityPercent ?? null, 0)} unit="%"
+          sub={r?.dewpointC != null ? `Dew ${r.dewpointC.toFixed(1)}°C` : undefined}
         />
         <MetricCell
-          label="Pressure"
-          value={fmt(baro, 1)}
-          unit="hPa"
-          sub={reading?.baroDayHighHpa != null
-            ? `H ${reading.baroDayHighHpa.toFixed(0)}  L ${reading.baroDayLowHpa?.toFixed(0) ?? '—'}`
+          label="Pressure" value={fmt(r?.barometerHpa ?? null, 1)} unit="hPa"
+          sub={r?.baroDayHighHpa != null
+            ? `H ${r.baroDayHighHpa.toFixed(0)}  L ${r.baroDayLowHpa?.toFixed(0) ?? '—'}`
             : undefined}
+        />
+        <MetricCell
+          label="Wind" value={fmt(r?.windSpeedMs ?? null)} unit="m/s"
+          sub={windSub || undefined}
+        />
+        <MetricCell
+          label="Rain today" value={fmt(r?.dailyRainMm ?? null)} unit="mm"
+          sub={r?.rainRateMmHr != null ? `Rate ${r.rainRateMmHr.toFixed(1)} mm/h` : undefined}
         />
       </div>
     </div>
