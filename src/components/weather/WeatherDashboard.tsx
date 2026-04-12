@@ -583,19 +583,29 @@ export default function WeatherDashboard({ title }: Props) {
 
         <div className="space-y-4">
 
-          <InstrumentPanel reading={latest} lastUpdate={lastUpdate} condition={conditionLabel} />
-
+          {/* Row 1: Condition hero + AllSkyCamera */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2"><AllSkyCamera /></div>
-            <div className="space-y-4">
-              <SunMoonCard reading={latest} />
-              <CwaForecastCard periods={cwaForecast} />
+            <div className="md:col-span-2">
+              <InstrumentPanel
+                reading={latest}
+                lastUpdate={lastUpdate}
+                condition={conditionLabel}
+                conditionKey={condition}
+              />
             </div>
+            <AllSkyCamera />
           </div>
 
+          {/* Row 2: Wind + Rain (the detailed cards, no duplicates) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <WindCard reading={latest} />
             <RainCard reading={latest} />
+          </div>
+
+          {/* Row 3: CWA forecast + Sun/Moon with phase */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2"><CwaForecastCard periods={cwaForecast} /></div>
+            <SunMoonCard reading={latest} />
           </div>
 
           {cloudForecast.length > 0 && (
