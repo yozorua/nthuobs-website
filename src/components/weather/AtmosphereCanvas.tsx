@@ -7,9 +7,9 @@ export type AtmosphereCondition =
   | 'Clear' | 'PartlyCloudy' | 'Cloudy' | 'Rainy' | 'Windy' | 'Unknown';
 
 export interface AtmosphereProps {
-  /** -1 = midnight (sun far below horizon), 0 = sunrise/sunset, 1 = solar noon */
+  /** True solar elevation in radians. Negative = sun below horizon (night/twilight). */
   sunElevation: number;
-  /** -1 = east (dawn), 0 = south (noon), +1 = west (dusk) */
+  /** −1 = east (dawn), 0 = south (noon), +1 = west (dusk) */
   sunAzimuth: number;
   condition: AtmosphereCondition;
 }
@@ -34,6 +34,7 @@ varying vec2  vPosition;
 uniform vec3  uSunPos;
 uniform float uMieMult;      // 1 = clear sky, higher = hazy/overcast
 uniform float uSunIntensity; // 22 = clear, lower = overcast
+uniform float uAspect;       // canvas width / height — corrects sun circularity
 
 #define PI     3.141592
 #define iSteps 16
@@ -122,10 +123,12 @@ vec3 atmosphere(
 
 void main() {
   // Map 2D screen position to a 3D view ray.
-  // vPosition.y=-1 (bottom of screen) → exactly horizon (ray y = 0).
-  // vPosition.y=+1 (top of screen)    → ~58° above horizon (deep blue sky).
+  // skyY: bottom of screen (y=-1) → horizon (0), top (y=+1) → ~58° above horizon.
+  // skyX: aspect-corrected so angular coverage per pixel is equal in x and y,
+  //        keeping the sun disc circular on any screen shape (portrait/landscape).
   float skyY = (vPosition.y + 1.0) * 0.8;
-  vec3 r = normalize(vec3(vPosition.x, skyY, -1.0));
+  float skyX = vPosition.x * 0.8 * uAspect;
+  vec3 r = normalize(vec3(skyX, skyY, -1.0));
 
   vec3 color = atmosphere(
     r,
@@ -177,6 +180,7 @@ interface GLState {
   uSunPos: WebGLUniformLocation | null;
   uMieMult: WebGLUniformLocation | null;
   uSunIntensity: WebGLUniformLocation | null;
+  uAspect: WebGLUniformLocation | null;
 }
 
 export default function AtmosphereCanvas({ sunElevation, sunAzimuth, condition }: AtmosphereProps) {
@@ -227,21 +231,27 @@ export default function AtmosphereCanvas({ sunElevation, sunAzimuth, condition }
       glStateRef.current = {
         gl,
         program,
-        uSunPos:      gl.getUniformLocation(program, 'uSunPos'),
-        uMieMult:     gl.getUniformLocation(program, 'uMieMult'),
+        uSunPos:       gl.getUniformLocation(program, 'uSunPos'),
+        uMieMult:      gl.getUniformLocation(program, 'uMieMult'),
         uSunIntensity: gl.getUniformLocation(program, 'uSunIntensity'),
+        uAspect:       gl.getUniformLocation(program, 'uAspect'),
       };
     } catch (err) {
       console.warn('[AtmosphereCanvas] WebGL init failed:', err);
       return;
     }
 
-    // Resize: update canvas pixel dimensions and viewport
+    // Resize: update canvas pixel dimensions, viewport, and aspect uniform
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio ?? 1, 2);
       canvas.width  = Math.round(window.innerWidth  * dpr);
       canvas.height = Math.round(window.innerHeight * dpr);
       gl.viewport(0, 0, canvas.width, canvas.height);
+      // Push updated aspect ratio so the sun disc stays circular
+      if (glStateRef.current) {
+        gl.useProgram(glStateRef.current.program);
+        gl.uniform1f(glStateRef.current.uAspect, canvas.width / canvas.height);
+      }
       needsRender.current = true;
     };
     resize();
@@ -272,12 +282,14 @@ export default function AtmosphereCanvas({ sunElevation, sunAzimuth, condition }
     const { gl, program, uSunPos, uMieMult, uSunIntensity } = state;
     const { mieMult, sunIntensity } = conditionParams(condition);
 
-    // pSun: direction vector toward the sun.
-    // y = 0  → sun at horizon (sunrise/sunset orange)
-    // y = 0.8 → sun high in sky (noon blue)
-    // y < 0  → sun below horizon (dark twilight / night)
-    const sunX = sunAzimuth  * 0.5;   // east-west sweep
-    const sunY = sunElevation * 0.8;  // scale to realistic noon height
+    // pSun: direction vector toward the sun (normalised inside the shader).
+    // sunElevation is the true altitude in radians, so tan(elevation) gives the
+    // correct y/z ratio for the direction vector pSun = (sunX, sunY, -1):
+    //   elevation =  0 rad → sunY = 0   (sun exactly at horizon)
+    //   elevation =  1.1 rad (~65°, equinox noon) → sunY ≈ 2.1
+    //   elevation = -0.3 rad (below horizon) → sunY ≈ -0.31
+    const sunX = sunAzimuth * 0.5;
+    const sunY = Math.tan(sunElevation);
 
     gl.useProgram(program);
     gl.uniform3f(uSunPos,       sunX, sunY, -1.0);
@@ -308,23 +320,53 @@ export default function AtmosphereCanvas({ sunElevation, sunAzimuth, condition }
 
 // ── Sun position helper (used by WeatherDashboard) ────────────────────────────
 
+// NTHU Observatory, Hsinchu, Taiwan
+const NTHU_LAT = 24.80 * (Math.PI / 180); // radians
+
+/** Solar declination in radians for a given day-of-year (Spencer's equation). */
+function solarDeclination(dayOfYear: number): number {
+  return 23.45 * (Math.PI / 180) * Math.sin((2 * Math.PI / 365) * (dayOfYear - 81));
+}
+
 /**
- * Compute sun elevation and azimuth from clock minutes and
+ * Compute the true solar elevation and azimuth from clock minutes and
  * today's sunrise / sunset times (all in minutes since midnight).
  *
  * Returns:
- *   elevation  –1 (midnight) … 0 (horizon) … +1 (solar noon)
- *   azimuth    –1 (east/dawn) … 0 (south/noon) … +1 (west/dusk)
+ *   elevation  actual solar altitude in **radians**
+ *              negative = sun below horizon (night / twilight)
+ *   azimuth    −1 (east/dawn) … 0 (south/noon) … +1 (west/dusk)
  */
 export function computeSunPosition(
   currentMin: number,
   riseMin: number,
   setMin: number,
 ): { elevation: number; azimuth: number } {
-  const dayProgress = (currentMin - riseMin) / (setMin - riseMin);
-  // Half-sine arc: 0 at horizon, 1 at solar noon, negative at night
-  const elevation = Math.sin(Math.PI * dayProgress);
-  // Linear sweep east → west, clamped so extrapolation stays sane
-  const azimuth   = Math.max(-1.5, Math.min(1.5, dayProgress * 2 - 1));
+  // Solar noon = midpoint of today's sunrise/sunset.
+  // This implicitly absorbs the equation-of-time and longitude correction
+  // because the API already returns the real local rise/set times.
+  const solarNoonMin = (riseMin + setMin) / 2;
+
+  // Hour angle in radians: 0 at solar noon, +π/2 six hours later (afternoon/west)
+  const hourAngle = ((currentMin - solarNoonMin) / 60) * (Math.PI / 12);
+
+  // Day of year for declination
+  const now = new Date();
+  const dayOfYear = Math.floor(
+    (now.getTime() - new Date(now.getFullYear(), 0, 0).getTime()) / 86_400_000,
+  );
+  const decl = solarDeclination(dayOfYear);
+
+  // True solar elevation angle
+  // sin(alt) = sin(lat)·sin(δ) + cos(lat)·cos(δ)·cos(H)
+  const sinAlt =
+    Math.sin(NTHU_LAT) * Math.sin(decl) +
+    Math.cos(NTHU_LAT) * Math.cos(decl) * Math.cos(hourAngle);
+  const elevation = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+
+  // Azimuth: sin(H) gives a smooth east(−1) → south(0) → west(+1) sweep.
+  // Negative H = morning = sun in the east = negative x on screen.
+  const azimuth = Math.sin(hourAngle);
+
   return { elevation, azimuth };
 }
