@@ -531,6 +531,9 @@ export default function WeatherDashboard({ title }: Props) {
       // backdrop-filter blur alone provides the frosted-glass separation.
       ['--nav-bg',        'rgba(0,0,0,0)'],
       ['--nav-border',    'rgba(255,255,255,0.12)'],
+      // Card shape & depth — scoped to the weather page only.
+      ['--card-radius',   '20px'],
+      ['--card-shadow',   '0 4px 32px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.18)'],
     ];
     overrides.forEach(([k, v]) => root.style.setProperty(k, v));
     return () => overrides.forEach(([k]) => root.style.removeProperty(k));
@@ -568,11 +571,11 @@ export default function WeatherDashboard({ title }: Props) {
     );
   }
 
-  // Apple Weather style: near-transparent frosted glass cards, white text throughout.
-  // --ink and friends are already overridden to white via the sky-mode useEffect above.
-  const cardBg     = 'rgba(255,255,255,0.12)';
-  const cardBorder = 'rgba(255,255,255,0.18)';
-  const cardGlass  = 'blur(24px) saturate(180%)';
+  // Matte frosted-glass cards — slightly more opaque and less saturated than
+  // a "crystal clear" glass gives a softer, more premium feel against the sky.
+  const cardBg     = 'rgba(255,255,255,0.11)';
+  const cardBorder = 'rgba(255,255,255,0.16)';
+  const cardGlass  = 'blur(28px) saturate(140%)';
 
   return (
     <div

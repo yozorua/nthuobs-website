@@ -93,14 +93,16 @@ body {
 
   .card {
     @apply p-6 transition-all duration-200;
+    border-radius: var(--card-radius, 0px);
     border: 1px solid var(--card-border);
     background: var(--card-bg);
     backdrop-filter: var(--card-glass);
     -webkit-backdrop-filter: var(--card-glass);
+    box-shadow: var(--card-shadow, none);
   }
   .card:hover {
     border-color: var(--line-dark);
-    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    box-shadow: var(--card-shadow, 0 2px 16px rgba(0,0,0,0.06));
   }
 
   .input {

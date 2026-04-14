@@ -188,11 +188,14 @@ export default function InstrumentPanel({ reading, lastUpdate, condition, condit
 
   return (
     <div style={{
+      borderRadius: 'var(--card-radius, 0px)',
       border: '1px solid var(--card-border)',
       borderTop: '2px solid rgba(255,255,255,0.35)',
       background: 'var(--card-bg)',
       backdropFilter: 'var(--card-glass)',
       WebkitBackdropFilter: 'var(--card-glass)',
+      boxShadow: 'var(--card-shadow, none)',
+      overflow: 'hidden',
     }}>
       {/* Status bar */}
       <div className="flex items-center justify-between px-5 py-1.5"
