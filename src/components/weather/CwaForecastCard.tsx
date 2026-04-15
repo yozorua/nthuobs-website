@@ -24,8 +24,8 @@ export default function CwaForecastCard({ periods }: Props) {
       {periods.length === 0 ? (
         <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>{t('cwaLoading')}</p>
       ) : (
-        <div className="space-y-3 max-h-40 overflow-y-auto">
-          {periods.slice(0, 4).map((p, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3">
+          {periods.slice(0, 8).map((p, i) => (
             <div key={i}>
               <p className="text-xs mb-0.5" style={{ color: 'var(--ink-faint)' }}>
                 {formatPeriod(p.start, p.end)}

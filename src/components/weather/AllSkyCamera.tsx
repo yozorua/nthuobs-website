@@ -19,7 +19,6 @@ export default function AllSkyCamera() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 
-  // Close fullscreen on Escape
   useEffect(() => {
     if (!fullscreen) return;
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setFullscreen(false); };
@@ -27,44 +26,34 @@ export default function AllSkyCamera() {
     return () => window.removeEventListener('keydown', handler);
   }, [fullscreen]);
 
-  const image = error ? null : (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={t('allSkyCamera')} className="w-full h-auto block" onError={() => setError(true)} />
-  );
-
-  const placeholder = (
-    <div className="flex items-center justify-center py-12" style={{ background: 'var(--bg-muted)' }}>
-      <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>{t('allSkyCameraPlaceholder')}</p>
-    </div>
-  );
-
   return (
     <>
-      <div className="card p-0 overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <p className="label">{t('allSkyCamera')}</p>
-          <span className="text-[10px]" style={{ color: 'var(--ink-faint)' }}>
-            {Math.round(ALLSKY_REFRESH_INTERVAL_MS / 1000)}s refresh
-          </span>
-        </div>
-
-        {/* Image — click to fullscreen */}
-        <div
-          className="cursor-zoom-in relative"
-          onClick={() => !error && setFullscreen(true)}
-          title="Click to enlarge"
-        >
-          {error ? placeholder : image}
-          {!error && (
-            <div
-              className="absolute bottom-2 right-2 text-[10px] px-1.5 py-0.5 rounded-sm"
-              style={{ background: 'rgba(0,0,0,0.45)', color: 'rgba(255,255,255,0.7)', pointerEvents: 'none' }}
-            >
-              ⛶ expand
-            </div>
-          )}
-        </div>
+      {/* Card — no header, image fills entire card height */}
+      <div
+        className="card p-0 overflow-hidden h-full"
+        style={{
+          position: 'relative',
+          cursor: error ? 'default' : 'zoom-in',
+          background: 'rgba(0,0,0,0.30)',
+        }}
+        onClick={() => !error && setFullscreen(true)}
+      >
+        {error ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-sm text-center px-4" style={{ color: 'var(--ink-faint)' }}>
+              {t('allSkyCameraPlaceholder')}
+            </p>
+          </div>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={src}
+            alt={t('allSkyCamera')}
+            className="absolute inset-0 w-full h-full"
+            style={{ objectFit: 'contain' }}
+            onError={() => setError(true)}
+          />
+        )}
       </div>
 
       {/* Fullscreen overlay */}
@@ -90,10 +79,7 @@ export default function AllSkyCamera() {
           >
             ✕
           </button>
-          <span
-            className="absolute bottom-5 text-xs"
-            style={{ color: 'rgba(255,255,255,0.4)' }}
-          >
+          <span className="absolute bottom-5 text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
             {t('allSkyCamera')} · auto-refreshes every {Math.round(ALLSKY_REFRESH_INTERVAL_MS / 1000)}s
           </span>
         </div>

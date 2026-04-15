@@ -10,8 +10,11 @@ import CloudSeeingGrid from './CloudSeeingGrid';
 import WeatherChart from './WeatherChart';
 import AllSkyCamera from './AllSkyCamera';
 import MeteogramEmbed from './MeteogramEmbed';
+import WindCard from './WindCard';
+import RainCard from './RainCard';
 import AtmosphereCanvas, { computeSunPosition, AtmosphereCondition } from './AtmosphereCanvas';
 import RainCanvas from './RainCanvas';
+import { ALLSKY_REFRESH_INTERVAL_MS } from '@/config/observatory';
 
 const REFRESH_MS = 15_000;
 const CWA_REFRESH_MS = 10 * 60 * 1000;
@@ -29,11 +32,43 @@ function useIsDark(): boolean {
   return dark;
 }
 
+// ── Pick the forecast entry closest to (but not exceeding) the current hour ──
+// Meteoblue uses 3-hour intervals (0,3,6,…) so an exact-hour match may not
+// exist — we take the most recent entry whose hour ≤ now.
+function currentForecastEntry(
+  forecast: MeteoblueForecastEntry[],
+): MeteoblueForecastEntry | null {
+  const now = new Date();
+  const todayDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const currentHour = now.getHours();
+
+  let best: MeteoblueForecastEntry | null = null;
+  for (const e of forecast) {
+    if (e.date !== todayDate) continue;
+    const h = parseInt(e.time, 10);
+    if (h <= currentHour) {
+      if (!best || parseInt(best.time, 10) < h) best = e;
+    }
+  }
+  return best;
+}
+
 // ── Condition key ─────────────────────────────────────────────────────────
-function conditionKey(r: WeatherReading | null): string {
+function conditionKey(
+  r: WeatherReading | null,
+  forecast: MeteoblueForecastEntry[],
+): string {
   if (!r) return 'Unknown';
   if ((r.rainRateMmHr ?? 0) > 0) return 'Rainy';
-  const cloud = Math.max(r.cloudCoverLow ?? 0, r.cloudCoverMid ?? 0, r.cloudCoverHigh ?? 0);
+
+  // Prefer live forecast cloud data aligned to actual current time; the DB
+  // value may be null when the station time didn't match a forecast slot.
+  const fc = currentForecastEntry(forecast);
+  const cloudHigh = fc ? (parseFloat(fc.clouds_high) || 0) : (r.cloudCoverHigh ?? 0);
+  const cloudMid  = fc ? (parseFloat(fc.clouds_mid)  || 0) : (r.cloudCoverMid  ?? 0);
+  const cloudLow  = fc ? (parseFloat(fc.clouds_low)  || 0) : (r.cloudCoverLow  ?? 0);
+
+  const cloud = Math.max(cloudHigh, cloudMid, cloudLow);
   if (cloud > 80) return 'Cloudy';
   if (cloud > 40) return 'PartlyCloudy';
   if ((r.windSpeedMs ?? 0) >= 10) return 'Windy';
@@ -239,6 +274,7 @@ function applyCondition(c: HSLA, cond: string, stopIdx: number): HSLA {
 
 function computeBackground(
   reading: WeatherReading | null,
+  forecast: MeteoblueForecastEntry[],
   isDark: boolean,
   simMinutes?: number | null,
   conditionOverride?: string | null,
@@ -256,7 +292,7 @@ function computeBackground(
     setMin = (h ?? 18) * 60 + (m ?? 0);
   }
 
-  const cond = conditionOverride ?? conditionKey(reading);
+  const cond = conditionOverride ?? conditionKey(reading, forecast);
   const kfs = buildKeyframes(riseMin, setMin, isDark);
 
   // Locate bounding keyframes
@@ -469,14 +505,14 @@ export default function WeatherDashboard({ title }: Props) {
   // the weather page is always sky-mode with white text, so a bright light-mode sky
   // would wash out legibility.
   useEffect(() => {
-    setBg(computeBackground(latest, true, simMinutes, debugCondition));
+    setBg(computeBackground(latest, cloudForecast, true, simMinutes, debugCondition));
     if (simMinutes !== null) return; // slider drives updates manually
     const timer = setInterval(
-      () => setBg(computeBackground(latest, true, null, debugCondition)),
+      () => setBg(computeBackground(latest, cloudForecast, true, null, debugCondition)),
       30_000,
     );
     return () => clearInterval(timer);
-  }, [latest, simMinutes, debugCondition]);
+  }, [latest, cloudForecast, simMinutes, debugCondition]);
 
   // Push sky onto body so it shows through the transparent navbar & footer.
   // The CSS gradient (`bg`) serves as a WebGL fallback — AtmosphereCanvas
@@ -551,7 +587,7 @@ export default function WeatherDashboard({ title }: Props) {
   if (latest?.sunset)  { const [h, m] = latest.sunset.split(':').map(Number);  setMin  = (h ?? 18) * 60 + (m ?? 0); }
 
   const period = getTimePeriod(simMinutes ?? actualMinutes, riseMin, setMin);
-  const condition = conditionKey(latest);
+  const condition = conditionKey(latest, cloudForecast);
   const conditionLabel = t(`conditions.${condition}`);
 
   // Physical atmosphere: derive sun position from today's solar arc
@@ -599,31 +635,55 @@ export default function WeatherDashboard({ title }: Props) {
 
       {/* z-index: 1 lifts all page content above the rain canvas (z: 0) */}
       <div style={{ position: 'relative', zIndex: 1 }}>
-      <div className="max-w-5xl mx-auto px-6 pt-8 pb-16">
+      <div className="max-w-screen-xl mx-auto px-4 pt-8 pb-16">
 
-        <div className="mb-8 pb-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
-          <p className="label mb-3">NTHU Observatory</p>
-          <h1 className="text-3xl font-light tracking-wider" style={{ color: 'var(--ink)' }}>
-            {title}
-          </h1>
+        {/* ── Header ── */}
+        <div className="mb-6 pb-5 flex items-end justify-between"
+             style={{ borderBottom: '1px solid rgba(255,255,255,0.18)' }}>
+          <div>
+            <p className="label mb-3">NTHU Observatory</p>
+            <h1 className="text-3xl font-light tracking-wider" style={{ color: 'var(--ink)' }}>
+              {title}
+            </h1>
+          </div>
+          <div className="text-right pb-0.5 space-y-0.5">
+            <p className="text-[10px]" style={{ color: 'var(--ink-faint)', letterSpacing: '0.05em' }}>
+              24°47′39″N · 120°59′31″E · EL 70 m
+            </p>
+            <p className="text-[10px]" style={{ color: 'var(--ink-faint)' }}>
+              {Math.round(ALLSKY_REFRESH_INTERVAL_MS / 1000)}s refresh · Updated {lastUpdate}
+            </p>
+          </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
 
-          {/* ── Current conditions + All-Sky Camera ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
+          {/* ── Row 1: 4-col grid, 2 implicit rows ── */}
+          {/*   row-a: InstrumentPanel (col 1-3)  |  AllSkyCamera (col 4)        */}
+          {/*   row-b: WindCard (col 1) | RainCard (col 2) | SunMoonCard (col 3) */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-stretch">
+            {/* InstrumentPanel spans cols 1-3, row 1 */}
+            <div className="md:col-span-3">
               <InstrumentPanel
                 reading={latest}
-                lastUpdate={lastUpdate}
                 condition={conditionLabel}
                 conditionKey={condition}
+                isNight={period === 'night'}
               />
             </div>
-            <AllSkyCamera />
+            {/* AllSkyCamera spans col 4, rows 1-2 */}
+            <div className="md:row-span-2 flex flex-col" style={{ minHeight: 0 }}>
+              <div className="flex-1 min-h-0">
+                <AllSkyCamera />
+              </div>
+            </div>
+            {/* Wind, Rain, SunMoon in row 2 cols 1-3 */}
+            <WindCard reading={latest} />
+            <RainCard reading={latest} />
+            <SunMoonCard reading={latest} />
           </div>
 
-          {/* ── Recent history chart ── */}
+          {/* ── Row 2: History chart (full width) ── */}
           <WeatherChart
             data={chartData}
             hours={chartHours}
@@ -632,11 +692,8 @@ export default function WeatherDashboard({ title }: Props) {
             sunset={latest?.sunset}
           />
 
-          {/* ── Forecast + Sun & Moon ── */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2"><CwaForecastCard periods={cwaForecast} /></div>
-            <SunMoonCard reading={latest} />
-          </div>
+          {/* ── Row 3: CWA Forecast (full width) ── */}
+          <CwaForecastCard periods={cwaForecast} />
 
           {/* ── Cloud & Seeing forecast ── */}
           {cloudForecast.length > 0 && (
@@ -650,10 +707,6 @@ export default function WeatherDashboard({ title }: Props) {
 
           {/* ── 5-day meteogram ── */}
           <MeteogramEmbed />
-
-          <p className="text-[10px]" style={{ color: 'var(--ink-faint)', letterSpacing: '0.04em' }}>
-            {t('stationLocation')}
-          </p>
 
           <DebugPanel
             simMinutes={simMinutes}

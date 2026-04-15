@@ -33,7 +33,7 @@ export default function WindCard({ reading }: { reading: WeatherReading | null }
   const bf = beaufort(reading?.windSpeedMs ?? null);
 
   return (
-    <div className="card p-5">
+    <div className="card p-5 h-full">
       <p className="label mb-3">{t('wind')}</p>
 
       <div className="flex items-baseline gap-2 mb-1">

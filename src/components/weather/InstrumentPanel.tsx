@@ -1,33 +1,54 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { WeatherReading } from './types';
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── SQM data shape ─────────────────────────────────────────────────────────
+interface SqmStats {
+  last: number | null;
+  avg:  number | null;
+  max:  number | null;
+  min:  number | null;
+}
+
+function useSqm(): SqmStats {
+  const [sqm, setSqm] = useState<SqmStats>({ last: null, avg: null, max: null, min: null });
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch('/api/allsky/sqm');
+        if (!res.ok) return;
+        const data = await res.json() as Record<string, unknown>;
+        const raw = data?.camera_sqm_mag_data as Record<string, number> | undefined;
+        if (!raw) return;
+        setSqm({
+          last: raw.last  ?? null,
+          avg:  raw.avg   ?? null,
+          max:  raw.max   ?? null,
+          min:  raw.min   ?? null,
+        });
+      } catch { /* silent */ }
+    };
+    load();
+    const id = setInterval(load, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  return sqm;
+}
+
 function fmt(v: number | null, d = 1): string {
   return v != null ? v.toFixed(d) : '—';
 }
 
-function beaufort(ms: number | null): number {
-  if (ms == null) return 0;
-  if (ms < 0.3) return 0; if (ms < 1.6) return 1; if (ms < 3.4) return 2;
-  if (ms < 5.5) return 3; if (ms < 8.0) return 4; if (ms < 10.8) return 5;
-  if (ms < 13.9) return 6; if (ms < 17.2) return 7; if (ms < 20.8) return 8;
-  if (ms < 24.5) return 9; if (ms < 28.5) return 10; if (ms < 32.7) return 11;
-  return 12;
-}
-
-function windDir(text: string | null | undefined, deg: number | null | undefined): string {
-  if (text) return text;
-  if (deg == null) return '—';
-  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-  return dirs[Math.round(deg / 22.5) % 16];
+function fmtInt(v: number | null): string {
+  return v != null ? Math.round(v).toString() : '—';
 }
 
 // ── Condition icons — 48×48 viewBox, white stroke, no fill ──────────────────
-// Each icon avoids ugly overlapping shapes: PartlyCloudy places sun and cloud
-// in separate regions; Cloudy draws a single clean cloud.
-function ConditionIcon({ cond, size = 64 }: { cond: string; size?: number }) {
-  const v = 48; // internal viewBox size
+function ConditionIcon({ cond, isNight, size = 64 }: { cond: string; isNight: boolean; size?: number }) {
+  const v = 48;
   const st = {
     stroke: 'rgba(255,255,255,0.88)',
     strokeWidth: 2.2,
@@ -35,9 +56,7 @@ function ConditionIcon({ cond, size = 64 }: { cond: string; size?: number }) {
     strokeLinecap: 'round' as const,
     strokeLinejoin: 'round' as const,
   };
-  const faint = { ...st, stroke: 'rgba(255,255,255,0.45)' };
 
-  // Sun centred at (cx,cy) with given radius and ray length
   const Sun = ({ cx, cy, r, rl = 4, rays = 8, opacity = 1 }: {
     cx: number; cy: number; r: number; rl?: number; rays?: number; opacity?: number;
   }) => (
@@ -54,34 +73,23 @@ function ConditionIcon({ cond, size = 64 }: { cond: string; size?: number }) {
     </g>
   );
 
-  // Cloud shape: smooth bezier, top-bumps then flat bottom
-  // Positions: left edge ~xl, right edge ~xr, top ~yt, bottom ~yb
   const Cloud = ({ xl = 4, xr = 44, yt = 16, yb = 36, style = st }: {
-    xl?: number; xr?: number; yt?: number; yb?: number;
-    style?: typeof st;
+    xl?: number; xr?: number; yt?: number; yb?: number; style?: typeof st;
   }) => {
     const w = xr - xl, h = yb - yt;
-    // Control points are fractions of width/height
     const d = [
       `M ${xl} ${yb}`,
-      // left wall
       `Q ${xl} ${yt + h * 0.5} ${xl + w * 0.15} ${yt + h * 0.35}`,
-      // left bump
       `Q ${xl + w * 0.18} ${yt} ${xl + w * 0.38} ${yt + h * 0.1}`,
-      // centre-top saddle
       `Q ${xl + w * 0.45} ${yt - h * 0.18} ${xl + w * 0.62} ${yt + h * 0.05}`,
-      // right bump
       `Q ${xl + w * 0.75} ${yt - h * 0.1} ${xl + w * 0.85} ${yt + h * 0.25}`,
-      // right wall
       `Q ${xr} ${yt + h * 0.35} ${xr} ${yt + h * 0.6}`,
       `Q ${xr} ${yb} ${xr - w * 0.1} ${yb}`,
-      // flat bottom back to start
       `L ${xl} ${yb} Z`,
     ].join(' ');
     return <path d={d} {...style} />;
   };
 
-  // Rain drops: 4 short diagonal lines below a cloud
   const Drops = ({ baseY, xl = 10, xr = 38 }: { baseY: number; xl?: number; xr?: number }) => {
     const xs = [xl, xl + (xr - xl) / 3, xl + (xr - xl) * 2 / 3, xr];
     return <>{xs.map((x, i) => (
@@ -90,28 +98,53 @@ function ConditionIcon({ cond, size = 64 }: { cond: string; size?: number }) {
   };
 
   let icon: React.ReactNode;
-
   switch (cond) {
     case 'Clear':
-      icon = <Sun cx={24} cy={24} r={9} rl={5} rays={8} />;
+      icon = isNight
+        ? (() => {
+            // Crescent moon: full circle arc then inner concave arc
+            const cx = 24, cy = 24, r = 12, ir = 9.5;
+            const d = `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${ir} ${ir} 0 1 0 ${cx} ${cy - r} Z`;
+            return (
+              <path d={d}
+                fill="rgba(255,248,200,0.88)"
+                stroke="rgba(255,255,255,0.65)"
+                strokeWidth={1.4}
+                transform={`rotate(-30, ${cx}, ${cy})`}
+              />
+            );
+          })()
+        : <Sun cx={24} cy={24} r={9} rl={5} rays={8} />;
       break;
-
     case 'PartlyCloudy':
-      // Sun sits in the upper-right; cloud is in the lower-left — no overlap
-      icon = (
-        <>
-          <Sun cx={34} cy={13} r={7} rl={4} rays={6} opacity={0.80} />
-          {/* Cloud sits lower, well below the sun */}
-          <Cloud xl={2} xr={40} yt={24} yb={42} />
-        </>
-      );
+      icon = isNight
+        ? (() => {
+            // Small crescent in upper-right + cloud below
+            const cx = 34, cy = 12, r = 7, ir = 5.5;
+            const d = `M ${cx} ${cy - r} A ${r} ${r} 0 1 1 ${cx} ${cy + r} A ${ir} ${ir} 0 1 0 ${cx} ${cy - r} Z`;
+            return (
+              <>
+                <path d={d}
+                  fill="rgba(255,248,200,0.80)"
+                  stroke="rgba(255,255,255,0.55)"
+                  strokeWidth={1.2}
+                  transform={`rotate(-30, ${cx}, ${cy})`}
+                  opacity={0.85}
+                />
+                <Cloud xl={2} xr={40} yt={24} yb={42} />
+              </>
+            );
+          })()
+        : (
+          <>
+            <Sun cx={34} cy={13} r={7} rl={4} rays={6} opacity={0.80} />
+            <Cloud xl={2} xr={40} yt={24} yb={42} />
+          </>
+        );
       break;
-
     case 'Cloudy':
-      // Single prominent cloud, vertically centred
       icon = <Cloud xl={2} xr={46} yt={12} yb={36} />;
       break;
-
     case 'Rainy':
       icon = (
         <>
@@ -120,9 +153,7 @@ function ConditionIcon({ cond, size = 64 }: { cond: string; size?: number }) {
         </>
       );
       break;
-
     case 'Windy':
-      // Three smooth arcs suggesting flowing wind
       icon = (
         <>
           <path d="M 4 14 Q 16 10 28 14 Q 36 18 34 22 Q 32 26 24 22" {...st} />
@@ -131,9 +162,7 @@ function ConditionIcon({ cond, size = 64 }: { cond: string; size?: number }) {
         </>
       );
       break;
-
     default:
-      // Three dots — "Unknown"
       icon = <>{[14, 24, 34].map(x => (
         <circle key={x} cx={x} cy={24} r={2.5} fill="rgba(255,255,255,0.55)" stroke="none" />
       ))}</>;
@@ -146,22 +175,26 @@ function ConditionIcon({ cond, size = 64 }: { cond: string; size?: number }) {
   );
 }
 
-// ── Metric cell ──────────────────────────────────────────────────────────────
-function MetricCell({ label, value, unit, sub }: {
-  label: string; value: string; unit: string; sub?: string;
+// ── Indoor metric cell ───────────────────────────────────────────────────────
+function IndoorCell({ label, value, unit, hiLo }: {
+  label: string;
+  value: string;
+  unit: string;
+  hiLo: string;
 }) {
   return (
-    <div className="flex-1 min-w-[90px] px-4 py-3"
-         style={{ borderRight: '1px solid rgba(255,255,255,0.08)' }}>
+    <div className="flex-1 min-w-[100px] px-5 py-3"
+         style={{ borderRight: '1px solid rgba(255,255,255,0.07)' }}>
       <div className="text-[10px] uppercase tracking-widest mb-1.5"
            style={{ color: 'var(--ink-faint)' }}>{label}</div>
       <div className="flex items-baseline gap-1">
-        <span className="text-lg font-light"
+        <span className="text-xl font-light"
               style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
-        {unit && <span className="text-[11px]" style={{ color: 'var(--ink-muted)' }}>{unit}</span>}
+        <span className="text-[11px]" style={{ color: 'var(--ink-muted)' }}>{unit}</span>
       </div>
-      {sub && <div className="text-[10px] mt-1 leading-tight"
-                   style={{ color: 'var(--ink-faint)' }}>{sub}</div>}
+      <div className="text-[10px] mt-1" style={{ color: 'var(--ink-faint)' }}>
+        {hiLo}
+      </div>
     </div>
   );
 }
@@ -169,22 +202,14 @@ function MetricCell({ label, value, unit, sub }: {
 // ── Component ────────────────────────────────────────────────────────────────
 interface Props {
   reading: WeatherReading | null;
-  lastUpdate: string;
-  condition: string;    // translated label
-  conditionKey: string; // 'Clear' | 'Cloudy' | …
+  condition: string;
+  conditionKey: string;
+  isNight: boolean;
 }
 
-export default function InstrumentPanel({ reading, lastUpdate, condition, conditionKey }: Props) {
+export default function InstrumentPanel({ reading, condition, conditionKey, isNight }: Props) {
   const r = reading;
-  const bf  = beaufort(r?.windSpeedMs ?? null);
-  const dir = windDir(r?.windDirectionText, r?.windDirectionDeg);
-
-  // Wind sub: direction · Beaufort · gust if available
-  const windSub = [
-    dir,
-    `Bf ${bf}`,
-    r?.windGustMs != null ? `G ${r.windGustMs.toFixed(1)}` : null,
-  ].filter(Boolean).join('  ');
+  const sqm = useSqm();
 
   return (
     <div style={{
@@ -197,65 +222,82 @@ export default function InstrumentPanel({ reading, lastUpdate, condition, condit
       boxShadow: 'var(--card-shadow, none)',
       overflow: 'hidden',
     }}>
-      {/* Status bar */}
-      <div className="flex items-center justify-between px-5 py-1.5"
-           style={{ borderBottom: '1px solid rgba(255,255,255,0.07)', background: 'rgba(0,0,0,0.06)' }}>
-        <span className="text-[10px]" style={{ color: 'var(--ink-faint)', letterSpacing: '0.05em' }}>
-          24°47′N  120°59′E  EL 55 m
-        </span>
-        <span className="text-[10px]" style={{ color: 'var(--ink-faint)' }}>
-          UPDATED  {lastUpdate}
-        </span>
-      </div>
 
-      {/* Hero: icon + condition + big outdoor temp */}
-      <div className="flex items-center gap-5 px-6 py-5">
-        <ConditionIcon cond={conditionKey} size={68} />
-        <div className="flex-1">
-          <div className="text-sm font-light tracking-[0.18em] uppercase mb-1"
+      {/* ── Hero: icon · condition · outdoor temp + outdoor humidity ── */}
+      <div className="flex items-center gap-6 px-6 py-5">
+        <ConditionIcon cond={conditionKey} isNight={isNight} size={68} />
+
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-light tracking-[0.18em] uppercase mb-3"
                style={{ color: 'var(--ink-muted)' }}>
             {condition}
           </div>
-          <div className="flex items-start gap-1 leading-none">
-            <span className="text-6xl font-extralight"
-                  style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
-              {r?.outsideTempC != null ? r.outsideTempC.toFixed(1) : '—'}
-            </span>
-            <span className="text-2xl mt-1" style={{ color: 'var(--ink-muted)' }}>°C</span>
-          </div>
-          {r?.outTempDayHighC != null && (
-            <div className="text-xs mt-1.5" style={{ color: 'var(--ink-faint)' }}>
-              H {fmt(r.outTempDayHighC)}°  ·  L {fmt(r.outTempDayLowC ?? null)}°
+
+          <div className="flex items-end gap-8 flex-wrap">
+            {/* Outdoor temperature */}
+            <div>
+              <div className="flex items-start gap-1 leading-none">
+                <span className="text-6xl font-extralight"
+                      style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                  {r?.outsideTempC != null ? r.outsideTempC.toFixed(1) : '—'}
+                </span>
+                <span className="text-2xl mt-1" style={{ color: 'var(--ink-muted)' }}>°C</span>
+              </div>
+              <div className="text-xs mt-1.5" style={{ color: 'var(--ink-faint)' }}>
+                H {fmt(r?.outTempDayHighC ?? null)}° · L {fmt(r?.outTempDayLowC ?? null)}°
+              </div>
             </div>
-          )}
+
+            {/* Vertical rule */}
+            <div style={{ width: 1, height: 52, background: 'rgba(255,255,255,0.14)', flexShrink: 0 }} />
+
+            {/* Outdoor humidity */}
+            <div>
+              <div className="flex items-start gap-1 leading-none">
+                <span className="text-6xl font-extralight"
+                      style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                  {r?.outsideHumidityPercent != null ? fmtInt(r.outsideHumidityPercent) : '—'}
+                </span>
+                <span className="text-2xl mt-1" style={{ color: 'var(--ink-muted)' }}>%</span>
+              </div>
+              <div className="text-xs mt-1.5" style={{ color: 'var(--ink-faint)' }}>
+                H {fmtInt(r?.outsideHumidityDayHigh ?? null)}% · L {fmtInt(r?.outsideHumidityDayLow ?? null)}%
+                {r?.dewpointC != null && ` · Dew ${fmt(r.dewpointC)}°C`}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 5-metric row: indoor temp · humidity · pressure · wind · rain */}
+      {/* ── Indoor metrics row ── */}
       <div className="flex flex-wrap" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-        <MetricCell
-          label="In Temp" value={fmt(r?.insideTempC ?? null)} unit="°C"
-          sub={r?.inTempDayHighC != null
-            ? `H ${r.inTempDayHighC.toFixed(1)}  L ${r.inTempDayLowC?.toFixed(1) ?? '—'}`
-            : undefined}
+        <IndoorCell
+          label="In Temp"
+          value={r?.insideTempC != null ? r.insideTempC.toFixed(1) : '—'}
+          unit="°C"
+          hiLo={`H ${fmt(r?.inTempDayHighC ?? null)}° · L ${fmt(r?.inTempDayLowC ?? null)}°`}
         />
-        <MetricCell
-          label="Humidity" value={fmt(r?.outsideHumidityPercent ?? null, 0)} unit="%"
-          sub={r?.dewpointC != null ? `Dew ${r.dewpointC.toFixed(1)}°C` : undefined}
+        <IndoorCell
+          label="In Humid"
+          value={fmtInt(r?.insideHumidityPercent ?? null)}
+          unit="%"
+          hiLo={`H ${fmtInt(r?.insideHumidityDayHigh ?? null)}% · L ${fmtInt(r?.insideHumidityDayLow ?? null)}%`}
         />
-        <MetricCell
-          label="Pressure" value={fmt(r?.barometerHpa ?? null, 1)} unit="hPa"
-          sub={r?.baroDayHighHpa != null
-            ? `H ${r.baroDayHighHpa.toFixed(0)}  L ${r.baroDayLowHpa?.toFixed(0) ?? '—'}`
-            : undefined}
+        <IndoorCell
+          label="Pressure"
+          value={r?.barometerHpa != null ? r.barometerHpa.toFixed(1) : '—'}
+          unit="hPa"
+          hiLo={`H ${fmt(r?.baroDayHighHpa ?? null, 0)} hPa · L ${fmt(r?.baroDayLowHpa ?? null, 0)} hPa`}
         />
-        <MetricCell
-          label="Wind" value={fmt(r?.windSpeedMs ?? null)} unit="m/s"
-          sub={windSub || undefined}
-        />
-        <MetricCell
-          label="Rain today" value={fmt(r?.dailyRainMm ?? null)} unit="mm"
-          sub={r?.rainRateMmHr != null ? `Rate ${r.rainRateMmHr.toFixed(1)} mm/h` : undefined}
+        <IndoorCell
+          label="SQM"
+          value={sqm.last != null ? sqm.last.toFixed(2) : '—'}
+          unit="mag/arcsec²"
+          hiLo={
+            sqm.avg != null
+              ? `avg ${sqm.avg.toFixed(2)} · max ${sqm.max?.toFixed(2) ?? '—'} · min ${sqm.min?.toFixed(2) ?? '—'}`
+              : '—'
+          }
         />
       </div>
     </div>

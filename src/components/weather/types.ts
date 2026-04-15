@@ -8,7 +8,11 @@ export interface WeatherReading {
   outsideTempC: number | null;
   insideTempC: number | null;
   outsideHumidityPercent: number | null;
+  outsideHumidityDayHigh: number | null;
+  outsideHumidityDayLow: number | null;
   insideHumidityPercent: number | null;
+  insideHumidityDayHigh: number | null;
+  insideHumidityDayLow: number | null;
   barometerHpa: number | null;
   windSpeedMs: number | null;
   windDirectionDeg: number | null;

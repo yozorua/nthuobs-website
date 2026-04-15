@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const rows = await db.weatherReading.findMany({
-      where: { consoleTime: { gte: since } },
+      where: { scriptTimestamp: { gte: since } },
       select: {
         scriptTimestamp: true,
         consoleTime: true,

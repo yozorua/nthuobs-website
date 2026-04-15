@@ -66,7 +66,10 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime, fo
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentRef = useRef<HTMLDivElement>(null);
 
-  const currentHour = stationTime ? parseInt(stationTime.split(':')[0], 10) : -1;
+  // Use actual wall-clock time so the highlight always reflects "now"
+  const nowDate = new Date();
+  const currentHour = nowDate.getHours();
+  const todayDate = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
 
   // Auto-scroll so the current hour is centred
   useEffect(() => {
@@ -184,7 +187,9 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime, fo
         </div>
 
         {/* ── Scrollable block grid ── */}
-        <div ref={scrollRef} className="overflow-x-auto flex-1" style={{ scrollbarWidth: 'thin' }}>
+        {/* eslint-disable-next-line react/no-unknown-property */}
+        <style>{`.cs-scroll::-webkit-scrollbar { display: none; }`}</style>
+        <div ref={scrollRef} className="overflow-x-auto flex-1 cs-scroll" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
           <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
 
             {/* Date banner row */}
@@ -220,8 +225,7 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime, fo
             <div className="flex" style={{ gap: 2, height: 16 }}>
               {forecast.map((e, i) => {
                 const hour = parseInt(e.time, 10);
-                const isCurrent = e.date === stationDate && hour === currentHour;
-                const isDayStart = hour === 0;
+                const isCurrent = e.date === todayDate && hour === currentHour;
                 return (
                   <div
                     key={i}
@@ -233,7 +237,6 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime, fo
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      borderLeft: isDayStart ? '1px solid var(--line-dark)' : undefined,
                       background: isCurrent ? 'var(--bg-muted)' : undefined,
                       borderRadius: 2,
                     }}
@@ -262,15 +265,13 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime, fo
               >
                 {forecast.map((e, i) => {
                   const hour = parseInt(e.time, 10);
-                  const isCurrent = e.date === stationDate && hour === currentHour;
-                  const isDayStart = hour === 0;
+                  const isCurrent = e.date === todayDate && hour === currentHour;
                   return (
                     <div
                       key={i}
                       style={{
                         width: BLOCK_W,
                         flexShrink: 0,
-                        borderLeft: isDayStart && i > 0 ? '1px solid var(--line-dark)' : undefined,
                         outline: isCurrent ? '1px solid var(--ink-muted)' : undefined,
                         outlineOffset: -1,
                         borderRadius: 2,
