@@ -153,6 +153,9 @@ model WeatherReading {
   moonset                      String?
   moonPhase                    String?
 
+  // Sky Quality Meter (from indi-allsky)
+  sqmMagPerArcsec2             Float?
+
   @@index([consoleTime])
   @@index([stationDate, consoleTime])
 }

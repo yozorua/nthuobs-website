@@ -4,54 +4,36 @@ import path from "path";
 
 const CACHE_PATH = path.join(process.cwd(), "daemon/weather/cache/cwa.json");
 
-interface CwaLocation {
-  LocationName?: string;
-  WeatherElement?: Array<{
-    ElementName?: string;
-    Time?: Array<{
-      StartTime?: string;
-      EndTime?: string;
-      Parameter?: Array<{ ParameterName?: string; ParameterValue?: string }>;
-    }>;
-  }>;
-}
-
 export async function GET() {
   try {
     const raw = await fs.readFile(CACHE_PATH, "utf-8");
     const json = JSON.parse(raw);
 
-    // Navigate the CWA response structure
-    const locations: CwaLocation[] =
-      json?.cwaopendata?.Dataset?.Locations?.Location ?? [];
+    // F-C0032-024 returns a single Location object (not array)
+    const locationRaw = json?.cwaopendata?.Dataset?.Locations?.Location;
+    const location = Array.isArray(locationRaw) ? locationRaw[0] : locationRaw;
 
-    // Find Hsinchu city forecast
-    const hsinchu = locations.find(
-      (loc) =>
-        loc.LocationName === "新竹市" || loc.LocationName === "Hsinchu City",
-    ) ?? locations[0];
-
-    if (!hsinchu) {
+    if (!location) {
       return NextResponse.json({ forecast: [] });
     }
 
-    // Extract weather description elements
-    const wxElement = (hsinchu.WeatherElement ?? []).find(
-      (el) => el.ElementName === "Wx" || el.ElementName === "天氣現象",
+    // WeatherElement may be a single object or array; find the narrative description element
+    const elementsRaw = location.WeatherElement;
+    const elements = Array.isArray(elementsRaw) ? elementsRaw : [elementsRaw].filter(Boolean);
+
+    const descElement = elements.find(
+      (el: { ElementName?: string }) =>
+        el?.ElementName === "天氣預報綜合描述" || el?.ElementName === "WeatherDescription",
     );
 
-    const periods = (wxElement?.Time ?? []).map((t) => ({
-      start: t.StartTime,
-      end: t.EndTime,
-      description:
-        t.Parameter?.find((p) => p.ParameterName === "天氣現象" || p.ParameterName === "Weather")
-          ?.ParameterValue ?? "",
-      code:
-        t.Parameter?.find((p) => p.ParameterName === "天氣代碼" || p.ParameterName === "Weather Code")
-          ?.ParameterValue ?? "",
-    }));
+    // Descriptions are under ElementValue.WeatherDescription (array of strings)
+    const descArray: string[] = descElement?.ElementValue?.WeatherDescription ?? [];
 
-    return NextResponse.json({ location: hsinchu.LocationName, forecast: periods });
+    const periods = descArray
+      .filter((d: string) => typeof d === "string" && d.trim().length > 0)
+      .map((description: string) => ({ description, code: "" }));
+
+    return NextResponse.json({ location: location.LocationName, forecast: periods });
   } catch {
     return NextResponse.json({ error: "CWA forecast unavailable" }, { status: 503 });
   }

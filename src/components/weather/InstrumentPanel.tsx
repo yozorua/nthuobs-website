@@ -287,7 +287,7 @@ export default function InstrumentPanel({ reading, condition, conditionKey, isNi
           label="Pressure"
           value={r?.barometerHpa != null ? r.barometerHpa.toFixed(1) : '—'}
           unit="hPa"
-          hiLo={`H ${fmt(r?.baroDayHighHpa ?? null, 0)} hPa · L ${fmt(r?.baroDayLowHpa ?? null, 0)} hPa`}
+          hiLo={`H ${fmt(r?.baroDayHighHpa ?? null, 1)} hPa · L ${fmt(r?.baroDayLowHpa ?? null, 1)} hPa`}
         />
         <IndoorCell
           label="SQM"

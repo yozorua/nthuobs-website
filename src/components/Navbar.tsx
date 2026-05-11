@@ -164,7 +164,16 @@ export default function Navbar({ session, locale }: NavbarProps) {
               {userMenuOpen && (
                 <div
                   className="absolute right-0 top-9 w-48 py-1 z-50"
-                  style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
+                  style={pathname.includes('/weather') ? {
+                    background: '#111111',
+                    border: '1px solid #2a2a2a',
+                    ['--bg' as string]: '#111111',
+                    ['--bg-warm' as string]: '#181818',
+                    ['--ink' as string]: '#e8e8e6',
+                    ['--ink-secondary' as string]: '#aaaaaa',
+                    ['--ink-faint' as string]: '#555555',
+                    ['--line' as string]: '#2a2a2a',
+                  } : { background: 'var(--bg)', border: '1px solid var(--line)' }}
                 >
                   <div className="px-4 py-3 flex items-center gap-3" style={{ borderBottom: '1px solid var(--line)' }}>
                     {avatarImage ? (

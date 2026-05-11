@@ -2,7 +2,7 @@
 
 import { useEffect, useState, startTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { WeatherReading, ChartRow, MeteoblueForecastEntry, CwaForecastPeriod } from './types';
+import { WeatherReading, ChartRow, MeteoblueForecastEntry, CwaForecastPeriod, PrecipPeriod } from './types';
 import InstrumentPanel from './InstrumentPanel';
 import SunMoonCard from './SunMoonCard';
 import CwaForecastCard from './CwaForecastCard';
@@ -14,9 +14,8 @@ import WindCard from './WindCard';
 import RainCard from './RainCard';
 import AtmosphereCanvas, { computeSunPosition, AtmosphereCondition } from './AtmosphereCanvas';
 import RainCanvas from './RainCanvas';
-import { ALLSKY_REFRESH_INTERVAL_MS } from '@/config/observatory';
 
-const REFRESH_MS = 15_000;
+const REFRESH_MS = 5_000;
 const CWA_REFRESH_MS = 10 * 60 * 1000;
 
 // ── Dark-mode detection ───────────────────────────────────────────────────
@@ -435,10 +434,12 @@ export default function WeatherDashboard({ title }: Props) {
   const [latest, setLatest] = useState<WeatherReading | null>(null);
   const [cloudForecast, setCloudForecast] = useState<MeteoblueForecastEntry[]>([]);
   const [cwaForecast, setCwaForecast] = useState<CwaForecastPeriod[]>([]);
+  const [precipForecast, setPrecipForecast] = useState<PrecipPeriod[]>([]);
   const [chartData, setChartData] = useState<ChartRow[]>([]);
   const [chartHours, setChartHours] = useState(12);
   const [loading, setLoading] = useState(true);
-  const [fetchTime, setFetchTime] = useState<Date | null>(null);
+  const [chartLoading, setChartLoading] = useState(false);
+  const [allskyRefreshTime, setAllskyRefreshTime] = useState<Date | null>(null);
   const [bg, setBg] = useState('');
 
   const [simMinutes, setSimMinutes] = useState<number | null>(null);
@@ -453,7 +454,6 @@ export default function WeatherDashboard({ title }: Props) {
         // to the browser between reconciliation chunks, keeping animations smooth.
         startTransition(() => {
           setLatest(data);
-          setFetchTime(new Date());
           setLoading(false);
         });
       }
@@ -480,21 +480,41 @@ export default function WeatherDashboard({ title }: Props) {
     } catch { /* silent */ }
   };
 
-  const fetchChart = async (hours: number) => {
+  const fetchPrecip = async () => {
     try {
-      const res = await fetch(`/api/weather/chart?hours=${hours}`);
+      const res = await fetch('/api/weather/forecast/precip');
       if (res.ok) {
-        const data = await res.json() as ChartRow[];
-        startTransition(() => { setChartData(data); });
+        const data = await res.json() as { periods: PrecipPeriod[] };
+        startTransition(() => { setPrecipForecast(data.periods ?? []); });
       }
     } catch { /* silent */ }
   };
 
+  const fetchChart = async (hours: number) => {
+    setChartLoading(true);
+    try {
+      const res = await fetch(`/api/weather/chart?hours=${hours}`);
+      if (res.ok) {
+        const data = await res.json() as ChartRow[];
+        startTransition(() => {
+          setChartData(data);
+          setChartLoading(false);
+        });
+      } else {
+        setChartLoading(false);
+      }
+    } catch {
+      setChartLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchLatest(); fetchCwa(); fetchCloud(); fetchChart(chartHours);
+    fetchLatest(); fetchCwa(); fetchCloud(); fetchChart(chartHours); fetchPrecip();
     const li = setInterval(fetchLatest, REFRESH_MS);
     const ci = setInterval(fetchCwa, CWA_REFRESH_MS);
-    return () => { clearInterval(li); clearInterval(ci); };
+    // Precipitation forecast changes slowly — refresh every 30 min
+    const pi = setInterval(fetchPrecip, 30 * 60 * 1000);
+    return () => { clearInterval(li); clearInterval(ci); clearInterval(pi); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -575,9 +595,20 @@ export default function WeatherDashboard({ title }: Props) {
     return () => overrides.forEach(([k]) => root.style.removeProperty(k));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const lastUpdate = fetchTime
-    ? fetchTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    : '—';
+  const fmtTimestamp = (d: Date | string | null | undefined): string => {
+    if (!d) return '—';
+    const date = typeof d === 'string' ? new Date(d) : d;
+    const yyyy = date.getFullYear();
+    const mm   = String(date.getMonth() + 1).padStart(2, '0');
+    const dd   = String(date.getDate()).padStart(2, '0');
+    const hh   = String(date.getHours()).padStart(2, '0');
+    const min  = String(date.getMinutes()).padStart(2, '0');
+    const ss   = String(date.getSeconds()).padStart(2, '0');
+    return `${yyyy}/${mm}/${dd} ${hh}:${min}:${ss}`;
+  };
+
+  const weatherTime = fmtTimestamp(latest?.scriptTimestamp);
+  const allskyTime  = fmtTimestamp(allskyRefreshTime);
 
   const now = new Date();
   const actualMinutes = now.getHours() * 60 + now.getMinutes();
@@ -646,13 +677,16 @@ export default function WeatherDashboard({ title }: Props) {
               {title}
             </h1>
           </div>
-          <div className="text-right pb-0.5 space-y-0.5">
-            <p className="text-[10px]" style={{ color: 'var(--ink-faint)', letterSpacing: '0.05em' }}>
+          <div className="pb-0.5 space-y-0.5" style={{ color: 'var(--ink-faint)' }}>
+            <p className="text-[10px] text-right" style={{ letterSpacing: '0.05em' }}>
               24°47′39″N · 120°59′31″E · EL 70 m
             </p>
-            <p className="text-[10px]" style={{ color: 'var(--ink-faint)' }}>
-              {Math.round(ALLSKY_REFRESH_INTERVAL_MS / 1000)}s refresh · Updated {lastUpdate}
-            </p>
+            {([['Weather', weatherTime], ['AllSkyCam', allskyTime]] as const).map(([label, ts]) => (
+              <div key={label} className="flex items-center justify-end gap-2 text-[10px]">
+                <span>{label}</span>
+                <span className="font-mono" style={{ fontVariantNumeric: 'tabular-nums', minWidth: '19ch', textAlign: 'right' }}>{ts}</span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -674,7 +708,7 @@ export default function WeatherDashboard({ title }: Props) {
             {/* AllSkyCamera spans col 4, rows 1-2 */}
             <div className="md:row-span-2 flex flex-col" style={{ minHeight: 0 }}>
               <div className="flex-1 min-h-0">
-                <AllSkyCamera />
+                <AllSkyCamera onRefresh={setAllskyRefreshTime} />
               </div>
             </div>
             {/* Wind, Rain, SunMoon in row 2 cols 1-3 */}
@@ -690,6 +724,7 @@ export default function WeatherDashboard({ title }: Props) {
             onHoursChange={h => setChartHours(h)}
             sunrise={latest?.sunrise}
             sunset={latest?.sunset}
+            loading={chartLoading}
           />
 
           {/* ── Row 3: CWA Forecast (full width) ── */}
@@ -702,11 +737,12 @@ export default function WeatherDashboard({ title }: Props) {
               stationDate={latest?.stationDate ?? ''}
               stationTime={latest?.stationTime ?? ''}
               forceDark={cloudForceDark}
+              precipForecast={precipForecast}
             />
           )}
 
           {/* ── 5-day meteogram ── */}
-          <MeteogramEmbed />
+          <MeteogramEmbed sunrise={latest?.sunrise} sunset={latest?.sunset} />
 
           <DebugPanel
             simMinutes={simMinutes}

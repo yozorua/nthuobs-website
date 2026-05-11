@@ -1,6 +1,7 @@
 import path from 'path';
 
-export const STATION_URL = 'http://192.168.0.203:8888/data';
+export const STATION_URL    = 'http://192.168.0.203:8888/data';
+export const ALLSKY_SQM_URL = 'https://192.168.0.203/indi-allsky/js/loop?camera_id=1&limit=1&limit_s=300';
 export const FETCH_INTERVAL_MS = 15_000;
 export const METEOBLUE_INTERVAL_MS = 60 * 60 * 1000;
 export const CWA_INTERVAL_MS = 10 * 60 * 1000;

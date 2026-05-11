@@ -74,6 +74,7 @@ export interface ChartRow {
   barometerHpa: number | null;
   windSpeedMs: number | null;
   dailyRainMm: number | null;
+  sqmMagPerArcsec2: number | null;
 }
 
 export interface MeteoblueForecastEntry {
@@ -86,6 +87,12 @@ export interface MeteoblueForecastEntry {
   moonrise: string;
   moonset: string;
   moonphase: string;
+}
+
+export interface PrecipPeriod {
+  start: string; // ISO-8601
+  end: string;
+  pop: number;   // 0-100
 }
 
 export interface CwaForecastPeriod {

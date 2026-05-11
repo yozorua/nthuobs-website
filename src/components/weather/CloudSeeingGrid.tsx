@@ -2,28 +2,20 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { MeteoblueForecastEntry } from './types';
+import { MeteoblueForecastEntry, PrecipPeriod } from './types';
 
 // ── Color functions ────────────────────────────────────────────────────────
-//
-// Dark mode:  dark navy (0%) → near-white (100%)  — blocks glow against dark bg
-// Light mode: pale sky-blue (0%) → slate gray (100%) — white stays visible on light bg
 
 function cloudColor(pct: number, dark: boolean): string {
   const p = Math.min(Math.max(pct, 0), 100) / 100;
   if (dark) {
-    // 0% → hsl(220, 50%, 15%)   100% → hsl(220, 20%, 90%)
     return `hsl(220, ${50 - p * 30}%, ${15 + p * 75}%)`;
   } else {
-    // 0% → hsl(210, 55%, 78%)   100% → hsl(220, 6%, 52%)
     return `hsl(${210 + p * 10}, ${55 - p * 49}%, ${78 - p * 26}%)`;
   }
 }
 
 // Green (good, 0.8″) → red (poor, 3.0″+)
-// Dark mode: slightly lower lightness so colors are rich against dark bg
-// Light mode: slightly higher lightness so colors read well on white
-
 function seeingColor(arcsec: number, dark: boolean): string {
   const p = Math.min(Math.max(arcsec - 0.8, 0) / (3.0 - 0.8), 1);
   const hue = 130 * (1 - p);
@@ -31,6 +23,21 @@ function seeingColor(arcsec: number, dark: boolean): string {
     return `hsl(${hue}, ${70 - p * 20}%, ${30 + p * 10}%)`;
   } else {
     return `hsl(${hue}, ${65 - p * 15}%, ${40 + p * 10}%)`;
+  }
+}
+
+// Transparent (0%) → sky-blue (50%) → deep blue (100%)
+function precipColor(pop: number, dark: boolean): string {
+  if (pop <= 0) return 'transparent';
+  const p = Math.min(Math.max(pop, 0), 100) / 100;
+  if (dark) {
+    // 0 → transparent, 10 → faint sky, 100 → saturated blue
+    const alpha = 0.15 + p * 0.75;
+    const lightness = 55 - p * 20;
+    return `hsla(205, ${60 + p * 20}%, ${lightness}%, ${alpha})`;
+  } else {
+    const alpha = 0.20 + p * 0.65;
+    return `hsla(210, ${55 + p * 20}%, ${65 - p * 20}%, ${alpha})`;
   }
 }
 
@@ -48,6 +55,26 @@ function useIsDark(): boolean {
   return dark;
 }
 
+// ── Precipitation lookup ───────────────────────────────────────────────────
+// Returns the PoP for a forecast block (date + hour string).
+// The CWA data uses 6-hour windows; we find the window that contains this hour.
+function lookupPop(
+  date: string,
+  hourStr: string,
+  periods: PrecipPeriod[],
+): number | null {
+  if (!periods.length) return null;
+  const hour = parseInt(hourStr, 10);
+  // Build an ISO-ish timestamp for the middle of this hour
+  const ts = new Date(`${date}T${String(hour).padStart(2, '0')}:30:00+08:00`).getTime();
+  for (const p of periods) {
+    const s = new Date(p.start).getTime();
+    const e = new Date(p.end).getTime();
+    if (ts >= s && ts < e) return p.pop;
+  }
+  return null;
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 interface Props {
@@ -55,23 +82,24 @@ interface Props {
   stationDate: string;
   stationTime: string;
   forceDark?: boolean;
+  precipForecast?: PrecipPeriod[];
 }
 
 const BLOCK_W = 24; // px
 
-export default function CloudSeeingGrid({ forecast, stationDate, stationTime, forceDark }: Props) {
+export default function CloudSeeingGrid({
+  forecast, stationDate, stationTime, forceDark, precipForecast = [],
+}: Props) {
   const t = useTranslations('weather');
   const isDark = useIsDark();
   const dark = forceDark ?? isDark;
   const scrollRef = useRef<HTMLDivElement>(null);
   const currentRef = useRef<HTMLDivElement>(null);
 
-  // Use actual wall-clock time so the highlight always reflects "now"
   const nowDate = new Date();
   const currentHour = nowDate.getHours();
   const todayDate = `${nowDate.getFullYear()}-${String(nowDate.getMonth() + 1).padStart(2, '0')}-${String(nowDate.getDate()).padStart(2, '0')}`;
 
-  // Auto-scroll so the current hour is centred
   useEffect(() => {
     if (!scrollRef.current || !currentRef.current) return;
     const container = scrollRef.current;
@@ -92,6 +120,8 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime, fo
       dateGroups.push({ date: e.date, count: 1 });
     }
   }
+
+  const hasPrecip = precipForecast.length > 0;
 
   const rows: {
     key: string;
@@ -158,6 +188,29 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime, fo
         );
       },
     },
+    // Precipitation row — only rendered when CWA data is available
+    ...(hasPrecip ? [{
+      key: 'precip',
+      label: 'Rain%',
+      render: (e: MeteoblueForecastEntry) => {
+        const pop = lookupPop(e.date, e.time, precipForecast);
+        const bg = pop !== null ? precipColor(pop, dark) : 'rgba(255,255,255,0.04)';
+        const label = pop !== null ? `${pop}%` : '—';
+        return (
+          <div
+            className="shrink-0 rounded-sm flex items-center justify-center"
+            style={{ width: BLOCK_W, height: 16, backgroundColor: bg }}
+            title={`Precipitation: ${label}  ${e.date} ${e.time}:00`}
+          >
+            {pop !== null && pop >= 30 && (
+              <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.75)', lineHeight: 1 }}>
+                {pop}
+              </span>
+            )}
+          </div>
+        );
+      },
+    }] : []),
   ];
 
   return (
@@ -189,13 +242,16 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime, fo
         {/* ── Scrollable block grid ── */}
         {/* eslint-disable-next-line react/no-unknown-property */}
         <style>{`.cs-scroll::-webkit-scrollbar { display: none; }`}</style>
-        <div ref={scrollRef} className="overflow-x-auto flex-1 cs-scroll" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
+        <div
+          ref={scrollRef}
+          className="overflow-x-auto flex-1 cs-scroll"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
+        >
           <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
 
             {/* Date banner row */}
             <div className="flex" style={{ gap: 2, height: 16, marginBottom: 2 }}>
               {dateGroups.map((g, gi) => {
-                // width spans all blocks for this day: n*BLOCK_W + (n-1)*gap
                 const w = g.count * BLOCK_W + (g.count - 1) * 2;
                 return (
                   <div
@@ -256,7 +312,7 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime, fo
               })}
             </div>
 
-            {/* Cloud & seeing rows */}
+            {/* Data rows */}
             {rows.map((row) => (
               <div
                 key={row.key}
@@ -313,6 +369,20 @@ export default function CloudSeeingGrid({ forecast, stationDate, stationTime, fo
           />
           <span className="text-[10px]" style={{ color: 'var(--ink-faint)' }}>0.8″ → 3.0″</span>
         </div>
+        {hasPrecip && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Rain%:</span>
+            <div
+              className="rounded-sm"
+              style={{
+                width: 80,
+                height: 10,
+                background: `linear-gradient(to right, ${precipColor(0, dark)}, ${precipColor(50, dark)}, ${precipColor(100, dark)})`,
+              }}
+            />
+            <span className="text-[10px]" style={{ color: 'var(--ink-faint)' }}>0 → 100%</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -4,18 +4,41 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 import { ALLSKY_REFRESH_INTERVAL_MS } from '@/config/observatory';
 
-export default function AllSkyCamera() {
+interface Props {
+  onRefresh?: (time: Date) => void;
+}
+
+async function fetchImageMtime(): Promise<Date | null> {
+  try {
+    const res = await fetch('/api/allsky/meta');
+    if (!res.ok) return null;
+    const data = await res.json() as { mtime?: string };
+    return data.mtime ? new Date(data.mtime) : null;
+  } catch {
+    return null;
+  }
+}
+
+export default function AllSkyCamera({ onRefresh }: Props) {
   const t = useTranslations('weather');
   const [src, setSrc] = useState(`/api/allsky/image?t=${Date.now()}`);
   const [error, setError] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const onRefreshRef = useRef(onRefresh);
+  onRefreshRef.current = onRefresh;
 
+  // Fetch the real file mtime once on mount, then on each refresh cycle.
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
+    fetchImageMtime().then(mtime => { if (mtime) onRefreshRef.current?.(mtime); });
+
+    intervalRef.current = setInterval(async () => {
       setSrc(`/api/allsky/image?t=${Date.now()}`);
       setError(false);
+      const mtime = await fetchImageMtime();
+      if (mtime) onRefreshRef.current?.(mtime);
     }, ALLSKY_REFRESH_INTERVAL_MS);
+
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, []);
 

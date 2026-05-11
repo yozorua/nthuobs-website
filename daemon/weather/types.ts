@@ -75,6 +75,10 @@ export interface WindStats {
   hiWind10MinMs: number | null;
 }
 
+export interface SqmData {
+  sqmMagPerArcsec2: number | null;
+}
+
 export interface MeteoblueForecastEntry {
   date: string;
   time: string;
