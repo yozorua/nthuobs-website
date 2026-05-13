@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
   await mkdir(uploadsDir, { recursive: true });
   await writeFile(join(uploadsDir, filename), buffer);
 
-  const imageUrl = `/avatars/${filename}`;
+  // Include a cache-busting timestamp so browsers always fetch the new file
+  const imageUrl = `/avatars/${filename}?v=${Date.now()}`;
 
   await db.user.update({
     where: { id: session.user.id },

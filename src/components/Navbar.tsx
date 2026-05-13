@@ -22,8 +22,8 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { theme, setTheme } = useTheme();
   const { data: clientSession } = useSession();
-  // Use live client session image so avatar updates immediately after upload
-  const avatarImage = clientSession?.user?.image ?? session?.user?.image;
+  // Prefer server session image (layout reads DB) — updates on router.refresh()
+  const avatarImage = session?.user?.image ?? clientSession?.user?.image;
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const navLinks = [

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import AvatarCropper from '@/components/AvatarCropper';
 
 interface Props {
@@ -12,7 +13,8 @@ interface Props {
 
 export default function ProfileModal({ open, onClose }: Props) {
   const t = useTranslations('profile');
-  const { data: session, update } = useSession();
+  const { data: session } = useSession();
+  const router = useRouter();
 
   const [form, setForm] = useState({
     lastNameZh: '', firstNameZh: '',
@@ -73,8 +75,8 @@ export default function ProfileModal({ open, onClose }: Props) {
     const res = await fetch('/api/auth/avatar', { method: 'POST', body: fd });
     if (res.ok) {
       const { url } = await res.json();
-      setAvatarUrl(`${url}?t=${Date.now()}`);
-      await update();
+      setAvatarUrl(url);
+      router.refresh(); // re-runs layout → reads new DB image → updates Navbar
     } else {
       setAvatarError(t('avatarUploadError'));
     }
