@@ -19,6 +19,7 @@ export default async function DashboardPage({
     where: { id: session.user.id },
     select: { role: true, firstNameEn: true, lastNameEn: true, firstNameZh: true, lastNameZh: true },
   });
+  console.log('[dashboard] session.user.id:', session.user.id, 'session.user.email:', session.user.email, 'dbUser:', dbUser);
   if (!dbUser || dbUser.role === 'PENDING') redirect(`/${locale}/activate`);
 
   const displayName = locale === 'tw'
@@ -27,14 +28,40 @@ export default async function DashboardPage({
 
   const t = await getTranslations({ locale, namespace: 'dashboard' });
 
-  const schedules = await db.schedule.findMany({
-    where: { date: { gte: new Date() } },
-    orderBy: { date: 'asc' },
-    take: 5,
-    include: { user: { select: { name: true } } },
-  });
+  const userId = session.user.id!;
+  const startOfToday = new Date();
+  startOfToday.setUTCHours(0, 0, 0, 0);
+  const dateLocale = locale === 'tw' ? 'zh-TW' : 'en-GB';
 
-  const totalSchedules = await db.schedule.count();
+  const nowTaipei = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  const nowTaipeiMins = nowTaipei.getUTCHours() * 60 + nowTaipei.getUTCMinutes();
+  const todayUTC = startOfToday.toISOString().slice(0, 10);
+
+  const isEndedToday = (ev: { date: Date; endTime: string | null }) => {
+    if (ev.date.toISOString().slice(0, 10) !== todayUTC || !ev.endTime) return false;
+    const [h, m] = ev.endTime.split(':').map(Number);
+    return h * 60 + m <= nowTaipeiMins;
+  };
+
+  const [schedules, totalSchedules, upcomingParticipations, totalEventsJoined] = await Promise.all([
+    db.schedule.findMany({
+      where: { date: { gte: startOfToday } },
+      orderBy: { date: 'asc' },
+      take: 5,
+      include: { user: { select: { name: true } } },
+    }),
+    db.schedule.count(),
+    db.eventParticipation.findMany({
+      where: { userId, event: { date: { gte: startOfToday } } },
+      orderBy: { event: { date: 'asc' } },
+      include: {
+        event: { select: { id: true, title: true, date: true, startTime: true, endTime: true, location: true } },
+      },
+    }),
+    db.eventParticipation.count({ where: { userId } }),
+  ]);
+
+  const upcomingEvents = upcomingParticipations.filter(p => !isEndedToday(p.event)).slice(0, 3);
 
   const roleKeyMap: Record<string, 'roleVisitor' | 'roleMember' | 'roleOperator' | 'roleManager'> = {
     PENDING: 'roleVisitor',
@@ -48,16 +75,17 @@ export default async function DashboardPage({
   const links = t.raw('links') as Array<{ label: string; desc: string }>;
   const linkHrefs = [
     `/${locale}/schedule`,
+    `/${locale}/dashboard/events`,
     `/${locale}/calendar`,
     `/${locale}/visit`,
     'mailto:nthuobs@gmail.com',
   ];
 
   const stats = [
-    { label: t('totalSchedules'), value: totalSchedules },
-    { label: t('upcomingSessions'), value: schedules.length },
     { label: t('role'), value: roleDisplay },
-    { label: t('status'), value: t('active') },
+    { label: t('totalEvents'), value: totalEventsJoined },
+    { label: t('upcomingEventsCount'), value: upcomingEvents.length },
+    { label: t('totalSchedules'), value: totalSchedules },
   ];
 
   return (
@@ -83,38 +111,26 @@ export default async function DashboardPage({
         ))}
       </div>
 
-      {/* Two columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-        {/* Upcoming sessions */}
+      {/* Upcoming Events + Quick Links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
         <div>
           <div className="flex items-center justify-between mb-6">
-            <p className="label">{t('upcomingLabel')}</p>
-            <Link
-              href={`/${locale}/schedule`}
-              className="hover-link text-xs"
-            >
-              {t('viewAll')}
-            </Link>
+            <p className="label">{t('upcomingEventsLabel')}</p>
+            <Link href={`/${locale}/dashboard/events`} className="hover-link text-xs">{t('viewAll')}</Link>
           </div>
-
-          {schedules.length === 0 ? (
-            <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>{t('noSessions')}</p>
+          {upcomingEvents.length === 0 ? (
+            <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>{t('noEvents')}</p>
           ) : (
             <div className="space-y-px" style={{ background: 'var(--line)' }}>
-              {schedules.map((s) => (
-                <div key={s.id} className="px-5 py-4" style={{ background: 'var(--bg)' }}>
-                  <p className="text-sm mb-1" style={{ color: 'var(--ink)' }}>{s.title}</p>
+              {upcomingEvents.map(({ event: ev }) => (
+                <div key={ev.id} className="px-5 py-4" style={{ background: 'var(--bg)' }}>
+                  <p className="text-sm mb-1" style={{ color: 'var(--ink)' }}>{ev.title}</p>
                   <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
-                    {new Date(s.date).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                    {' · '}
-                    {s.startTime}–{s.endTime}
+                    {new Date(ev.date).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {ev.startTime && ev.endTime && <span> · {ev.startTime}–{ev.endTime}</span>}
                   </p>
-                  {s.user.name && (
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>{s.user.name}</p>
+                  {ev.location && (
+                    <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--ink-faint)' }}>{ev.location}</p>
                   )}
                 </div>
               ))}
@@ -122,22 +138,43 @@ export default async function DashboardPage({
           )}
         </div>
 
-        {/* Quick links */}
         <div>
           <p className="label mb-6">{t('quickLinks')}</p>
           <div className="space-y-px" style={{ background: 'var(--line)' }}>
             {links.map((link, i) => (
-              <Link
-                key={link.label}
-                href={linkHrefs[i]}
-                className="hover-bg block px-5 py-4"
-              >
+              <Link key={link.label} href={linkHrefs[i]} className="hover-bg block px-5 py-4">
                 <p className="text-sm mb-0.5" style={{ color: 'var(--ink)' }}>{link.label}</p>
                 <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>{link.desc}</p>
               </Link>
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Upcoming Sessions */}
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <p className="label">{t('upcomingLabel')}</p>
+          <Link href={`/${locale}/schedule`} className="hover-link text-xs">{t('viewAll')}</Link>
+        </div>
+        {schedules.length === 0 ? (
+          <p className="text-sm" style={{ color: 'var(--ink-faint)' }}>{t('noSessions')}</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-px" style={{ background: 'var(--line)' }}>
+            {schedules.map((s) => (
+              <div key={s.id} className="px-5 py-4" style={{ background: 'var(--bg)' }}>
+                <p className="text-sm mb-1" style={{ color: 'var(--ink)' }}>{s.title}</p>
+                <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                  {new Date(s.date).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {' · '}{s.startTime}–{s.endTime}
+                </p>
+                {s.user.name && (
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>{s.user.name}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

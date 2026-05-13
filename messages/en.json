@@ -9,6 +9,7 @@
     "portal": "Portal",
     "admin": "Admin",
     "events": "Events",
+    "manageEvents": "Manage Events",
     "signIn": "Login",
     "activate": "Activate Account",
     "signOut": "Sign out",
@@ -42,12 +43,30 @@
     "visitCta": "Visit Rules & Application",
     "contactUs": "Contact Us",
     "services": [
-      { "title": "Guided Visits", "desc": "Group visits for educational institutions. 10–25 people per group, by appointment, one month in advance." },
-      { "title": "Public Open Days", "desc": "Occasional open days where the public can explore the observatory and interact with our telescopes." },
-      { "title": "Weather Monitoring", "desc": "Real-time sky conditions from our all-sky camera and weather station for observation planning." },
-      { "title": "Astronomical Education", "desc": "Supporting astronomy education at NTHU and serving as a benchmark for Taiwan's public outreach." },
-      { "title": "Observation Sessions", "desc": "Regular sessions using our 25 cm refractor, 16-inch Cassegrain, and Celestron 8 telescopes." },
-      { "title": "News & Gallery", "desc": "Updates on observations, events, and astronomical imagery captured at the observatory." }
+      {
+        "title": "Guided Visits",
+        "desc": "Group visits for educational institutions. 10–25 people per group, by appointment, one month in advance."
+      },
+      {
+        "title": "Public Open Days",
+        "desc": "Occasional open days where the public can explore the observatory and interact with our telescopes."
+      },
+      {
+        "title": "Weather Monitoring",
+        "desc": "Real-time sky conditions from our all-sky camera and weather station for observation planning."
+      },
+      {
+        "title": "Astronomical Education",
+        "desc": "Supporting astronomy education at NTHU and serving as a benchmark for Taiwan's public outreach."
+      },
+      {
+        "title": "Observation Sessions",
+        "desc": "Regular sessions using our 25 cm refractor, 16-inch Cassegrain, and Celestron 8 telescopes."
+      },
+      {
+        "title": "News & Gallery",
+        "desc": "Updates on observations, events, and astronomical imagery captured at the observatory."
+      }
     ]
   },
   "about": {
@@ -71,27 +90,68 @@
     "timelineLabel": "Founding Timeline · 1971",
     "timelineNote": "Source: Interview of 黃銘爵 by 謝立宜, Republic of China Year 69 (1980)",
     "timeline": [
-      { "date": "Early March", "event": "Professor Qiu Hongyi returns from the US" },
-      { "date": "Mid April", "event": "Grinding of the 8-inch Newtonian mirror begins" },
-      { "date": "Mid July", "event": "8-inch Newtonian telescope and grinding machine completed" },
-      { "date": "Early August", "event": "Preparations for the 16-inch Cassegrain begin" },
-      { "date": "Late August", "event": "8-inch finder completed; 16-inch mirror arrives" },
-      { "date": "Late November", "event": "16-inch fully installed and calibrated; founding meeting held" }
+      {
+        "date": "Early March",
+        "event": "Professor Qiu Hongyi returns from the US"
+      },
+      {
+        "date": "Mid April",
+        "event": "Grinding of the 8-inch Newtonian mirror begins"
+      },
+      {
+        "date": "Mid July",
+        "event": "8-inch Newtonian telescope and grinding machine completed"
+      },
+      {
+        "date": "Early August",
+        "event": "Preparations for the 16-inch Cassegrain begin"
+      },
+      {
+        "date": "Late August",
+        "event": "8-inch finder completed; 16-inch mirror arrives"
+      },
+      {
+        "date": "Late November",
+        "event": "16-inch fully installed and calibrated; founding meeting held"
+      }
     ],
     "photosLabel": "Historical Record",
     "photos": [
-      { "caption": "Former observatory on the old Physics Building." },
-      { "caption": "The original dome, constructed in 1971." },
-      { "caption": "16-inch handmade Cassegrain reflector with open fork mount." },
-      { "caption": "Two Celestron 8 telescopes imported from the US." }
+      {
+        "caption": "Former observatory on the old Physics Building."
+      },
+      {
+        "caption": "The original dome, constructed in 1971."
+      },
+      {
+        "caption": "16-inch handmade Cassegrain reflector with open fork mount."
+      },
+      {
+        "caption": "Two Celestron 8 telescopes imported from the US."
+      }
     ],
     "equipmentLabel": "Equipment",
     "equipment": [
-      { "name": "25 cm Refractor", "detail": "The largest aperture refracting telescope in Taiwan. Permanently mounted." },
-      { "name": "16-inch Cassegrain Reflector", "detail": "Handmade by students in 1971. Open fork equatorial mount." },
-      { "name": "Celestron 8 (×2)", "detail": "Schmidt-Cassegrain telescopes imported from the United States." },
-      { "name": "All-Sky Camera", "detail": "Full-sky imaging for real-time cloud cover and weather monitoring." },
-      { "name": "Weather Station", "detail": "Monitors temperature, humidity, wind speed, pressure, and rainfall." }
+      {
+        "name": "25 cm Refractor",
+        "detail": "The largest aperture refracting telescope in Taiwan. Permanently mounted."
+      },
+      {
+        "name": "16-inch Cassegrain Reflector",
+        "detail": "Handmade by students in 1971. Open fork equatorial mount."
+      },
+      {
+        "name": "Celestron 8 (×2)",
+        "detail": "Schmidt-Cassegrain telescopes imported from the United States."
+      },
+      {
+        "name": "All-Sky Camera",
+        "detail": "Full-sky imaging for real-time cloud cover and weather monitoring."
+      },
+      {
+        "name": "Weather Station",
+        "detail": "Monitors temperature, humidity, wind speed, pressure, and rainfall."
+      }
     ],
     "refsLabel": "References"
   },
@@ -185,10 +245,10 @@
     "label": "Member Portal",
     "welcome": "Welcome",
     "totalSchedules": "Total Schedules",
+    "totalEvents": "Events Joined",
     "upcomingSessions": "Upcoming Sessions",
+    "upcomingEventsCount": "Upcoming Events",
     "role": "Your Role",
-    "status": "Observatory",
-    "active": "Active",
     "roleVisitor": "Visitor",
     "roleMember": "Member",
     "roleOperator": "Operator",
@@ -196,13 +256,53 @@
     "upcomingLabel": "Upcoming Sessions",
     "viewAll": "View all →",
     "noSessions": "No upcoming sessions scheduled.",
+    "upcomingEventsLabel": "Upcoming Events",
+    "noEvents": "No registered events.",
     "quickLinks": "Quick Links",
     "links": [
-      { "label": "Schedule Management", "desc": "View and manage observation schedules" },
-      { "label": "Public Calendar", "desc": "Check upcoming public events" },
-      { "label": "Visit Registration", "desc": "Rules and application form" },
-      { "label": "Contact", "desc": "nthuobs@gmail.com" }
+      {
+        "label": "Schedule Management",
+        "desc": "View and manage observation schedules"
+      },
+      {
+        "label": "Events",
+        "desc": "View and register for upcoming events"
+      },
+      {
+        "label": "Public Calendar",
+        "desc": "Check upcoming public events"
+      },
+      {
+        "label": "Visit Registration",
+        "desc": "Rules and application form"
+      },
+      {
+        "label": "Contact",
+        "desc": "nthuobs@gmail.com"
+      }
     ]
+  },
+  "events": {
+    "label": "Member Portal",
+    "title": "Events",
+    "back": "Dashboard",
+    "upcomingTab": "Upcoming",
+    "historyTab": "My History",
+    "noUpcoming": "No upcoming events.",
+    "noHistory": "You have not participated in any events yet.",
+    "participate": "Register",
+    "withdraw": "Withdraw",
+    "full": "Full",
+    "registered": "Participated",
+    "participants": "registered",
+    "details": "Details",
+    "hideDetails": "Hide",
+    "time": "Time",
+    "location": "Location",
+    "estimatedVisitors": "Est. Visitors",
+    "alsoJoining": "Members joining",
+    "noOthers": "No one else registered yet.",
+    "loadingParticipants": "Loading…"
   },
   "schedule": {
     "label": "Member Portal",
@@ -233,6 +333,46 @@
     "saving": "Saving…",
     "cancel": "Cancel"
   },
+  "adminEvents": {
+    "breadcrumb": "Administration · Events",
+    "title": "Event Management",
+    "back": "Back",
+    "newEvent": "+ New Event",
+    "colTitle": "Title",
+    "colDateTime": "Date & Time",
+    "colLocation": "Location",
+    "colVisibility": "Visibility",
+    "colParticipants": "Participants",
+    "edit": "Edit",
+    "delete": "Delete",
+    "public": "Public",
+    "private": "Private",
+    "estVisitorsRow": "Est. visitors: {n}",
+    "modalCreate": "New Event",
+    "modalEdit": "Edit Event",
+    "fieldTitle": "Title *",
+    "fieldDate": "Date *",
+    "fieldStartTime": "Start Time",
+    "fieldEndTime": "End Time",
+    "fieldLocation": "Location",
+    "fieldMaxMembers": "Max Members",
+    "fieldEstVisitors": "Est. Visitors",
+    "fieldDescription": "Description",
+    "fieldPublic": "Show on public calendar",
+    "unlimited": "Unlimited",
+    "save": "Save",
+    "saving": "Saving…",
+    "cancel": "Cancel",
+    "noEvents": "No events yet.",
+    "deleteConfirm": "Delete this event?",
+    "participantsTitle": "Participants",
+    "participantsClose": "Close",
+    "participantsLoading": "Loading…",
+    "participantsEmpty": "No participants yet.",
+    "footerRegistered": "{n} registered",
+    "footerMax": "{n} max",
+    "footerEstVisitors": "{n} est. visitors"
+  },
   "admin": {
     "label": "Administration",
     "title": "Admin Panel",
@@ -240,11 +380,23 @@
     "pending": "Pending",
     "members": "Members",
     "admins": "Admins",
+    "eventManagement": "Event Management",
+    "eventManagementDesc": "Create and manage events shown on the calendar.",
     "userManagement": "User Management",
     "colName": "Name",
     "colEmail": "Email",
     "colJoined": "Joined",
-    "colRole": "Role"
+    "colRole": "Role",
+    "colActions": "",
+    "you": "(you)",
+    "deleteConfirm": "Delete this user? This cannot be undone.",
+    "delete": "Delete",
+    "deleting": "…",
+    "rolePending": "Pending",
+    "roleMember": "Member",
+    "roleOperator": "Operator",
+    "roleManager": "Manager",
+    "roleAdmin": "Admin"
   },
   "activate": {
     "label": "Account Activation",
@@ -273,50 +425,64 @@
     "pageTitle": "Live Weather",
     "lastUpdate": "Last Update",
     "stationLocation": "Lat: 24° 47′ 39″ N · Lon: 120° 59′ 31″ E · Elev: 70 m",
-
     "outdoorTemp": "Outdoor Temperature",
-    "indoorTemp": "Indoor Temperature",
+    "indoorTemp": "Temperature (Server Room)",
     "outdoorHumidity": "Outdoor Humidity",
-    "indoorHumidity": "Indoor Humidity",
+    "indoorHumidity": "Humidity (Server Room)",
     "barometer": "Barometer",
     "condition": "Condition",
-
     "wind": "Wind",
     "windBeaufort": "Beaufort: force {force}",
     "windGust": "Gust: {speed} m/s (force {force})",
     "windAvg1m": "Avg. (1 min): {speed} m/s",
     "windAvg10m": "Avg. (10 min): {speed} m/s",
     "windHigh10m": "High (10 min): {speed} m/s",
-
     "dailyRain": "Daily Rain",
     "rainRate": "Rate: {rate} mm/hr",
     "rainLastHour": "Last 1 hr: {amount} mm",
     "rainLast15min": "Last 15 min: {amount} mm",
-
     "sunMoon": "Sun & Moon",
     "sunrise": "Sunrise",
     "sunset": "Sunset",
     "moonrise": "Moonrise",
     "moonset": "Moonset",
     "moonPhase": "Phase",
-
     "cwaForecast": "CWA Forecast",
     "cwaLoading": "Loading forecast…",
     "cwaError": "Forecast unavailable",
-
     "cloudSeeing": "Cloud & Seeing Forecast",
     "cloudHigh": "High Cloud",
     "cloudMid": "Mid Cloud",
     "cloudLow": "Low Cloud",
     "seeing": "Seeing",
-
+    "sqmStats": "avg {avg} · max {max} · min {min}",
+    "illuminated": "{pct}% illuminated",
+    "moonPhaseNames": {
+      "NewMoon": "New Moon",
+      "WaxingCrescent": "Waxing Crescent",
+      "FirstQuarter": "First Quarter",
+      "WaxingGibbous": "Waxing Gibbous",
+      "FullMoon": "Full Moon",
+      "WaningGibbous": "Waning Gibbous",
+      "LastQuarter": "Last Quarter",
+      "WaningCrescent": "Waning Crescent"
+    },
+    "cloudLegend": "Cloud",
+    "precipPct": "Rain%",
     "dataTrends": "Data Trends",
-
+    "seriesOutTemp": "Temp. (Outdoor)",
+    "seriesInTemp": "Temp. (Server Room)",
+    "seriesOutHumid": "Humid. (Outdoor)",
+    "seriesInHumid": "Humid. (Server Room)",
+    "seriesBaro": "Pressure",
+    "seriesWind": "Wind",
+    "seriesRain": "Rain",
+    "seriesSqm": "SQM",
     "windMap": "Wind Map",
     "satellite": "Satellite",
     "allSkyCamera": "All-Sky Camera",
-    "allSkyCameraPlaceholder": "All-sky camera coming soon",
-
+    "allSkyCameraPlaceholder": "Waiting for All-sky camera image",
+    "dew": "Dew",
     "conditions": {
       "Clear": "Clear",
       "PartlyCloudy": "Partly Cloudy",

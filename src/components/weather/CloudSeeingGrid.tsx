@@ -191,23 +191,17 @@ export default function CloudSeeingGrid({
     // Precipitation row — only rendered when CWA data is available
     ...(hasPrecip ? [{
       key: 'precip',
-      label: 'Rain%',
+      label: t('precipPct'),
       render: (e: MeteoblueForecastEntry) => {
         const pop = lookupPop(e.date, e.time, precipForecast);
         const bg = pop !== null ? precipColor(pop, dark) : 'rgba(255,255,255,0.04)';
         const label = pop !== null ? `${pop}%` : '—';
         return (
           <div
-            className="shrink-0 rounded-sm flex items-center justify-center"
+            className="shrink-0 rounded-sm"
             style={{ width: BLOCK_W, height: 16, backgroundColor: bg }}
             title={`Precipitation: ${label}  ${e.date} ${e.time}:00`}
-          >
-            {pop !== null && pop >= 30 && (
-              <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.75)', lineHeight: 1 }}>
-                {pop}
-              </span>
-            )}
-          </div>
+          />
         );
       },
     }] : []),
@@ -224,13 +218,12 @@ export default function CloudSeeingGrid({
           {rows.map((row) => (
             <div
               key={row.key}
-              className="flex flex-col justify-center"
-              style={{ height: 16, marginBottom: row.key === 'low' ? 6 : 0 }}
+              style={{ marginBottom: row.key === 'low' ? 6 : 0 }}
             >
-              <span className="text-xs leading-none" style={{ color: 'var(--ink-faint)', whiteSpace: 'nowrap' }}>
+              <span style={{ display: 'block', lineHeight: '16px', fontSize: 12, color: 'var(--ink-faint)', whiteSpace: 'nowrap' }}>
                 {row.label}
                 {row.subLabel && (
-                  <span className="ml-1 text-[10px]" style={{ color: 'var(--ink-faint)', opacity: 0.55 }}>
+                  <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.55 }}>
                     {row.subLabel}
                   </span>
                 )}
@@ -247,10 +240,10 @@ export default function CloudSeeingGrid({
           className="overflow-x-auto flex-1 cs-scroll"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
         >
-          <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 2, verticalAlign: 'top' }}>
 
             {/* Date banner row */}
-            <div className="flex" style={{ gap: 2, height: 16, marginBottom: 2 }}>
+            <div className="flex" style={{ gap: 2, height: 16 }}>
               {dateGroups.map((g, gi) => {
                 const w = g.count * BLOCK_W + (g.count - 1) * 2;
                 return (
@@ -327,6 +320,7 @@ export default function CloudSeeingGrid({
                       key={i}
                       style={{
                         width: BLOCK_W,
+                        height: 16,
                         flexShrink: 0,
                         outline: isCurrent ? '1px solid var(--ink-muted)' : undefined,
                         outlineOffset: -1,
@@ -346,7 +340,7 @@ export default function CloudSeeingGrid({
       {/* Legend */}
       <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Cloud:</span>
+          <span className="text-xs leading-none" style={{ color: 'var(--ink-faint)' }}>{t('cloudLegend')}:</span>
           <div
             className="rounded-sm"
             style={{
@@ -355,10 +349,10 @@ export default function CloudSeeingGrid({
               background: `linear-gradient(to right, ${cloudColor(0, dark)}, ${cloudColor(50, dark)}, ${cloudColor(100, dark)})`,
             }}
           />
-          <span className="text-[10px]" style={{ color: 'var(--ink-faint)' }}>0 → 100%</span>
+          <span className="text-[10px] leading-none" style={{ color: 'var(--ink-faint)' }}>0 → 100%</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Seeing:</span>
+          <span className="text-xs leading-none" style={{ color: 'var(--ink-faint)' }}>{t('seeing')}:</span>
           <div
             className="rounded-sm"
             style={{
@@ -367,11 +361,11 @@ export default function CloudSeeingGrid({
               background: `linear-gradient(to right, ${seeingColor(0.8, dark)}, ${seeingColor(1.9, dark)}, ${seeingColor(3.0, dark)})`,
             }}
           />
-          <span className="text-[10px]" style={{ color: 'var(--ink-faint)' }}>0.8″ → 3.0″</span>
+          <span className="text-[10px] leading-none" style={{ color: 'var(--ink-faint)' }}>0.8″ → 3.0″</span>
         </div>
         {hasPrecip && (
           <div className="flex items-center gap-2">
-            <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>Rain%:</span>
+            <span className="text-xs leading-none" style={{ color: 'var(--ink-faint)' }}>{t('precipPct')}:</span>
             <div
               className="rounded-sm"
               style={{
@@ -380,7 +374,7 @@ export default function CloudSeeingGrid({
                 background: `linear-gradient(to right, ${precipColor(0, dark)}, ${precipColor(50, dark)}, ${precipColor(100, dark)})`,
               }}
             />
-            <span className="text-[10px]" style={{ color: 'var(--ink-faint)' }}>0 → 100%</span>
+            <span className="text-[10px] leading-none" style={{ color: 'var(--ink-faint)' }}>0 → 100%</span>
           </div>
         )}
       </div>

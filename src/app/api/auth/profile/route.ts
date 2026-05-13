@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });
   }
 
-  await db.user.update({
+  const updated = await db.user.update({
     where: { id: session.user.id },
     data: {
       firstNameEn: firstNameEn.trim(),
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       role: 'MEMBER',
     },
   });
+  console.log('[profile POST] updated user id:', updated.id, 'role:', updated.role);
 
   return NextResponse.json({ ok: true });
 }

@@ -12,7 +12,7 @@ const MONTHS_EN = [
 ];
 const MONTHS_TW = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
 
-type Entry = { id: string; title: string; date: string; description?: string; location?: string; type: 'event' };
+type Entry = { id: string; title: string; date: string; description?: string; location?: string; startTime?: string; endTime?: string; type: 'event' };
 
 export default function CalendarClient({ entries }: { entries: Entry[] }) {
   const t = useTranslations('calendar');
@@ -24,7 +24,7 @@ export default function CalendarClient({ entries }: { entries: Entry[] }) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(today.getDate());
 
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -154,6 +154,13 @@ export default function CalendarClient({ entries }: { entries: Entry[] }) {
                   {selectedEntries.map(entry => (
                     <div key={entry.id} className="pb-3" style={{ borderBottom: '1px solid var(--line)' }}>
                       <p className="text-sm font-light" style={{ color: 'var(--ink)' }}>{entry.title}</p>
+                      {(entry.startTime || entry.endTime) && (
+                        <p className="text-xs mt-0.5" style={{ color: 'var(--ink-muted)' }}>
+                          {entry.startTime && entry.endTime
+                            ? `${entry.startTime}–${entry.endTime}`
+                            : entry.startTime ?? entry.endTime}
+                        </p>
+                      )}
                       {entry.location && (
                         <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>{entry.location}</p>
                       )}

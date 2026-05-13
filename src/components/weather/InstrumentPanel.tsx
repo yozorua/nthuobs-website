@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { WeatherReading } from './types';
 
 // ── SQM data shape ─────────────────────────────────────────────────────────
@@ -210,6 +211,7 @@ interface Props {
 export default function InstrumentPanel({ reading, condition, conditionKey, isNight }: Props) {
   const r = reading;
   const sqm = useSqm();
+  const t = useTranslations('weather');
 
   return (
     <div style={{
@@ -262,7 +264,7 @@ export default function InstrumentPanel({ reading, condition, conditionKey, isNi
               </div>
               <div className="text-xs mt-1.5" style={{ color: 'var(--ink-faint)' }}>
                 H {fmtInt(r?.outsideHumidityDayHigh ?? null)}% · L {fmtInt(r?.outsideHumidityDayLow ?? null)}%
-                {r?.dewpointC != null && ` · Dew ${fmt(r.dewpointC)}°C`}
+                {r?.dewpointC != null && ` · ${t('dew')} ${fmt(r.dewpointC)}°C`}
               </div>
             </div>
           </div>
@@ -272,19 +274,19 @@ export default function InstrumentPanel({ reading, condition, conditionKey, isNi
       {/* ── Indoor metrics row ── */}
       <div className="flex flex-wrap" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
         <IndoorCell
-          label="In Temp"
+          label={t('indoorTemp')}
           value={r?.insideTempC != null ? r.insideTempC.toFixed(1) : '—'}
           unit="°C"
           hiLo={`H ${fmt(r?.inTempDayHighC ?? null)}° · L ${fmt(r?.inTempDayLowC ?? null)}°`}
         />
         <IndoorCell
-          label="In Humid"
+          label={t('indoorHumidity')}
           value={fmtInt(r?.insideHumidityPercent ?? null)}
           unit="%"
           hiLo={`H ${fmtInt(r?.insideHumidityDayHigh ?? null)}% · L ${fmtInt(r?.insideHumidityDayLow ?? null)}%`}
         />
         <IndoorCell
-          label="Pressure"
+          label={t('barometer')}
           value={r?.barometerHpa != null ? r.barometerHpa.toFixed(1) : '—'}
           unit="hPa"
           hiLo={`H ${fmt(r?.baroDayHighHpa ?? null, 1)} hPa · L ${fmt(r?.baroDayLowHpa ?? null, 1)} hPa`}
@@ -295,7 +297,7 @@ export default function InstrumentPanel({ reading, condition, conditionKey, isNi
           unit="mag/arcsec²"
           hiLo={
             sqm.avg != null
-              ? `avg ${sqm.avg.toFixed(2)} · max ${sqm.max?.toFixed(2) ?? '—'} · min ${sqm.min?.toFixed(2) ?? '—'}`
+              ? t('sqmStats', { avg: sqm.avg.toFixed(2), max: sqm.max?.toFixed(2) ?? '—', min: sqm.min?.toFixed(2) ?? '—' })
               : '—'
           }
         />

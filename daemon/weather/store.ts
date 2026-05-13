@@ -18,7 +18,8 @@ function fetchSqm(): Promise<SqmData> {
         try {
           const data = JSON.parse(raw) as Record<string, unknown>;
           const sqmData = data?.camera_sqm_mag_data as Record<string, number> | undefined;
-          resolve({ sqmMagPerArcsec2: sqmData?.last ?? null });
+          const last = sqmData?.last;
+          resolve({ sqmMagPerArcsec2: last != null ? Math.round(last * 100) / 100 : null });
         } catch {
           resolve({ sqmMagPerArcsec2: null });
         }

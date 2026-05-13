@@ -20,7 +20,18 @@ export default async function AdminPage({
 
   const users = await db.user.findMany({
     orderBy: { createdAt: 'asc' },
-    select: { id: true, email: true, name: true, image: true, role: true, createdAt: true },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      image: true,
+      role: true,
+      createdAt: true,
+      firstNameEn: true,
+      lastNameEn: true,
+      firstNameZh: true,
+      lastNameZh: true,
+    },
   });
 
   const counts = {
@@ -61,8 +72,8 @@ export default async function AdminPage({
       {/* Sections */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-px mb-14" style={{ background: 'var(--line)' }}>
         <Link href={`/${locale}/admin/events`} className="hover-bg block px-6 py-5" style={{ background: 'var(--bg)' }}>
-          <p className="text-sm mb-1" style={{ color: 'var(--ink)' }}>Event Management</p>
-          <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>Create and manage public events shown on the calendar.</p>
+          <p className="text-sm mb-1" style={{ color: 'var(--ink)' }}>{t('eventManagement')}</p>
+          <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>{t('eventManagementDesc')}</p>
         </Link>
       </div>
 
@@ -71,18 +82,17 @@ export default async function AdminPage({
         <p className="label mb-6">{t('userManagement')}</p>
 
         <div style={{ border: '1px solid var(--line)' }}>
-          {/* Table header */}
           <div
-            className="hidden md:grid grid-cols-[1fr_1fr_160px_120px] gap-4 px-5 py-3 text-xs tracking-ultra uppercase"
+            className="hidden md:grid grid-cols-[1fr_1fr_160px_120px_60px] gap-4 px-5 py-3 text-xs tracking-ultra uppercase"
             style={{ color: 'var(--ink-faint)', borderBottom: '1px solid var(--line)', background: 'var(--bg-warm)' }}
           >
             <span>{t('colName')}</span>
             <span>{t('colEmail')}</span>
             <span>{t('colJoined')}</span>
             <span>{t('colRole')}</span>
+            <span>{t('colActions')}</span>
           </div>
 
-          {/* Rows */}
           <div className="divide-y" style={{ borderColor: 'var(--line)' }}>
             {users.map((user) => (
               <UserRoleRow key={user.id} user={user} currentUserId={(session.user as { id: string }).id} />

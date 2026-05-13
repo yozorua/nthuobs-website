@@ -10,12 +10,14 @@ function moonPhaseNow(): number {
   return ((elapsed % LUNAR_PERIOD_MS) + LUNAR_PERIOD_MS) % LUNAR_PERIOD_MS / LUNAR_PERIOD_MS;
 }
 
-function moonPhaseName(phase: number): string {
-  const names = [
-    'New Moon', 'Waxing Crescent', 'First Quarter', 'Waxing Gibbous',
-    'Full Moon', 'Waning Gibbous', 'Last Quarter', 'Waning Crescent',
+type MoonPhaseKey = 'NewMoon' | 'WaxingCrescent' | 'FirstQuarter' | 'WaxingGibbous' | 'FullMoon' | 'WaningGibbous' | 'LastQuarter' | 'WaningCrescent';
+
+function moonPhaseKey(phase: number): MoonPhaseKey {
+  const keys: MoonPhaseKey[] = [
+    'NewMoon', 'WaxingCrescent', 'FirstQuarter', 'WaxingGibbous',
+    'FullMoon', 'WaningGibbous', 'LastQuarter', 'WaningCrescent',
   ];
-  return names[Math.round(phase * 8) % 8];
+  return keys[Math.round(phase * 8) % 8]!;
 }
 
 function moonIllumination(phase: number): number {
@@ -224,7 +226,7 @@ export default function SunMoonCard({ reading }: { reading: WeatherReading | nul
   const t = useTranslations('weather');
   const phase = moonPhaseNow();
   const illum = moonIllumination(phase);
-  const phaseName = moonPhaseName(phase);
+  const phaseKey = moonPhaseKey(phase);
 
   return (
     <div className="card p-5 h-full">
@@ -234,9 +236,9 @@ export default function SunMoonCard({ reading }: { reading: WeatherReading | nul
       <div className="flex items-center gap-4 mb-4">
         <MoonPhaseSVG phase={phase} size={52} />
         <div>
-          <div className="text-sm font-light" style={{ color: 'var(--ink)' }}>{phaseName}</div>
+          <div className="text-sm font-light" style={{ color: 'var(--ink)' }}>{t(`moonPhaseNames.${phaseKey}`)}</div>
           <div className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>
-            {illum}% illuminated
+            {t('illuminated', { pct: illum })}
           </div>
         </div>
       </div>

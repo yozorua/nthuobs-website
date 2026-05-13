@@ -56,6 +56,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const role = (session?.user as { role?: string })?.role;
   const isAdmin = role === 'ADMIN';
   const isManager = role === 'MANAGER';
+  const isMember = ['MEMBER', 'OPERATOR', 'MANAGER', 'ADMIN'].includes(role ?? '');
 
   const roleDisplayKey: Record<string, 'roleVisitor' | 'roleMember' | 'roleOperator' | 'roleManager'> = {
     PENDING: 'roleVisitor',
@@ -211,6 +212,16 @@ export default function Navbar({ session, locale }: NavbarProps) {
                   >
                     {t('portal')}
                   </Link>
+                  {isMember && (
+                    <Link
+                      href={`/${locale}/dashboard/events`}
+                      onClick={() => setUserMenuOpen(false)}
+                      className="hover-bg block px-4 py-2 text-sm tracking-wide"
+                      style={{ color: 'var(--ink-secondary)' }}
+                    >
+                      {t('events')}
+                    </Link>
+                  )}
                   {isAdmin && (
                     <Link
                       href={`/${locale}/admin`}
@@ -228,7 +239,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
                       className="hover-bg block px-4 py-2 text-sm tracking-wide"
                       style={{ color: 'var(--ink-secondary)' }}
                     >
-                      {t('events')}
+                      {t('manageEvents')}
                     </Link>
                   )}
                   <div style={{ borderTop: '1px solid var(--line)', marginTop: '0.25rem' }}>
@@ -309,11 +320,14 @@ export default function Navbar({ session, locale }: NavbarProps) {
                   <span className="text-sm" style={{ color: 'var(--ink-secondary)' }}>{session.user.name}</span>
                 </div>
                 <Link href={`/${locale}/dashboard`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('portal')}</Link>
+                {isMember && (
+                  <Link href={`/${locale}/dashboard/events`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('events')}</Link>
+                )}
                 {isAdmin && (
                   <Link href={`/${locale}/admin`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('admin')}</Link>
                 )}
                 {isManager && (
-                  <Link href={`/${locale}/admin/events`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('events')}</Link>
+                  <Link href={`/${locale}/admin/events`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('manageEvents')}</Link>
                 )}
                 <button onClick={() => signOut()} className="text-left text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('signOut')}</button>
               </div>

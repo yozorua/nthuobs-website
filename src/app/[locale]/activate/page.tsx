@@ -9,7 +9,7 @@ export default function ActivatePage() {
   const t = useTranslations('activate');
   const params = useParams();
   const locale = params.locale as string;
-  const { data: session, update } = useSession();
+  const { data: session } = useSession();
 
   const [step, setStep] = useState<'passkey' | 'profile'>('passkey');
 
@@ -51,7 +51,6 @@ export default function ActivatePage() {
       body: JSON.stringify(form),
     });
     if (res.ok) {
-      await update();
       window.location.href = `/${locale}/dashboard`;
     } else {
       setProfileStatus('error');

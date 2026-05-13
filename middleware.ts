@@ -24,9 +24,6 @@ export default async function middleware(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.redirect(new URL(`/${locale}`, request.url));
     }
-    if (role === 'PENDING') {
-      return NextResponse.redirect(new URL(`/${locale}/activate`, request.url));
-    }
     if (isAdminPath) {
       const isEventsPath = pathnameWithoutLocale.startsWith('/admin/events');
       const canAccessEvents = role === 'ADMIN' || role === 'MANAGER';

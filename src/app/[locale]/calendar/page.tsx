@@ -13,7 +13,7 @@ export default async function CalendarPage({
   const events = await db.event.findMany({
     where: { isPublic: true },
     orderBy: { date: 'asc' },
-    select: { id: true, title: true, description: true, date: true, location: true },
+    select: { id: true, title: true, description: true, date: true, location: true, startTime: true, endTime: true },
   });
 
   const entries = events.map(e => ({
@@ -22,6 +22,8 @@ export default async function CalendarPage({
     date: e.date.toISOString(),
     description: e.description ?? undefined,
     location: e.location ?? undefined,
+    startTime: e.startTime ?? undefined,
+    endTime: e.endTime ?? undefined,
     type: 'event' as const,
   }));
 

@@ -19,7 +19,7 @@ const HOURS_OPTIONS = [
 
 interface SeriesOption {
   key: string;
-  label: string;
+  labelKey: string;
   color: string;
   yAxisId: string;
   unit: string;
@@ -27,14 +27,14 @@ interface SeriesOption {
 }
 
 const SERIES_OPTIONS: SeriesOption[] = [
-  { key: 'outTemp',  label: 'Out Temp',  color: '#60a5fa', yAxisId: 'temp',  unit: '°C' },
-  { key: 'inTemp',   label: 'In Temp',   color: '#93c5fd', yAxisId: 'temp',  unit: '°C', dashed: true },
-  { key: 'outHumid', label: 'Out Humid', color: '#34d399', yAxisId: 'humid', unit: '%'   },
-  { key: 'inHumid',  label: 'In Humid',  color: '#6ee7b7', yAxisId: 'humid', unit: '%', dashed: true },
-  { key: 'baro',     label: 'Pressure',  color: '#c084fc', yAxisId: 'baro',  unit: 'hPa' },
-  { key: 'wind',     label: 'Wind',      color: '#fbbf24', yAxisId: 'wind',  unit: 'm/s' },
-  { key: 'rain',     label: 'Rain',      color: '#38bdf8', yAxisId: 'rain',  unit: 'mm'  },
-  { key: 'sqm',      label: 'SQM',       color: '#a78bfa', yAxisId: 'sqm',   unit: 'mag' },
+  { key: 'outTemp',  labelKey: 'seriesOutTemp',  color: '#60a5fa', yAxisId: 'temp',  unit: '°C' },
+  { key: 'inTemp',   labelKey: 'seriesInTemp',   color: '#93c5fd', yAxisId: 'temp',  unit: '°C', dashed: true },
+  { key: 'outHumid', labelKey: 'seriesOutHumid', color: '#34d399', yAxisId: 'humid', unit: '%'   },
+  { key: 'inHumid',  labelKey: 'seriesInHumid',  color: '#6ee7b7', yAxisId: 'humid', unit: '%', dashed: true },
+  { key: 'baro',     labelKey: 'seriesBaro',     color: '#c084fc', yAxisId: 'baro',  unit: 'hPa' },
+  { key: 'wind',     labelKey: 'seriesWind',     color: '#fbbf24', yAxisId: 'wind',  unit: 'm/s' },
+  { key: 'rain',     labelKey: 'seriesRain',     color: '#38bdf8', yAxisId: 'rain',  unit: 'mm'  },
+  { key: 'sqm',      labelKey: 'seriesSqm',      color: '#a78bfa', yAxisId: 'sqm',   unit: 'mag' },
 ];
 
 const DEFAULT_SERIES = new Set(['outTemp', 'outHumid']);
@@ -157,9 +157,10 @@ interface TooltipProps {
   payload?: Array<{ name: string; value: number | null; color: string }>;
   label?: string;
   hours: number;
+  labelMap: Record<string, string>;
 }
 
-function ChartTooltip({ active, payload, label, hours }: TooltipProps) {
+function ChartTooltip({ active, payload, label, hours, labelMap }: TooltipProps) {
   if (!active || !payload?.length || !label) return null;
   const visible = payload.filter(p => p.value != null);
   if (!visible.length) return null;
@@ -198,7 +199,7 @@ function ChartTooltip({ active, payload, label, hours }: TooltipProps) {
             lineHeight: 1.7,
           }}>
             <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10 }}>
-              {s?.label ?? p.name}
+              {labelMap[p.name] ?? p.name}
             </span>
             <span style={{ color: p.color, fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
               {val} {s?.unit}
@@ -213,6 +214,7 @@ function ChartTooltip({ active, payload, label, hours }: TooltipProps) {
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function WeatherChart({ data, hours, onHoursChange, sunrise, sunset, loading }: Props) {
   const t = useTranslations('weather');
+  const labelMap = Object.fromEntries(SERIES_OPTIONS.map(s => [s.key, t(s.labelKey as Parameters<typeof t>[0])]));
   const [activeSeries, setActiveSeries] = useState<Set<string>>(DEFAULT_SERIES);
 
   const toggleSeries = (key: string) => {
@@ -321,7 +323,7 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
                 letterSpacing: '0.04em',
               }}
             >
-              {s.label}
+              {labelMap[s.key]}
             </button>
           );
         })}
@@ -418,6 +420,7 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
                     payload={props.payload as unknown as TooltipProps['payload']}
                     label={props.label as string}
                     hours={hours}
+                    labelMap={labelMap}
                   />
                 )}
                 cursor={{ stroke: 'rgba(255,255,255,0.12)', strokeWidth: 1 }}
