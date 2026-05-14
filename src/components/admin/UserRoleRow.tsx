@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
 
 const ROLES = ['PENDING', 'MEMBER', 'OPERATOR', 'MANAGER', 'ADMIN'] as const;
@@ -95,7 +94,8 @@ export default function UserRoleRow({ user, currentUserId }: Props) {
       {/* Name */}
       <div className="flex items-center gap-2.5">
         {user.image ? (
-          <Image src={user.image} alt={user.name ?? ''} width={24} height={24} className="rounded-full shrink-0" />
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={user.image} alt={user.name ?? ''} width={24} height={24} className="rounded-full shrink-0" style={{ objectFit: 'cover' }} />
         ) : (
           <div className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-xs" style={{ background: 'var(--line)', color: 'var(--ink-secondary)' }}>
             {(user.firstNameEn ?? user.name ?? user.email)?.[0]?.toUpperCase() ?? '?'}

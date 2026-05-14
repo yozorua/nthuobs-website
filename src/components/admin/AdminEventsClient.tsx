@@ -64,6 +64,13 @@ export default function AdminEventsClient({ initialEvents, locale }: Props) {
   const [loadingParticipants, setLoadingParticipants] = useState(false);
 
   const dateLocale = locale === 'tw' ? 'zh-TW' : 'en-GB';
+  const roleLabels: Record<string, string> = {
+    PENDING: t('rolePending'),
+    MEMBER: t('roleMember'),
+    OPERATOR: t('roleOperator'),
+    MANAGER: t('roleManager'),
+    ADMIN: t('roleAdmin'),
+  };
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true); };
   const openEdit = (ev: Event) => {
@@ -308,7 +315,9 @@ export default function AdminEventsClient({ initialEvents, locale }: Props) {
                         <p className="text-sm truncate" style={{ color: 'var(--ink)' }}>{displayName(p.user)}</p>
                         <p className="text-xs truncate" style={{ color: 'var(--ink-faint)' }}>{p.user.email}</p>
                       </div>
-                      <span className="text-xs tracking-ultra uppercase shrink-0" style={{ color: 'var(--ink-faint)' }}>{p.user.role}</span>
+                      <span className="text-xs tracking-ultra uppercase shrink-0" style={{ color: 'var(--ink-faint)' }}>
+                        {roleLabels[p.user.role] ?? p.user.role}
+                      </span>
                     </div>
                   ))}
                 </div>

@@ -10,7 +10,7 @@ import {
 import { ChartRow } from './types';
 
 const HOURS_OPTIONS = [
-  { label: '1h',  value: 1   },
+  { label: '3h',  value: 3   },
   { label: '12h', value: 12  },
   { label: '24h', value: 24  },
   { label: '3d',  value: 72  },
@@ -229,31 +229,17 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
     });
   };
 
-  const chartData = data.map((r, i) => {
-    const prevRain = i > 0 ? data[i - 1].dailyRainMm : null;
-    const curRain  = r.dailyRainMm;
-    let rainDelta: number | null = null;
-    if (curRain != null) {
-      if (prevRain != null) {
-        const delta = curRain - prevRain;
-        // Negative delta means the daily counter reset; treat it as rain since the reset
-        rainDelta = delta < 0 ? Math.max(0, curRain) : delta;
-      } else {
-        rainDelta = 0;
-      }
-    }
-    return {
-      time:     r.scriptTimestamp,
-      outTemp:  r.outsideTempC,
-      inTemp:   r.insideTempC,
-      outHumid: r.outsideHumidityPercent,
-      inHumid:  r.insideHumidityPercent,
-      baro:     r.barometerHpa,
-      wind:     r.windSpeedMs,
-      rain:     rainDelta,
-      sqm:      r.sqmMagPerArcsec2,
-    };
-  });
+  const chartData = data.map(r => ({
+    time:     r.scriptTimestamp,
+    outTemp:  r.outsideTempC,
+    inTemp:   r.insideTempC,
+    outHumid: r.outsideHumidityPercent,
+    inHumid:  r.insideHumidityPercent,
+    baro:     r.barometerHpa,
+    wind:     r.windSpeedMs,
+    rain:     r.rainTotalMm,
+    sqm:      r.sqmMagPerArcsec2,
+  }));
 
   const dayNightZones = buildDayNightZones(data, sunrise, sunset);
   const showTempAxis  = activeSeries.has('outTemp') || activeSeries.has('inTemp');
@@ -359,7 +345,7 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
-            <ComposedChart data={chartData} margin={{ top: 4, right: showHumidAxis ? 38 : 12, bottom: 0, left: 0 }}>
+            <ComposedChart data={chartData} margin={{ top: 4, right: showHumidAxis ? 38 : 12, bottom: 0, left: showTempAxis ? 4 : 0 }} barCategoryGap="2%">
 
               {/* Day / night background zones */}
               <DayNightBackground zones={dayNightZones} />
@@ -406,12 +392,12 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
               />
 
               {/* Pressure — tight domain, hidden axis */}
-              <YAxis yAxisId="baro" hide domain={baroDomain} />
+              <YAxis yAxisId="baro" hide width={0} domain={baroDomain} />
               {/* Wind & rain — start from 0 */}
-              <YAxis yAxisId="wind" hide domain={[0, 'dataMax + 1']} />
-              <YAxis yAxisId="rain" hide domain={[0, 'dataMax + 1']} />
+              <YAxis yAxisId="wind" hide width={0} domain={[0, 'dataMax + 1']} />
+              <YAxis yAxisId="rain" hide width={0} domain={[0, 'dataMax + 1']} />
               {/* SQM — higher mag = darker sky, so invert axis */}
-              <YAxis yAxisId="sqm" hide domain={['dataMin - 0.5', 'dataMax + 0.5']} reversed />
+              <YAxis yAxisId="sqm" hide width={0} domain={['dataMin - 0.5', 'dataMax + 0.5']} reversed />
 
               <Tooltip
                 content={(props) => (
@@ -450,11 +436,11 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
               )}
               {activeSeries.has('wind') && (
                 <Bar yAxisId="wind" dataKey="wind" name="wind"
-                  fill="#fbbf24" fillOpacity={0.65} maxBarSize={4} />
+                  fill="#fbbf24" fillOpacity={0.65} maxBarSize={8} />
               )}
               {activeSeries.has('rain') && (
                 <Bar yAxisId="rain" dataKey="rain" name="rain"
-                  fill="#38bdf8" fillOpacity={0.72} maxBarSize={6} />
+                  fill="#38bdf8" fillOpacity={0.72} maxBarSize={10} />
               )}
               {activeSeries.has('sqm') && (
                 <Line yAxisId="sqm" type="monotone" dataKey="sqm" name="sqm"

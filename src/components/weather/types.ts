@@ -66,14 +66,13 @@ export interface WeatherReading {
 
 export interface ChartRow {
   scriptTimestamp: string;
-  consoleTime: string;
   outsideTempC: number | null;
   insideTempC: number | null;
   outsideHumidityPercent: number | null;
   insideHumidityPercent: number | null;
   barometerHpa: number | null;
-  windSpeedMs: number | null;
-  dailyRainMm: number | null;
+  windSpeedMs: number | null;    // max wind speed in the 15-min bin
+  rainTotalMm: number | null;   // total rain accumulated in the 15-min bin
   sqmMagPerArcsec2: number | null;
 }
 

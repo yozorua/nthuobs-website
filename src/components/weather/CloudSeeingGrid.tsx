@@ -194,13 +194,17 @@ export default function CloudSeeingGrid({
       label: t('precipPct'),
       render: (e: MeteoblueForecastEntry) => {
         const pop = lookupPop(e.date, e.time, precipForecast);
-        const bg = pop !== null ? precipColor(pop, dark) : 'rgba(255,255,255,0.04)';
-        const label = pop !== null ? `${pop}%` : '—';
+        const noCwaData = pop === null;
+        const bg = noCwaData
+          ? `repeating-linear-gradient(45deg, rgba(255,255,255,0.06) 0px, rgba(255,255,255,0.06) 2px, transparent 2px, transparent 6px)`
+          : precipColor(pop, dark);
+        const label = noCwaData ? '—' : `${pop}%`;
+        const titleSuffix = noCwaData ? ' (no CWA forecast)' : '';
         return (
           <div
             className="shrink-0 rounded-sm"
-            style={{ width: BLOCK_W, height: 16, backgroundColor: bg }}
-            title={`Precipitation: ${label}  ${e.date} ${e.time}:00`}
+            style={{ width: BLOCK_W, height: 16, background: bg }}
+            title={`${t('precipPct')}: ${label}  ${e.date} ${e.time}:00${titleSuffix}`}
           />
         );
       },

@@ -58,7 +58,7 @@ function conditionKey(
   forecast: MeteoblueForecastEntry[],
 ): string {
   if (!r) return 'Unknown';
-  if ((r.rainRateMmHr ?? 0) > 0) return 'Rainy';
+  if ((r.last15MinRainMm ?? 0) > 0) return 'Rainy';
 
   // Prefer live forecast cloud data aligned to actual current time; the DB
   // value may be null when the station time didn't match a forecast slot.
