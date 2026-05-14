@@ -22,8 +22,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
           <div>
             <p className="label mb-3">{t('observatory')}</p>
-            <p className="text-sm font-medium mb-1" style={{ color: 'var(--ink)' }}>NTHU Observatory</p>
-            <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>國立清華大學天文台</p>
+            <p className="text-sm font-medium mb-1" style={{ color: 'var(--ink)' }}>{locale === 'tw' ? '國立清華大學天文台' : 'NTHU Observatory'}</p>
+            <p className="text-xs" style={{ color: 'var(--ink-muted)' }}>{locale === 'tw' ? 'NTHU Observatory' : '國立清華大學天文台'}</p>
             <p className="text-xs mt-3" style={{ color: 'var(--ink-muted)' }}>Est. 1971</p>
           </div>
           <div>
@@ -39,7 +39,7 @@ export default function Footer() {
                 { href: 'mailto:nthuobs@gmail.com', label: 'nthuobs@gmail.com' },
                 { href: 'https://www.facebook.com/nthuobs', label: 'Facebook' },
                 { href: 'https://www.instagram.com/nthuobs', label: 'Instagram' },
-                { href: 'https://www.youtube.com/@nthuobs', label: 'YouTube' },
+                { href: 'https://www.youtube.com/@nthuobservatory575/streams', label: 'YouTube' },
               ].map(link => (
                 <a
                   key={link.href}

@@ -1,6 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
+import { db } from '@/lib/db';
+import HeroSlideshow from '@/components/HeroSlideshow';
+
+export const revalidate = 300;
 
 export default async function HomePage({
   params,
@@ -9,6 +13,21 @@ export default async function HomePage({
 }) {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'home' });
+
+  const heroItems = await db.galleryItem.findMany({
+    where: { isPublic: true, type: 'IMAGE' },
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: { filename: true, thumbname: true },
+  });
+  const heroImages = heroItems
+    .map((item) => {
+      // Use the original for web-native formats; fall back to thumb for TIFF
+      const webNative = /\.(jpe?g|png|webp)$/i.test(item.filename);
+      if (webNative) return `/api/gallery/file/${item.filename}`;
+      return item.thumbname ? `/api/gallery/file/thumbs/${item.thumbname}` : null;
+    })
+    .filter(Boolean) as string[];
 
   const stats = [
     { num: '1971', label: t('yearFounded') },
@@ -23,13 +42,7 @@ export default async function HomePage({
     <div className="page-enter">
       {/* Hero */}
       <section className="relative h-[85vh] min-h-[520px] overflow-hidden">
-        <Image
-          src="/header.jpg"
-          alt="NTHU Observatory"
-          fill
-          priority
-          className="object-cover"
-        />
+        <HeroSlideshow images={heroImages} fallback="/header.jpg" />
         <div className="absolute inset-0 bg-black/40" />
         <div className="absolute inset-0 flex flex-col justify-end px-8 pb-16 max-w-5xl mx-auto w-full">
           <p className="text-xs tracking-ultra uppercase text-white/50 mb-4">{t('established')}</p>

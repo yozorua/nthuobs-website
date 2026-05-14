@@ -32,6 +32,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
     { href: `/${locale}/people`, label: t('people') },
     { href: `/${locale}/calendar`, label: t('calendar') },
     { href: `/${locale}/visit`, label: t('visit') },
+    { href: `/${locale}/gallery`, label: t('gallery') },
     { href: `/${locale}/weather`, label: t('weather') },
   ];
 
@@ -88,7 +89,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
             className="opacity-75 group-hover:opacity-100 transition-opacity"
           />
           <span className="text-sm font-medium tracking-wider" style={{ color: 'var(--ink)' }}>
-            NTHU Observatory
+            {locale === 'tw' ? '國立清華大學天文台' : 'NTHU Observatory'}
           </span>
         </Link>
 
@@ -123,6 +124,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
 
           {/* Dark mode toggle */}
           <button
+            suppressHydrationWarning
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             className="text-sm tracking-wide transition-colors duration-150"
             style={{ color: 'var(--ink-faint)' }}
@@ -305,7 +307,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
             <button onClick={switchLocale} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>
               {locale === 'en' ? '中文' : 'EN'}
             </button>
-            <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>
+            <button suppressHydrationWarning onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>
               {theme === 'dark' ? 'Light' : 'Dark'}
             </button>
           </div>

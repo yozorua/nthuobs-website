@@ -26,6 +26,7 @@ model User {
   schedules      Schedule[]
   sessions       Session[]
   participations EventParticipation[]
+  galleryItems   GalleryItem[]
 }
 
 model Account {
@@ -183,4 +184,31 @@ enum Role {
   OPERATOR
   MANAGER
   ADMIN
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+model GalleryItem {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  category    String    @default("other")
+  type        MediaType @default(IMAGE)
+  filename    String
+  thumbname   String?
+  width       Int?
+  height      Int?
+  takenAt     DateTime?
+  equipment   Json?
+  isPublic    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([category])
+  @@index([createdAt])
 }

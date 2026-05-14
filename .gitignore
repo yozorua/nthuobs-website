@@ -48,3 +48,4 @@ public/avatars/*
 # AI
 .claude/
 memory/
+public/gallery
