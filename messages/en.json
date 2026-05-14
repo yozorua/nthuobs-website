@@ -238,7 +238,7 @@
     "location": "Location",
     "contact": "Contact",
     "locationText": "Room 801, Physics Building\nNational Tsing Hua University\nNo. 101, Sec. 2, Guangfu Rd.\nHsinchu City 30013, Taiwan",
-    "rights": "All rights reserved.",
+    "rights": "Site designed and maintained by Jamie Chang.",
     "visit": "Visit",
     "calendar": "Calendar"
   },
@@ -558,7 +558,16 @@
     "intDate": "Date",
     "totalPerRow": "Total",
     "addIntRow": "+ Add row",
-    "totalExposure": "Total exposure"
+    "totalExposure": "Total exposure",
+    "locationField": "Location",
+    "addLocation": "+ Add Location",
+    "removeLocation": "Remove",
+    "useMyLocation": "Use my location",
+    "clickToPin": "Click on the map to pin a location",
+    "linksField": "External Links",
+    "addLink": "+ Add Link",
+    "linkTitle": "Title",
+    "linkUrl": "URL"
   },
   "profile": {
     "title": "Edit Profile",

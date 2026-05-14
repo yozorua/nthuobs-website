@@ -20,14 +20,14 @@ const IMAGE_TYPES: Record<string, string> = {
 const VIDEO_TYPES: Record<string, string> = {
   'video/mp4': 'mp4',
 };
-const IMAGE_MAX = 50 * 1024 * 1024;
+const IMAGE_MAX = 100 * 1024 * 1024;
 const VIDEO_MAX = 500 * 1024 * 1024;
 
 function serializeItem(item: {
   id: string; title: string; description: string | null; category: string;
-  type: string; filename: string; thumbname: string | null; width: number | null;
+  type: string; filename: string; thumbname: string | null; heroname: string | null; webname: string | null; width: number | null;
   height: number | null; takenAt: Date | null; createdAt: Date; userId: string;
-  equipment: unknown;
+  equipment: unknown; lat: number | null; lng: number | null; links: unknown;
   user: { name: string | null; firstNameEn: string | null; lastNameEn: string | null; firstNameZh: string | null; lastNameZh: string | null };
 }) {
   return {
@@ -38,12 +38,17 @@ function serializeItem(item: {
     type: item.type,
     filename: item.filename,
     thumbname: item.thumbname,
+    heroname: item.heroname,
+    webname: item.webname,
     width: item.width,
     height: item.height,
     takenAt: item.takenAt?.toISOString() ?? null,
     createdAt: item.createdAt.toISOString(),
     userId: item.userId,
     equipment: item.equipment ?? null,
+    lat: item.lat ?? null,
+    lng: item.lng ?? null,
+    links: (item.links as Array<{ title: string; url: string }> | null) ?? null,
     uploaderEn:
       [item.user.firstNameEn, item.user.lastNameEn].filter(Boolean).join(' ') ||
       item.user.name || '',
@@ -73,8 +78,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   const session = await auth();
-  const role = (session?.user as { role?: string })?.role ?? '';
-  if (!session?.user?.id || !MEMBER_ROLES.includes(role)) {
+  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const dbUser = await db.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+  if (!dbUser || !MEMBER_ROLES.includes(dbUser.role)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -85,6 +91,9 @@ export async function POST(request: NextRequest) {
   const category = (formData.get('category') as string) || 'other';
   const takenAtRaw = formData.get('takenAt') as string | null;
   const equipmentRaw = formData.get('equipment') as string | null;
+  const latRaw = formData.get('lat') as string | null;
+  const lngRaw = formData.get('lng') as string | null;
+  const linksRaw = formData.get('links') as string | null;
 
   if (!file) return NextResponse.json({ error: 'No file' }, { status: 400 });
   if (!title) return NextResponse.json({ error: 'Title required' }, { status: 400 });
@@ -104,6 +113,12 @@ export async function POST(request: NextRequest) {
   if (equipmentRaw) {
     try { equipment = JSON.parse(equipmentRaw); } catch { /* ignore malformed JSON */ }
   }
+  const lat = latRaw !== null && latRaw !== '' ? Number(latRaw) : null;
+  const lng = lngRaw !== null && lngRaw !== '' ? Number(lngRaw) : null;
+  let links: Array<{ title: string; url: string }> | null = null;
+  if (linksRaw) {
+    try { links = JSON.parse(linksRaw); } catch { /* ignore malformed JSON */ }
+  }
 
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
@@ -118,6 +133,8 @@ export async function POST(request: NextRequest) {
   await mkdir(thumbsDir, { recursive: true });
 
   let thumbname: string | null = null;
+  let heroname: string | null = null;
+  let webname: string | null = null;
   let width: number | null = null;
   let height: number | null = null;
 
@@ -137,16 +154,29 @@ export async function POST(request: NextRequest) {
 
   if (isImage) {
     // Read from saved file on disk — avoids Sharp buffer-input issues
+    const src = join(galleryDir, filename);
     try {
       const candidate = `${id}_thumb.jpg`;
-      const thumbBuf = await sharp(join(galleryDir, filename))
-        .resize(800, undefined, { withoutEnlargement: true })
-        .jpeg({ quality: 85 })
-        .toBuffer();
-      await writeFile(join(thumbsDir, candidate), thumbBuf);
+      await sharp(src).resize(800, undefined, { withoutEnlargement: true }).jpeg({ quality: 85 }).toFile(join(thumbsDir, candidate));
       thumbname = candidate;
     } catch (err) {
-      console.error('[gallery] thumbnail generation failed:', err);
+      console.error('[gallery] 800px thumbnail generation failed:', err);
+    }
+    try {
+      const candidate = `${id}_hero.jpg`;
+      await sharp(src).resize(1920, undefined, { withoutEnlargement: true }).jpeg({ quality: 85 }).toFile(join(thumbsDir, candidate));
+      heroname = candidate;
+    } catch (err) {
+      console.error('[gallery] 1920px hero thumbnail generation failed:', err);
+    }
+    if (file.type === 'image/tiff') {
+      try {
+        const candidate = `${id}_web.jpg`;
+        await sharp(src).jpeg({ quality: 92 }).toFile(join(thumbsDir, candidate));
+        webname = candidate;
+      } catch (err) {
+        console.error('[gallery] full-res TIFF conversion failed:', err);
+      }
     }
   }
 
@@ -154,16 +184,22 @@ export async function POST(request: NextRequest) {
     try {
       const candidate = `${id}_thumb.jpg`;
       await execFileAsync('ffmpeg', [
-        '-ss', '1',
-        '-i', join(galleryDir, filename),
-        '-vframes', '1',
-        '-vf', 'scale=800:-1',
-        '-q:v', '2',
-        '-y', join(thumbsDir, candidate),
+        '-ss', '1', '-i', join(galleryDir, filename),
+        '-vframes', '1', '-vf', 'scale=800:-1', '-q:v', '2', '-y', join(thumbsDir, candidate),
       ]);
       thumbname = candidate;
     } catch (err) {
-      console.error('[gallery] video thumbnail generation failed:', err);
+      console.error('[gallery] video 800px thumbnail generation failed:', err);
+    }
+    try {
+      const candidate = `${id}_hero.jpg`;
+      await execFileAsync('ffmpeg', [
+        '-ss', '1', '-i', join(galleryDir, filename),
+        '-vframes', '1', '-vf', 'scale=1920:-1', '-q:v', '2', '-y', join(thumbsDir, candidate),
+      ]);
+      heroname = candidate;
+    } catch (err) {
+      console.error('[gallery] video 1920px hero thumbnail generation failed:', err);
     }
   }
 
@@ -177,10 +213,15 @@ export async function POST(request: NextRequest) {
       type: isImage ? 'IMAGE' : 'VIDEO',
       filename,
       thumbname,
+      heroname,
+      webname,
       width,
       height,
       takenAt: takenAtRaw ? new Date(takenAtRaw) : null,
       equipment: equipment ?? undefined,
+      lat: lat !== null && !isNaN(lat) ? lat : null,
+      lng: lng !== null && !isNaN(lng) ? lng : null,
+      links: links ?? undefined,
     },
     include: { user: { select: userSelect } },
   });

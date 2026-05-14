@@ -82,11 +82,18 @@ export default function Navbar({ session, locale }: NavbarProps) {
         {/* Logo */}
         <Link href={`/${locale}`} className="flex items-center gap-2.5 group">
           <Image
-            src="/logo_icon.png"
+            src="/logo_icon_light.png"
             alt="NTHU Observatory"
             width={22}
             height={22}
-            className="opacity-75 group-hover:opacity-100 transition-opacity"
+            className="block dark:hidden opacity-75 group-hover:opacity-100 transition-opacity"
+          />
+          <Image
+            src="/logo_icon_dark.png"
+            alt="NTHU Observatory"
+            width={22}
+            height={22}
+            className="hidden dark:block opacity-75 group-hover:opacity-100 transition-opacity"
           />
           <span className="text-sm font-medium tracking-wider" style={{ color: 'var(--ink)' }}>
             {locale === 'tw' ? '國立清華大學天文台' : 'NTHU Observatory'}

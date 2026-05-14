@@ -18,15 +18,10 @@ export default async function HomePage({
     where: { isPublic: true, type: 'IMAGE' },
     orderBy: { createdAt: 'desc' },
     take: 20,
-    select: { filename: true, thumbname: true },
+    select: { heroname: true },
   });
   const heroImages = heroItems
-    .map((item) => {
-      // Use the original for web-native formats; fall back to thumb for TIFF
-      const webNative = /\.(jpe?g|png|webp)$/i.test(item.filename);
-      if (webNative) return `/api/gallery/file/${item.filename}`;
-      return item.thumbname ? `/api/gallery/file/thumbs/${item.thumbname}` : null;
-    })
+    .map((item) => item.heroname ? `/api/gallery/file/thumbs/${item.heroname}` : null)
     .filter(Boolean) as string[];
 
   const stats = [

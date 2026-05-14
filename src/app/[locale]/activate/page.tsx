@@ -132,7 +132,7 @@ export default function ActivatePage() {
               </div>
               <div>
                 <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('phone')}</label>
-                <input type="tel" className="input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))} inputMode="numeric" pattern="[0-9]*" required />
+                <input type="tel" className="input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))} inputMode="numeric" pattern="[0-9]*" />
               </div>
               {profileStatus === 'error' && (
                 <p className="text-xs" style={{ color: '#cc4444' }}>{t('profileError')}</p>

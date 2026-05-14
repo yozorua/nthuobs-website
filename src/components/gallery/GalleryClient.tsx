@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
+import dynamic from 'next/dynamic';
+
+const MapPicker = dynamic(() => import('./MapPickerInner'), { ssr: false });
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -23,6 +26,8 @@ export type EquipmentData = {
   integration: IntegrationRow[];
 };
 
+export type GalleryLink = { title: string; url: string };
+
 export type GalleryItemData = {
   id: string;
   title: string;
@@ -31,6 +36,8 @@ export type GalleryItemData = {
   type: 'IMAGE' | 'VIDEO';
   filename: string;
   thumbname: string | null;
+  heroname: string | null;
+  webname: string | null;
   width: number | null;
   height: number | null;
   takenAt: string | null;
@@ -39,6 +46,9 @@ export type GalleryItemData = {
   uploaderEn: string;
   uploaderZh: string | null;
   equipment: Partial<EquipmentData> | null;
+  lat: number | null;
+  lng: number | null;
+  links: GalleryLink[] | null;
 };
 
 // ─── Constants & helpers ─────────────────────────────────────────────────────
@@ -293,6 +303,10 @@ function UploadModal({
   const [eq, setEq] = useState<EqFormState>({
     telescope: '', camera: '', mount: '', accessory: '', software: '', integration: [],
   });
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
+  const [showMap, setShowMap] = useState(false);
+  const [links, setLinks] = useState<GalleryLink[]>([]);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -309,7 +323,7 @@ function UploadModal({
     const isImg = f.type.startsWith('image/');
     const isVid = f.type === 'video/mp4';
     if (!isImg && !isVid) { setError(t('fileTypeError')); return; }
-    const max = isImg ? 50 * 1024 * 1024 : 500 * 1024 * 1024;
+    const max = isImg ? 100 * 1024 * 1024 : 500 * 1024 * 1024;
     if (f.size > max) { setError(t('fileTooLarge')); return; }
     setFile(f);
     if (!title) setTitle(f.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '));
@@ -336,6 +350,12 @@ function UploadModal({
     fd.append('category', category);
     if (takenAt) fd.append('takenAt', takenAt);
     if (hasEquipment) fd.append('equipment', JSON.stringify(eq));
+    if (lat !== null && lng !== null) {
+      fd.append('lat', String(lat));
+      fd.append('lng', String(lng));
+    }
+    const validLinks = links.filter(l => l.title.trim() && l.url.trim());
+    if (validLinks.length > 0) fd.append('links', JSON.stringify(validLinks));
 
     try {
       const result = await new Promise<GalleryItemData>((resolve, reject) => {
@@ -468,6 +488,133 @@ function UploadModal({
           {/* Equipment + Integration */}
           <EquipmentForm value={eq} onChange={setEq} />
 
+          {/* Divider */}
+          <hr style={{ borderColor: 'var(--line)', borderTopWidth: 1, borderStyle: 'solid' }} />
+
+          {/* Location */}
+          <div>
+            {showMap ? (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="label">{t('locationField')}</label>
+                  <div className="flex items-center gap-3">
+                    {lat !== null && (
+                      <button
+                        type="button"
+                        onClick={() => { setLat(null); setLng(null); }}
+                        className="text-xs tracking-ultra uppercase transition-colors duration-150"
+                        style={{ color: '#c0392b' }}
+                      >
+                        {t('removeLocation')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowMap(false)}
+                      className="text-xs tracking-ultra uppercase transition-colors duration-150"
+                      style={{ color: 'var(--ink-faint)' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                <div style={{ border: '1px solid var(--line)', overflow: 'hidden' }}>
+                  <MapPicker lat={lat} lng={lng} onChange={(la, lo) => { setLat(la); setLng(lo); }} />
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                    {lat !== null ? `${lat.toFixed(5)}, ${lng!.toFixed(5)}` : t('clickToPin')}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!navigator.geolocation) return;
+                      navigator.geolocation.getCurrentPosition((pos) => {
+                        setLat(pos.coords.latitude);
+                        setLng(pos.coords.longitude);
+                      });
+                    }}
+                    className="btn-outline text-xs"
+                  >
+                    {t('useMyLocation')}
+                  </button>
+                </div>
+              </>
+            ) : lat !== null ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="label mb-0.5 block">{t('locationField')}</label>
+                  <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                    {lat.toFixed(5)}, {lng!.toFixed(5)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => setShowMap(true)} className="btn-outline text-xs">
+                    {t('edit')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setLat(null); setLng(null); }}
+                    className="text-xs tracking-ultra uppercase"
+                    style={{ color: '#c0392b' }}
+                  >
+                    {t('removeLocation')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <label className="label">{t('locationField')}</label>
+                <button type="button" onClick={() => setShowMap(true)} className="btn-outline text-xs">
+                  {t('addLocation')}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* External Links */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="label">{t('linksField')}</label>
+              <button
+                type="button"
+                onClick={() => setLinks(l => [...l, { title: '', url: '' }])}
+                className="btn-outline text-xs"
+              >
+                {t('addLink')}
+              </button>
+            </div>
+            {links.map((link, i) => (
+              <div key={i} className="flex gap-2 mb-2">
+                <input
+                  className="input text-sm"
+                  style={{ flex: '0 0 36%' }}
+                  placeholder={t('linkTitle')}
+                  value={link.title}
+                  onChange={(e) => setLinks(l => l.map((lk, j) => j === i ? { ...lk, title: e.target.value } : lk))}
+                />
+                <input
+                  className="input text-sm flex-1"
+                  placeholder="https://..."
+                  value={link.url}
+                  onChange={(e) => setLinks(l => l.map((lk, j) => j === i ? { ...lk, url: e.target.value } : lk))}
+                />
+                <button
+                  type="button"
+                  onClick={() => setLinks(l => l.filter((_, j) => j !== i))}
+                  className="flex items-center justify-center w-8 h-8 text-lg leading-none flex-shrink-0 transition-colors duration-150"
+                  style={{ color: 'var(--ink-faint)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = '#c0392b')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+
           {/* Progress */}
           {uploading && progress > 0 && (
             <div className="h-px w-full" style={{ background: 'var(--line)' }}>
@@ -517,28 +664,31 @@ function EquipmentDisplay({
       style={{
         borderTop: '1px solid var(--line)',
         display: 'flex',
-        flexWrap: 'wrap',
-        gap: '2rem',
-        alignItems: 'start',
+        flexDirection: 'column',
+        gap: '1.5rem',
       }}
     >
       {/* Equipment table */}
       {hasGear && (
-        <div style={{ flexShrink: 0 }}>
+        <div style={{ minWidth: 0, flex: '1 1 160px' }}>
           <p className="label mb-2">
             {t('equipmentSection')}
           </p>
-          <table style={{ borderCollapse: 'collapse' }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '5.5rem' }} />
+              <col />
+            </colgroup>
             <tbody>
               {EQUIP_FIELDS.filter((f) => equipment[f]).map((f) => (
                 <tr key={f}>
                   <td
-                    className="text-xs pr-5 pb-0.5"
+                    className="text-xs pr-3 pb-0.5"
                     style={{ color: 'var(--ink-faint)', whiteSpace: 'nowrap', verticalAlign: 'top' }}
                   >
                     {t(f)}
                   </td>
-                  <td className="text-xs pb-0.5" style={{ color: 'var(--ink-secondary)' }}>
+                  <td className="text-xs pb-0.5" style={{ color: 'var(--ink-secondary)', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                     {equipment[f]}
                   </td>
                 </tr>
@@ -649,6 +799,13 @@ function Lightbox({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showHint, setShowHint] = useState(false);
 
+  // Panel resize state
+  const [panelWidth, setPanelWidth] = useState(480);
+  const [isResizing, setIsResizing] = useState(false);
+  const [isMdPlus, setIsMdPlus] = useState(true);
+  const resizeStartRef = useRef({ x: 0, width: 480 });
+  const isResizingRef = useRef(false);
+
   // Edit form mirrors item fields
   const [editTitle, setEditTitle] = useState(item.title);
   const [editDesc, setEditDesc] = useState(item.description ?? '');
@@ -662,6 +819,10 @@ function Lightbox({
     software: (item.equipment?.software) ?? '',
     integration: item.equipment?.integration ?? [],
   });
+  const [editLat, setEditLat] = useState<number | null>(item.lat);
+  const [editLng, setEditLng] = useState<number | null>(item.lng);
+  const [editShowMap, setEditShowMap] = useState(false);
+  const [editLinks, setEditLinks] = useState<GalleryLink[]>(item.links ?? []);
 
   // Reset when item changes
   useEffect(() => {
@@ -682,6 +843,10 @@ function Lightbox({
       software: item.equipment?.software ?? '',
       integration: item.equipment?.integration ?? [],
     });
+    setEditLat(item.lat);
+    setEditLng(item.lng);
+    setEditShowMap(false);
+    setEditLinks(item.links ?? []);
   }, [item.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -708,6 +873,34 @@ function Lightbox({
     const timer = setTimeout(() => setShowHint(false), 2000);
     return () => clearTimeout(timer);
   }, [zoomMode]);
+
+  // Viewport detection for responsive panel width
+  useEffect(() => {
+    const check = () => setIsMdPlus(window.innerWidth >= 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Panel resize mouse events
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!isResizingRef.current) return;
+      const delta = resizeStartRef.current.x - e.clientX;
+      setPanelWidth(Math.max(300, Math.min(800, resizeStartRef.current.width + delta)));
+    };
+    const onUp = () => {
+      if (!isResizingRef.current) return;
+      isResizingRef.current = false;
+      setIsResizing(false);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
 
   // Mouse-wheel zoom (only when in zoom mode)
   useEffect(() => {
@@ -736,6 +929,9 @@ function Lightbox({
           category: editCategory,
           takenAt: editTakenAt || null,
           equipment: hasEq ? editEq : null,
+          lat: editLat,
+          lng: editLng,
+          links: editLinks.filter(l => l.title.trim() && l.url.trim()),
         }),
       });
       if (!res.ok) throw new Error();
@@ -766,8 +962,8 @@ function Lightbox({
   return (
     <div
       ref={lightboxRef}
-      className="fixed inset-0 z-50 flex flex-col"
-      style={{ background: 'var(--bg)', userSelect: dragging ? 'none' : undefined }}
+      className="fixed inset-0 z-50 flex flex-col md:flex-row"
+      style={{ background: 'var(--bg)', userSelect: (dragging || isResizing) ? 'none' : undefined, cursor: isResizing ? 'col-resize' : undefined }}
       onMouseMove={(e) => {
         if (!dragging) return;
         setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
@@ -775,70 +971,20 @@ function Lightbox({
       onMouseUp={() => setDragging(false)}
       onMouseLeave={() => setDragging(false)}
     >
-      {/* Top bar */}
-      <div
-        className="flex-shrink-0 flex items-center justify-between px-5 h-11"
-        style={{ borderBottom: '1px solid var(--line)', display: zoomMode ? 'none' : undefined }}
-      >
-        <div className="flex items-center gap-4">
-          {canManage && !editMode && (
-            <>
-              <button
-                onClick={() => { setEditMode(true); setDeleteConfirm(false); }}
-                className="text-xs tracking-ultra uppercase transition-colors duration-150"
-                style={{ color: 'var(--ink-faint)' }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink-secondary)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
-              >
-                {t('edit')}
-              </button>
-              <span style={{ color: 'var(--line)' }}>·</span>
-              {!deleteConfirm ? (
-                <button
-                  onClick={() => setDeleteConfirm(true)}
-                  className="text-xs tracking-ultra uppercase transition-colors duration-150"
-                  style={{ color: 'var(--ink-faint)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#e74c3c')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
-                >
-                  {t('delete')}
-                </button>
-              ) : (
-                <span className="flex items-center gap-2 text-xs">
-                  <span style={{ color: '#e74c3c' }}>{t('deleteConfirm')}</span>
-                  <button
-                    onClick={doDelete}
-                    disabled={deleting}
-                    style={{ color: '#e74c3c' }}
-                    className="tracking-ultra uppercase"
-                  >
-                    {deleting ? t('deleting') : t('delete')}
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm(false)}
-                    style={{ color: 'var(--ink-faint)' }}
-                    className="tracking-ultra uppercase"
-                  >
-                    {t('cancelEdit')}
-                  </button>
-                </span>
-              )}
-            </>
-          )}
-        </div>
-        <button
-          onClick={onClose}
-          className="text-2xl leading-none transition-opacity duration-150"
-          style={{ color: 'var(--ink-faint)' }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
-          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
-        >
-          ×
-        </button>
-      </div>
-
       {/* Image + nav */}
       <div className="flex-1 relative flex items-center justify-center overflow-hidden min-h-0" style={{ background: '#000' }}>
+        {/* Floating close button */}
+        {!zoomMode && (
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center text-xl leading-none transition-colors duration-150"
+            style={{ color: 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.9)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
+          >
+            ×
+          </button>
+        )}
         {hasPrev && !zoomMode && (
           <button
             onClick={onPrev}
@@ -864,7 +1010,11 @@ function Lightbox({
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={item.id}
-              src={`/api/gallery/file/${item.filename}`}
+              src={item.webname
+                ? `/api/gallery/file/thumbs/${item.webname}`
+                : item.heroname
+                  ? `/api/gallery/file/thumbs/${item.heroname}`
+                  : `/api/gallery/file/${item.filename}`}
               alt={item.title}
               draggable={false}
               onClick={() => { if (!zoomMode) setZoomMode(true); }}
@@ -932,17 +1082,32 @@ function Lightbox({
         )}
       </div>
 
-      {/* Info / Edit bar (scrollable) — hidden in zoom mode */}
+      {/* Info / Edit panel — hidden in zoom mode, right panel on desktop */}
       <div
-        className="flex-shrink-0 overflow-y-auto"
+        className="flex-shrink-0 overflow-y-auto max-h-[40vh] md:max-h-none border-t md:border-t-0 md:border-l relative"
         style={{
-          maxHeight: zoomMode ? 0 : '40vh',
-          borderTop: zoomMode ? 'none' : '1px solid var(--line)',
+          display: zoomMode ? 'none' : undefined,
+          borderColor: 'var(--line)',
           background: 'var(--bg)',
-          overflow: zoomMode ? 'hidden' : undefined,
-          transition: 'max-height 0.2s ease-out',
+          width: isMdPlus ? panelWidth : undefined,
         }}
       >
+        {/* Drag-to-resize handle */}
+        <div
+          className="absolute top-0 bottom-0 hidden md:block z-10 group"
+          style={{ left: '-3px', width: '6px', cursor: 'col-resize' }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            isResizingRef.current = true;
+            setIsResizing(true);
+            resizeStartRef.current = { x: e.clientX, width: panelWidth };
+          }}
+        >
+          <div
+            className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+            style={{ background: 'var(--ink-faint)' }}
+          />
+        </div>
         {editMode ? (
           /* ── Edit form ── */
           <div className="px-6 py-4 flex flex-col gap-3">
@@ -998,6 +1163,127 @@ function Lightbox({
               />
             </div>
             <EquipmentForm value={editEq} onChange={setEditEq} />
+
+            {/* Location (edit) */}
+            <div style={{ borderTop: '1px solid var(--line)', paddingTop: '12px' }}>
+              {editShowMap ? (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="label">{t('locationField')}</label>
+                    <div className="flex items-center gap-3">
+                      {editLat !== null && (
+                        <button
+                          type="button"
+                          onClick={() => { setEditLat(null); setEditLng(null); }}
+                          className="text-xs tracking-ultra uppercase"
+                          style={{ color: '#c0392b' }}
+                        >
+                          {t('removeLocation')}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setEditShowMap(false)}
+                        className="text-xs"
+                        style={{ color: 'var(--ink-faint)' }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ border: '1px solid var(--line)', overflow: 'hidden' }}>
+                    <MapPicker lat={editLat} lng={editLng} onChange={(la, lo) => { setEditLat(la); setEditLng(lo); }} height={200} />
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                      {editLat !== null ? `${editLat.toFixed(5)}, ${editLng!.toFixed(5)}` : t('clickToPin')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!navigator.geolocation) return;
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                          setEditLat(pos.coords.latitude);
+                          setEditLng(pos.coords.longitude);
+                        });
+                      }}
+                      className="btn-outline text-xs"
+                    >
+                      {t('useMyLocation')}
+                    </button>
+                  </div>
+                </>
+              ) : editLat !== null ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="label mb-0.5 block">{t('locationField')}</label>
+                    <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                      {editLat.toFixed(5)}, {editLng!.toFixed(5)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button type="button" onClick={() => setEditShowMap(true)} className="btn-outline text-xs">{t('edit')}</button>
+                    <button
+                      type="button"
+                      onClick={() => { setEditLat(null); setEditLng(null); }}
+                      className="text-xs tracking-ultra uppercase"
+                      style={{ color: '#c0392b' }}
+                    >
+                      {t('removeLocation')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <label className="label">{t('locationField')}</label>
+                  <button type="button" onClick={() => setEditShowMap(true)} className="btn-outline text-xs">
+                    {t('addLocation')}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* External links (edit) */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="label">{t('linksField')}</label>
+                <button
+                  type="button"
+                  onClick={() => setEditLinks(l => [...l, { title: '', url: '' }])}
+                  className="btn-outline text-xs"
+                >
+                  {t('addLink')}
+                </button>
+              </div>
+              {editLinks.map((link, i) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <input
+                    className="input text-sm"
+                    style={{ flex: '0 0 36%' }}
+                    placeholder={t('linkTitle')}
+                    value={link.title}
+                    onChange={(e) => setEditLinks(l => l.map((lk, j) => j === i ? { ...lk, title: e.target.value } : lk))}
+                  />
+                  <input
+                    className="input text-sm flex-1"
+                    placeholder="https://..."
+                    value={link.url}
+                    onChange={(e) => setEditLinks(l => l.map((lk, j) => j === i ? { ...lk, url: e.target.value } : lk))}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setEditLinks(l => l.filter((_, j) => j !== i))}
+                    className="flex items-center justify-center w-8 h-8 text-lg leading-none flex-shrink-0 transition-colors duration-150"
+                    style={{ color: 'var(--ink-faint)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#c0392b')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+
             <div className="flex items-center gap-3 pt-1">
               <button
                 onClick={saveEdit}
@@ -1028,7 +1314,7 @@ function Lightbox({
                 {(item.takenAt || item.category !== 'other') && (
                   <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
                     {[
-                      item.takenAt && item.takenAt.slice(0, 10),
+                      item.takenAt && item.takenAt.slice(0, 10).replace(/-/g, '.'),
                       item.category !== 'other' && t((`categories.${item.category}`) as Parameters<typeof t>[0]),
                     ].filter(Boolean).join(' · ')}
                   </p>
@@ -1048,38 +1334,116 @@ function Lightbox({
                 )}
               </div>
               <div className="flex items-center gap-0.5 flex-shrink-0">
-                  {/* Download */}
-                  <a
-                    href={`/api/gallery/file/${item.filename}`}
-                    download
-                    aria-label={t('download')}
+                {/* Edit icon */}
+                {canManage && !editMode && (
+                  <button
+                    onClick={() => { setEditMode(true); setDeleteConfirm(false); }}
+                    aria-label={t('edit')}
                     className="flex items-center justify-center w-8 h-8 transition-colors duration-150"
                     style={{ color: 'var(--ink-faint)' }}
                     onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
                     onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
                   >
-                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7.5 1.5v8M4.5 7l3 3 3-3M1.5 13.5h12"/>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9.5 2.5l2 2-7.5 7.5H2v-2L9.5 2.5z"/>
                     </svg>
-                  </a>
-                  {/* Fullscreen — images only */}
-                  {item.type === 'IMAGE' && (
-                    <button
-                      onClick={() => setZoomMode(true)}
-                      aria-label="Fullscreen"
-                      className="flex items-center justify-center w-8 h-8 transition-colors duration-150"
-                      style={{ color: 'var(--ink-faint)' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9"/>
-                      </svg>
-                    </button>
-                  )}
-                </div>
+                  </button>
+                )}
+                {/* Delete icon */}
+                {canManage && !editMode && (
+                  <button
+                    onClick={() => setDeleteConfirm(v => !v)}
+                    aria-label={t('delete')}
+                    className="flex items-center justify-center w-8 h-8 transition-colors duration-150"
+                    style={{ color: deleteConfirm ? '#e74c3c' : 'var(--ink-faint)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = '#e74c3c')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = deleteConfirm ? '#e74c3c' : 'var(--ink-faint)')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M2 4h10M5 4V2h4v2M4 4l1 8h4l1-8"/>
+                    </svg>
+                  </button>
+                )}
+                {/* Download */}
+                <a
+                  href={`/api/gallery/file/${item.filename}`}
+                  download
+                  aria-label={t('download')}
+                  className="flex items-center justify-center w-8 h-8 transition-colors duration-150"
+                  style={{ color: 'var(--ink-faint)' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
+                >
+                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7.5 1.5v8M4.5 7l3 3 3-3M1.5 13.5h12"/>
+                  </svg>
+                </a>
+                {/* Fullscreen — images only */}
+                {item.type === 'IMAGE' && (
+                  <button
+                    onClick={() => setZoomMode(true)}
+                    aria-label="Fullscreen"
+                    className="flex items-center justify-center w-8 h-8 transition-colors duration-150"
+                    style={{ color: 'var(--ink-faint)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
+            {/* Delete confirm — inline */}
+            {deleteConfirm && (
+              <div className="flex items-center gap-2 pt-1">
+                <span style={{ color: '#e74c3c', fontSize: '12px' }}>{t('deleteConfirm')}</span>
+                <button
+                  onClick={doDelete}
+                  disabled={deleting}
+                  style={{ color: '#e74c3c', fontSize: '12px' }}
+                  className="tracking-ultra uppercase"
+                >
+                  {deleting ? t('deleting') : t('delete')}
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(false)}
+                  style={{ color: 'var(--ink-faint)', fontSize: '12px' }}
+                  className="tracking-ultra uppercase"
+                >
+                  {t('cancelEdit')}
+                </button>
+              </div>
+            )}
             {hasEquipData && <EquipmentDisplay equipment={item.equipment!} />}
+            {item.lat !== null && item.lng !== null && (
+              <div style={{ border: '1px solid var(--line)', overflow: 'hidden' }}>
+                <MapPicker lat={item.lat} lng={item.lng} height={180} />
+              </div>
+            )}
+            {item.links && item.links.length > 0 && (
+              <div className="mt-3 flex flex-col gap-2">
+                {item.links.map((link, i) => (
+                  <a
+                    key={i}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm transition-colors duration-150"
+                    style={{ color: 'var(--ink-secondary)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-secondary)')}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                      <path d="M4.5 2H2a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6.5"/>
+                      <path d="M7 1h3m0 0v3m0-3L5.5 5.5"/>
+                    </svg>
+                    {link.title}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

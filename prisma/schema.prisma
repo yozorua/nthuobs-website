@@ -89,6 +89,7 @@ model Event {
   isPublic          Boolean              @default(true)
   maxParticipants   Int?
   estimatedVisitors Int?
+  reminderSentAt    DateTime?
   createdAt         DateTime             @default(now())
   updatedAt         DateTime             @updatedAt
   participations    EventParticipation[]
@@ -201,10 +202,15 @@ model GalleryItem {
   type        MediaType @default(IMAGE)
   filename    String
   thumbname   String?
+  heroname    String?
+  webname     String?
   width       Int?
   height      Int?
   takenAt     DateTime?
   equipment   Json?
+  lat         Float?
+  lng         Float?
+  links       Json?
   isPublic    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

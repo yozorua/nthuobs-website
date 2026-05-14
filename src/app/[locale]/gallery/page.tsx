@@ -14,6 +14,16 @@ export default async function GalleryPage({
   const { locale } = await params;
   const session = await auth();
 
+  // Read role from DB so activation takes effect without re-login
+  let sessionUserRole: string | null = null;
+  if (session?.user?.id) {
+    const dbUser = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: true },
+    });
+    sessionUserRole = dbUser?.role ?? null;
+  }
+
   const items = await db.galleryItem.findMany({
     where: { isPublic: true },
     orderBy: { createdAt: 'desc' },
@@ -38,12 +48,17 @@ export default async function GalleryPage({
     type: item.type as 'IMAGE' | 'VIDEO',
     filename: item.filename,
     thumbname: item.thumbname,
+    heroname: item.heroname ?? null,
+    webname: item.webname ?? null,
     width: item.width,
     height: item.height,
     takenAt: item.takenAt?.toISOString() ?? null,
     createdAt: item.createdAt.toISOString(),
     userId: item.userId,
     equipment: (item.equipment as GalleryItemData['equipment']) ?? null,
+    lat: item.lat ?? null,
+    lng: item.lng ?? null,
+    links: (item.links as GalleryItemData['links']) ?? null,
     uploaderEn:
       [item.user.firstNameEn, item.user.lastNameEn].filter(Boolean).join(' ') ||
       item.user.name || '',
@@ -54,7 +69,6 @@ export default async function GalleryPage({
   }));
 
   const sessionUserId = session?.user?.id ?? null;
-  const sessionUserRole = (session?.user as { role?: string })?.role ?? null;
 
   return (
     <GalleryClient

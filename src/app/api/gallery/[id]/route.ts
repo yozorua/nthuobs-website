@@ -15,8 +15,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  const role = (session?.user as { role?: string })?.role ?? '';
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const dbUser = await db.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+  const role = dbUser?.role ?? '';
 
   const { id } = await params;
   const item = await db.galleryItem.findUnique({ where: { id } });
@@ -34,6 +35,9 @@ export async function PATCH(
       category: body.category ?? item.category,
       takenAt: body.takenAt !== undefined ? (body.takenAt ? new Date(body.takenAt) : null) : item.takenAt,
       equipment: body.equipment !== undefined ? (body.equipment ?? undefined) : undefined,
+      lat: body.lat !== undefined ? (body.lat ?? null) : item.lat,
+      lng: body.lng !== undefined ? (body.lng ?? null) : item.lng,
+      links: body.links !== undefined ? (body.links ?? undefined) : undefined,
     },
   });
 
@@ -44,6 +48,9 @@ export async function PATCH(
     category: updated.category,
     takenAt: updated.takenAt?.toISOString() ?? null,
     equipment: updated.equipment ?? null,
+    lat: updated.lat ?? null,
+    lng: updated.lng ?? null,
+    links: updated.links ?? null,
   });
 }
 
@@ -52,8 +59,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const session = await auth();
-  const role = (session?.user as { role?: string })?.role ?? '';
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const dbUser = await db.user.findUnique({ where: { id: session.user.id }, select: { role: true } });
+  const role = dbUser?.role ?? '';
 
   const { id } = await params;
   const item = await db.galleryItem.findUnique({ where: { id } });
