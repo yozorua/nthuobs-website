@@ -800,6 +800,7 @@ function Lightbox({
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showHint, setShowHint] = useState(false);
+  const [hiResReady, setHiResReady] = useState(false);
 
   // Panel resize state
   const [panelWidth, setPanelWidth] = useState(480);
@@ -855,6 +856,7 @@ function Lightbox({
     setZoomMode(false);
     setScale(1);
     setPan({ x: 0, y: 0 });
+    setHiResReady(false);
     setEditTitle(item.title);
     setEditDesc(item.description ?? '');
     setEditCategory(item.category);
@@ -897,6 +899,17 @@ function Lightbox({
     const timer = setTimeout(() => setShowHint(false), 2000);
     return () => clearTimeout(timer);
   }, [zoomMode]);
+
+  // When zoom mode is entered, preload the full-res original in the background
+  const fullSrc = item.webname
+    ? `/api/gallery/file/thumbs/${item.webname}`
+    : `/api/gallery/file/${item.filename}`;
+  useEffect(() => {
+    if (!zoomMode || item.type !== 'IMAGE' || hiResReady) return;
+    const img = new window.Image();
+    img.onload = () => setHiResReady(true);
+    img.src = fullSrc;
+  }, [zoomMode, fullSrc, hiResReady, item.type]);
 
   // Viewport detection for responsive panel width
   useEffect(() => {
@@ -1039,11 +1052,13 @@ function Lightbox({
             <img
               ref={imgRef}
               key={item.id}
-              src={item.webname
-                ? `/api/gallery/file/thumbs/${item.webname}`
-                : item.heroname
-                  ? `/api/gallery/file/thumbs/${item.heroname}`
-                  : `/api/gallery/file/${item.filename}`}
+              src={zoomMode && hiResReady
+                ? fullSrc
+                : item.webname
+                  ? `/api/gallery/file/thumbs/${item.webname}`
+                  : item.heroname
+                    ? `/api/gallery/file/thumbs/${item.heroname}`
+                    : `/api/gallery/file/${item.filename}`}
               alt={item.title}
               draggable={false}
               onClick={() => { if (!zoomMode) setZoomMode(true); }}
