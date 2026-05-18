@@ -226,7 +226,7 @@ export default function InstrumentPanel({ reading, condition, conditionKey, isNi
     }}>
 
       {/* ── Hero: icon · condition · outdoor temp + outdoor humidity ── */}
-      <div className="flex items-center gap-6 px-6 py-5">
+      <div className="flex items-center gap-4 sm:gap-6 px-4 sm:px-6 py-5">
         <ConditionIcon cond={conditionKey} isNight={isNight} size={68} />
 
         <div className="flex-1 min-w-0">
@@ -235,7 +235,7 @@ export default function InstrumentPanel({ reading, condition, conditionKey, isNi
             {condition}
           </div>
 
-          <div className="flex items-end gap-8 flex-wrap">
+          <div className="flex items-end gap-4 sm:gap-8">
             {/* Outdoor temperature */}
             <div>
               <div className="flex items-start gap-1 leading-none">
@@ -264,7 +264,9 @@ export default function InstrumentPanel({ reading, condition, conditionKey, isNi
               </div>
               <div className="text-xs mt-1.5" style={{ color: 'var(--ink-faint)' }}>
                 H {fmtInt(r?.outsideHumidityDayHigh ?? null)}% · L {fmtInt(r?.outsideHumidityDayLow ?? null)}%
-                {r?.dewpointC != null && ` · ${t('dew')} ${fmt(r.dewpointC)}°C`}
+                {r?.dewpointC != null && (
+                  <span className="hidden sm:inline">{` · ${t('dew')} ${fmt(r.dewpointC)}°C`}</span>
+                )}
               </div>
             </div>
           </div>

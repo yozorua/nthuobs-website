@@ -713,8 +713,8 @@ export default function WeatherDashboard({ title }: Props) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
             <WindCard reading={latest} />
             <RainCard reading={latest} />
-            <SunMoonCard reading={latest} />
-            <CwaForecastCard periods={cwaForecast} />
+            <div className="col-span-2 md:col-span-1"><SunMoonCard reading={latest} /></div>
+            <div className="col-span-2 md:col-span-1"><CwaForecastCard periods={cwaForecast} /></div>
           </div>
 
           {/* ── Row 2: History chart (full width) ── */}
@@ -745,8 +745,10 @@ export default function WeatherDashboard({ title }: Props) {
             />
           )}
 
-          {/* ── 5-day meteogram ── */}
-          <MeteogramEmbed sunrise={latest?.sunrise} sunset={latest?.sunset} />
+          {/* ── 5-day meteogram (desktop only) ── */}
+          <div className="hidden sm:block">
+            <MeteogramEmbed sunrise={latest?.sunrise} sunset={latest?.sunset} />
+          </div>
 
           <DebugPanel
             simMinutes={simMinutes}

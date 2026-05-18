@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   ComposedChart, Line, Bar, XAxis, YAxis,
@@ -27,14 +27,14 @@ interface SeriesOption {
 }
 
 const SERIES_OPTIONS: SeriesOption[] = [
-  { key: 'outTemp',  labelKey: 'seriesOutTemp',  color: '#60a5fa', yAxisId: 'temp',  unit: '°C' },
-  { key: 'inTemp',   labelKey: 'seriesInTemp',   color: '#93c5fd', yAxisId: 'temp',  unit: '°C', dashed: true },
-  { key: 'outHumid', labelKey: 'seriesOutHumid', color: '#34d399', yAxisId: 'humid', unit: '%'   },
-  { key: 'inHumid',  labelKey: 'seriesInHumid',  color: '#6ee7b7', yAxisId: 'humid', unit: '%', dashed: true },
-  { key: 'baro',     labelKey: 'seriesBaro',     color: '#c084fc', yAxisId: 'baro',  unit: 'hPa' },
-  { key: 'wind',     labelKey: 'seriesWind',     color: '#fbbf24', yAxisId: 'wind',  unit: 'm/s' },
-  { key: 'rain',     labelKey: 'seriesRain',     color: '#38bdf8', yAxisId: 'rain',  unit: 'mm'  },
-  { key: 'sqm',      labelKey: 'seriesSqm',      color: '#a78bfa', yAxisId: 'sqm',   unit: 'mag' },
+  { key: 'outTemp',  labelKey: 'seriesOutTemp',  color: '#5bbcff', yAxisId: 'temp',  unit: '°C' },
+  { key: 'inTemp',   labelKey: 'seriesInTemp',   color: '#5bbcff', yAxisId: 'temp',  unit: '°C', dashed: true },
+  { key: 'outHumid', labelKey: 'seriesOutHumid', color: '#2dd4b0', yAxisId: 'humid', unit: '%'   },
+  { key: 'inHumid',  labelKey: 'seriesInHumid',  color: '#2dd4b0', yAxisId: 'humid', unit: '%', dashed: true },
+  { key: 'baro',     labelKey: 'seriesBaro',     color: '#a78bfa', yAxisId: 'baro',  unit: 'hPa' },
+  { key: 'wind',     labelKey: 'seriesWind',     color: '#f0c040', yAxisId: 'wind',  unit: 'm/s' },
+  { key: 'rain',     labelKey: 'seriesRain',     color: '#4ea8e8', yAxisId: 'rain',  unit: 'mm'  },
+  { key: 'sqm',      labelKey: 'seriesSqm',      color: '#c084e8', yAxisId: 'sqm',   unit: 'mag' },
 ];
 
 const DEFAULT_SERIES = new Set(['outTemp', 'outHumid']);
@@ -178,7 +178,7 @@ function DayNightBackground({ zones }: {
             y={offset.top}
             width={right - px1}
             height={plotArea.height}
-            fill={z.isDay ? 'rgba(255,230,160,0.04)' : 'rgba(20,40,100,0.12)'}
+            fill={z.isDay ? 'rgba(255,215,100,0.05)' : 'rgba(10,22,75,0.18)'}
           />
         );
       })}
@@ -202,20 +202,23 @@ function ChartTooltip({ active, payload, label, hours, labelMap }: TooltipProps)
 
   return (
     <div style={{
-      background: 'rgba(10,12,22,0.85)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
-      border: '1px solid rgba(255,255,255,0.12)',
+      background: 'rgba(8,10,20,0.88)',
+      backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255,255,255,0.10)',
+      borderTop: '1px solid rgba(255,255,255,0.18)',
       borderRadius: 10,
-      padding: '8px 12px',
+      padding: '9px 13px',
       fontSize: 11,
-      minWidth: 130,
+      minWidth: 140,
+      boxShadow: '0 8px 32px rgba(0,0,0,0.45)',
     }}>
       <div style={{
-        color: 'rgba(255,255,255,0.4)',
-        marginBottom: 6,
+        color: 'rgba(255,255,255,0.32)',
+        marginBottom: 8,
         fontSize: 10,
-        letterSpacing: '0.06em',
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
       }}>
         {formatTime(label, hours)}
       </div>
@@ -229,14 +232,20 @@ function ChartTooltip({ active, payload, label, hours, labelMap }: TooltipProps)
         return (
           <div key={p.name} style={{
             display: 'flex',
-            justifyContent: 'space-between',
-            gap: 14,
-            lineHeight: 1.7,
+            alignItems: 'center',
+            gap: 8,
+            lineHeight: 1.75,
           }}>
-            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 10 }}>
+            <span style={{
+              width: 5, height: 5, borderRadius: '50%',
+              background: p.color,
+              flexShrink: 0,
+              boxShadow: `0 0 5px ${p.color}99`,
+            }} />
+            <span style={{ color: 'rgba(255,255,255,0.38)', fontSize: 10, flex: 1 }}>
               {labelMap[p.name] ?? p.name}
             </span>
-            <span style={{ color: p.color, fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+            <span style={{ color: p.color, fontVariantNumeric: 'tabular-nums', fontWeight: 500, fontSize: 11 }}>
               {val} {s?.unit}
             </span>
           </div>
@@ -251,6 +260,13 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
   const t = useTranslations('weather');
   const labelMap = Object.fromEntries(SERIES_OPTIONS.map(s => [s.key, t(s.labelKey as Parameters<typeof t>[0])]));
   const [activeSeries, setActiveSeries] = useState<Set<string>>(DEFAULT_SERIES);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   const toggleSeries = (key: string) => {
     setActiveSeries(prev => {
@@ -282,7 +298,9 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
   const showBaroAxis  = activeSeries.has('baro') && !showTempAxis;
   const showWindAxis  = activeSeries.has('wind') && !showTempAxis && !showBaroAxis;
   const showSqmAxis   = activeSeries.has('sqm') && !showTempAxis && !showBaroAxis && !showWindAxis;
-  const showRainAxis  = activeSeries.has('rain') && !showHumidAxis;
+  // Right-side axes hidden on mobile to avoid cramping the chart
+  const showHumidAxisR = showHumidAxis && !isMobile;
+  const showRainAxisR  = activeSeries.has('rain') && !showHumidAxis && !isMobile;
 
   // Tight domain helpers — pad a bit above/below actual data range
   const tempDomain  = [
@@ -340,12 +358,13 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
                 fontSize: 10,
                 padding: '3px 10px',
                 borderRadius: 20,
-                border: `1px solid ${active ? s.color + 'aa' : 'rgba(255,255,255,0.14)'}`,
-                background: active ? s.color + '22' : 'transparent',
-                color: active ? s.color : 'rgba(255,255,255,0.30)',
+                border: `1px solid ${active ? s.color + 'cc' : 'rgba(255,255,255,0.12)'}`,
+                background: active ? s.color + '1e' : 'transparent',
+                color: active ? s.color : 'rgba(255,255,255,0.28)',
+                boxShadow: active ? `0 0 8px ${s.color}30` : 'none',
                 cursor: 'pointer',
-                transition: 'all 0.15s',
-                letterSpacing: '0.04em',
+                transition: 'all 0.18s',
+                letterSpacing: '0.05em',
               }}
             >
               {labelMap[s.key]}
@@ -384,7 +403,7 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
-            <ComposedChart data={chartData} margin={{ top: 4, right: (showHumidAxis || showRainAxis) ? 38 : 12, bottom: 0, left: (showTempAxis || showBaroAxis || showWindAxis || showSqmAxis) ? 4 : 0 }} barCategoryGap="2%">
+            <ComposedChart data={chartData} margin={{ top: 4, right: (showHumidAxisR || showRainAxisR) ? 38 : 12, bottom: 0, left: (showTempAxis || showBaroAxis || showWindAxis || showSqmAxis) ? 4 : 0 }} barCategoryGap="2%">
 
               {/* Day / night background zones */}
               <DayNightBackground zones={dayNightZones} />
@@ -417,17 +436,17 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
                 width={showTempAxis ? 34 : 0}
               />
 
-              {/* Humidity axis — right, tight range */}
+              {/* Humidity axis — right, hidden on mobile */}
               <YAxis
                 yAxisId="humid"
                 orientation="right"
                 domain={humidDomain}
-                hide={!showHumidAxis}
+                hide={!showHumidAxisR}
                 tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }}
                 tickLine={false}
                 axisLine={false}
                 unit="%"
-                width={showHumidAxis ? 34 : 0}
+                width={showHumidAxisR ? 34 : 0}
               />
 
               {/* Pressure */}
@@ -442,18 +461,19 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
                 domain={[0, 'dataMax + 1']}
                 tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }}
                 tickLine={false} axisLine={false} unit=" m/s" />
-              {/* Rain — right side */}
+              {/* Rain — right side, hidden on mobile */}
               <YAxis yAxisId="rain" orientation="right"
-                hide={!showRainAxis} width={showRainAxis ? 36 : 0}
+                hide={!showRainAxisR} width={showRainAxisR ? 36 : 0}
                 domain={[0, 'dataMax + 1']}
                 tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }}
                 tickLine={false} axisLine={false} unit=" mm" />
-              {/* SQM — left, higher mag = darker sky, so invert */}
+              {/* SQM — left, higher = darker sky = better, no inversion needed */}
               <YAxis yAxisId="sqm" orientation="left"
                 hide={!showSqmAxis} width={showSqmAxis ? 40 : 0}
-                domain={['dataMin - 0.5', 'dataMax + 0.5']} reversed
+                domain={[(d: number) => Math.floor(d - 0.5), (d: number) => Math.ceil(d + 0.5)]}
                 tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }}
-                tickLine={false} axisLine={false} />
+                tickLine={false} axisLine={false}
+                tickFormatter={(v: number) => v.toFixed(1)} />
 
               <Tooltip
                 content={(props) => (
@@ -465,42 +485,46 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
                     labelMap={labelMap}
                   />
                 )}
-                cursor={{ stroke: 'rgba(255,255,255,0.12)', strokeWidth: 1 }}
+                cursor={{ stroke: 'rgba(255,255,255,0.18)', strokeWidth: 1, strokeDasharray: '2 4' }}
               />
 
               {activeSeries.has('outTemp') && (
                 <Line yAxisId="temp" type="monotone" dataKey="outTemp" name="outTemp"
-                  stroke="#60a5fa" dot={false} strokeWidth={1.8} connectNulls />
+                  stroke="#5bbcff" dot={false} strokeWidth={2} connectNulls
+                  style={{ filter: 'drop-shadow(0 0 4px rgba(91,188,255,0.55))' }} />
               )}
               {activeSeries.has('inTemp') && (
                 <Line yAxisId="temp" type="monotone" dataKey="inTemp" name="inTemp"
-                  stroke="#93c5fd" dot={false} strokeWidth={1.2}
-                  strokeDasharray="4 3" connectNulls />
+                  stroke="#5bbcff" dot={false} strokeWidth={1.3}
+                  strokeDasharray="6 4" connectNulls strokeOpacity={0.55} />
               )}
               {activeSeries.has('outHumid') && (
                 <Line yAxisId="humid" type="monotone" dataKey="outHumid" name="outHumid"
-                  stroke="#34d399" dot={false} strokeWidth={1.8} connectNulls />
+                  stroke="#2dd4b0" dot={false} strokeWidth={2} connectNulls
+                  style={{ filter: 'drop-shadow(0 0 4px rgba(45,212,176,0.50))' }} />
               )}
               {activeSeries.has('inHumid') && (
                 <Line yAxisId="humid" type="monotone" dataKey="inHumid" name="inHumid"
-                  stroke="#6ee7b7" dot={false} strokeWidth={1.2}
-                  strokeDasharray="4 3" connectNulls />
+                  stroke="#2dd4b0" dot={false} strokeWidth={1.3}
+                  strokeDasharray="6 4" connectNulls strokeOpacity={0.55} />
               )}
               {activeSeries.has('baro') && (
                 <Line yAxisId="baro" type="monotone" dataKey="baro" name="baro"
-                  stroke="#c084fc" dot={false} strokeWidth={1.5} connectNulls />
+                  stroke="#a78bfa" dot={false} strokeWidth={1.8} connectNulls
+                  style={{ filter: 'drop-shadow(0 0 3px rgba(167,139,250,0.48))' }} />
               )}
               {activeSeries.has('wind') && (
                 <Bar yAxisId="wind" dataKey="wind" name="wind"
-                  fill="#fbbf24" fillOpacity={0.65} maxBarSize={8} />
+                  fill="#f0c040" fillOpacity={0.55} maxBarSize={6} radius={[2, 2, 0, 0]} />
               )}
               {activeSeries.has('rain') && (
                 <Bar yAxisId="rain" dataKey="rain" name="rain"
-                  fill="#38bdf8" fillOpacity={0.72} maxBarSize={10} />
+                  fill="#4ea8e8" fillOpacity={0.62} maxBarSize={8} radius={[2, 2, 0, 0]} />
               )}
               {activeSeries.has('sqm') && (
                 <Line yAxisId="sqm" type="monotone" dataKey="sqm" name="sqm"
-                  stroke="#a78bfa" dot={false} strokeWidth={1.5} connectNulls />
+                  stroke="#c084e8" dot={false} strokeWidth={1.8} connectNulls
+                  style={{ filter: 'drop-shadow(0 0 3px rgba(192,132,232,0.48))' }} />
               )}
 
             </ComposedChart>

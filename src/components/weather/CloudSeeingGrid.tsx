@@ -224,7 +224,7 @@ export default function CloudSeeingGrid({
               key={row.key}
               style={{ marginBottom: row.key === 'low' ? 6 : 0 }}
             >
-              <span style={{ display: 'block', lineHeight: '16px', fontSize: 12, color: 'var(--ink-faint)', whiteSpace: 'nowrap' }}>
+              <span style={{ display: 'block', lineHeight: '16px', fontSize: 12, color: 'var(--ink-faint)', whiteSpace: 'nowrap', position: 'relative', top: (row.key === 'seeing' || row.key === 'precip') ? -4 : 0 }}>
                 {row.label}
                 {row.subLabel && (
                   <span style={{ marginLeft: 4, fontSize: 10, opacity: 0.55 }}>
@@ -236,12 +236,13 @@ export default function CloudSeeingGrid({
           ))}
         </div>
 
-        {/* ── Scrollable block grid ── */}
+        {/* ── Right column: scrollable grid + legend aligned together ── */}
         {/* eslint-disable-next-line react/no-unknown-property */}
         <style>{`.cs-scroll::-webkit-scrollbar { display: none; }`}</style>
+        <div className="flex-1 min-w-0 flex flex-col">
         <div
           ref={scrollRef}
-          className="overflow-x-auto flex-1 cs-scroll"
+          className="overflow-x-auto cs-scroll"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
         >
           <div style={{ display: 'inline-flex', flexDirection: 'column', gap: 2, verticalAlign: 'top' }}>
@@ -339,48 +340,48 @@ export default function CloudSeeingGrid({
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Legend */}
-      <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs leading-none" style={{ color: 'var(--ink-faint)' }}>{t('cloudLegend')}:</span>
-          <div
-            className="rounded-sm"
-            style={{
-              width: 80,
-              height: 10,
-              background: `linear-gradient(to right, ${cloudColor(0, dark)}, ${cloudColor(50, dark)}, ${cloudColor(100, dark)})`,
-            }}
-          />
-          <span className="text-[10px] leading-none" style={{ color: 'var(--ink-faint)' }}>0 → 100%</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs leading-none" style={{ color: 'var(--ink-faint)' }}>{t('seeing')}:</span>
-          <div
-            className="rounded-sm"
-            style={{
-              width: 80,
-              height: 10,
-              background: `linear-gradient(to right, ${seeingColor(0.8, dark)}, ${seeingColor(1.9, dark)}, ${seeingColor(3.0, dark)})`,
-            }}
-          />
-          <span className="text-[10px] leading-none" style={{ color: 'var(--ink-faint)' }}>0.8″ → 3.0″</span>
-        </div>
-        {hasPrecip && (
+        {/* Legend — inside the same column as the boxes, so "Cloud:" aligns with box left edge */}
+        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-xs leading-none" style={{ color: 'var(--ink-faint)' }}>{t('precipPct')}:</span>
+            <span className="text-xs leading-none" style={{ color: 'var(--ink-faint)' }}>{t('cloudLegend')}:</span>
             <div
               className="rounded-sm"
               style={{
                 width: 80,
                 height: 10,
-                background: `linear-gradient(to right, ${precipColor(0, dark)}, ${precipColor(50, dark)}, ${precipColor(100, dark)})`,
+                background: `linear-gradient(to right, ${cloudColor(0, dark)}, ${cloudColor(50, dark)}, ${cloudColor(100, dark)})`,
               }}
             />
             <span className="text-[10px] leading-none" style={{ color: 'var(--ink-faint)' }}>0 → 100%</span>
           </div>
-        )}
+          <div className="flex items-center gap-2">
+            <span className="text-xs leading-none" style={{ color: 'var(--ink-faint)' }}>{t('seeing')}:</span>
+            <div
+              className="rounded-sm"
+              style={{
+                width: 80,
+                height: 10,
+                background: `linear-gradient(to right, ${seeingColor(0.8, dark)}, ${seeingColor(1.9, dark)}, ${seeingColor(3.0, dark)})`,
+              }}
+            />
+            <span className="text-[10px] leading-none" style={{ color: 'var(--ink-faint)' }}>0.8″ → 3.0″</span>
+          </div>
+          {hasPrecip && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs leading-none" style={{ color: 'var(--ink-faint)' }}>{t('precipPct')}:</span>
+              <div
+                className="rounded-sm"
+                style={{
+                  width: 80,
+                  height: 10,
+                  background: `linear-gradient(to right, ${precipColor(0, dark)}, ${precipColor(50, dark)}, ${precipColor(100, dark)})`,
+                }}
+              />
+              <span className="text-[10px] leading-none" style={{ color: 'var(--ink-faint)' }}>0 → 100%</span>
+            </div>
+          )}
+        </div>
+        </div>{/* closes flex-1 min-w-0 flex-col wrapper */}
       </div>
     </div>
   );
