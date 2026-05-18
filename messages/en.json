@@ -134,16 +134,16 @@
     "equipmentLabel": "Equipment",
     "equipment": [
       {
-        "name": "25 cm Refractor",
+        "name": "SHOWA 25 cm Refractor",
         "detail": "The largest aperture refracting telescope in Taiwan. Permanently mounted."
       },
       {
-        "name": "16-inch Cassegrain Reflector",
-        "detail": "Handmade by students in 1971. Open fork equatorial mount."
+        "name": "TAT",
+        "detail": "Originally part of the Taiwan Automated Telescope project, now used as the observatory's remote observation instrument."
       },
       {
-        "name": "Celestron 8 (×2)",
-        "detail": "Schmidt-Cassegrain telescopes imported from the United States."
+        "name": "Takahashi FC-125 Refractor",
+        "detail": "12.5 cm refractor used for educational activities and public observations."
       },
       {
         "name": "All-Sky Camera",
@@ -152,6 +152,10 @@
       {
         "name": "Weather Station",
         "detail": "Monitors temperature, humidity, wind speed, pressure, and rainfall."
+      },
+      {
+        "name": "Computer Cluster - MIRA",
+        "detail": "Handles data storage, image processing, web services, and high-speed internal communications."
       }
     ],
     "refsLabel": "References"
@@ -489,7 +493,7 @@
     "allSkyCamera": "All-Sky Camera",
     "allSkyCameraPlaceholder": "Waiting for All-sky camera image",
     "allSkyAutoRefresh": "auto-refreshes every {seconds}s",
-    "radarEcho": "Radar Echo",
+    "radarEcho": "Radar",
     "radarUnavailable": "Radar image unavailable",
     "dew": "Dew",
     "conditions": {
