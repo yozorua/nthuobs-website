@@ -488,6 +488,9 @@
     "satellite": "Satellite",
     "allSkyCamera": "All-Sky Camera",
     "allSkyCameraPlaceholder": "Waiting for All-sky camera image",
+    "allSkyAutoRefresh": "auto-refreshes every {seconds}s",
+    "radarEcho": "Radar Echo",
+    "radarUnavailable": "Radar image unavailable",
     "dew": "Dew",
     "conditions": {
       "Clear": "Clear",

@@ -1,45 +1,21 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ALLSKY_REFRESH_INTERVAL_MS } from '@/config/observatory';
+import { useTranslations } from 'next-intl';
 
-interface Props {
-  onRefresh?: (time: Date) => void;
-}
-
-async function fetchImageMtime(): Promise<Date | null> {
-  try {
-    const res = await fetch('/api/allsky/meta');
-    if (!res.ok) return null;
-    const data = await res.json() as { mtime?: string };
-    return data.mtime ? new Date(data.mtime) : null;
-  } catch {
-    return null;
-  }
-}
-
-export default function AllSkyCamera({ onRefresh }: Props) {
+export default function RadarCard() {
   const t = useTranslations('weather');
-  const [src, setSrc] = useState(`/api/allsky/image?t=${Date.now()}`);
+  const [src, setSrc] = useState(`/api/weather/radar?t=${Date.now()}`);
   const [error, setError] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const onRefreshRef = useRef(onRefresh);
-  onRefreshRef.current = onRefresh;
 
   useEffect(() => {
-    fetchImageMtime().then(mtime => { if (mtime) onRefreshRef.current?.(mtime); });
-
-    intervalRef.current = setInterval(async () => {
-      setSrc(`/api/allsky/image?t=${Date.now()}`);
+    const id = setInterval(() => {
+      setSrc(`/api/weather/radar?t=${Date.now()}`);
       setError(false);
-      const mtime = await fetchImageMtime();
-      if (mtime) onRefreshRef.current?.(mtime);
-    }, ALLSKY_REFRESH_INTERVAL_MS);
-
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    }, 10 * 60 * 1000);
+    return () => clearInterval(id);
   }, []);
 
   useEffect(() => {
@@ -61,7 +37,7 @@ export default function AllSkyCamera({ onRefresh }: Props) {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
-        alt={t('allSkyCamera')}
+        alt={t('radarEcho')}
         style={{ maxWidth: '92vw', maxHeight: '92vh', objectFit: 'contain' }}
         onClick={e => e.stopPropagation()}
       />
@@ -76,12 +52,6 @@ export default function AllSkyCamera({ onRefresh }: Props) {
       >
         ✕
       </button>
-      <span style={{
-        position: 'absolute', bottom: 20,
-        fontSize: 11, color: 'rgba(255,255,255,0.4)',
-      }}>
-        {t('allSkyCamera')} · {t('allSkyAutoRefresh', { seconds: Math.round(ALLSKY_REFRESH_INTERVAL_MS / 1000) })}
-      </span>
     </div>
   );
 
@@ -94,22 +64,22 @@ export default function AllSkyCamera({ onRefresh }: Props) {
       >
         {/* Title row — px-5 pt-5 matches other cards' p-5 */}
         <div className="px-5 pt-5 flex-shrink-0">
-          <p className="label mb-3">{t('allSkyCamera')}</p>
+          <p className="label mb-3">{t('radarEcho')}</p>
         </div>
 
         {/* Image area */}
-        <div className="relative flex-1" style={{ minHeight: 120 }}>
+        <div className="relative flex-1" style={{ minHeight: 160 }}>
           {error ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <p className="text-sm text-center px-4" style={{ color: 'var(--ink-faint)' }}>
-                {t('allSkyCameraPlaceholder')}
+                {t('radarUnavailable')}
               </p>
             </div>
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={src}
-              alt={t('allSkyCamera')}
+              alt={t('radarEcho')}
               className="absolute inset-0 w-full h-full"
               style={{ objectFit: 'contain' }}
               onError={() => setError(true)}

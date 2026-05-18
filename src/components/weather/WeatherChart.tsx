@@ -155,14 +155,28 @@ function DayNightBackground({ zones }: {
     <g>
       {zones.map((z, i) => {
         const px1 = xScale(z.x1);
-        const px2 = xScale(z.x2);
-        if (px1 == null || px2 == null) return null;
+        if (px1 == null) return null;
+
+        // Use the next zone's left edge as this zone's right edge so adjacent
+        // zones never overlap. Only the last zone needs to extend by bw to
+        // cover the final band.
+        let right: number;
+        if (i + 1 < zones.length) {
+          const nextPx = xScale(zones[i + 1].x1);
+          if (nextPx == null) return null;
+          right = nextPx;
+        } else {
+          const px2 = xScale(z.x2);
+          if (px2 == null) return null;
+          right = px2 + bw;
+        }
+
         return (
           <rect
             key={i}
             x={px1}
             y={offset.top}
-            width={px2 - px1 + bw}
+            width={right - px1}
             height={plotArea.height}
             fill={z.isDay ? 'rgba(255,230,160,0.04)' : 'rgba(20,40,100,0.12)'}
           />
@@ -265,6 +279,10 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
   const dayNightZones = buildDayNightZones(data, sunrise, sunset);
   const showTempAxis  = activeSeries.has('outTemp') || activeSeries.has('inTemp');
   const showHumidAxis = activeSeries.has('outHumid') || activeSeries.has('inHumid');
+  const showBaroAxis  = activeSeries.has('baro') && !showTempAxis;
+  const showWindAxis  = activeSeries.has('wind') && !showTempAxis && !showBaroAxis;
+  const showSqmAxis   = activeSeries.has('sqm') && !showTempAxis && !showBaroAxis && !showWindAxis;
+  const showRainAxis  = activeSeries.has('rain') && !showHumidAxis;
 
   // Tight domain helpers — pad a bit above/below actual data range
   const tempDomain  = [
@@ -366,7 +384,7 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
-            <ComposedChart data={chartData} margin={{ top: 4, right: showHumidAxis ? 38 : 12, bottom: 0, left: showTempAxis ? 4 : 0 }} barCategoryGap="2%">
+            <ComposedChart data={chartData} margin={{ top: 4, right: (showHumidAxis || showRainAxis) ? 38 : 12, bottom: 0, left: (showTempAxis || showBaroAxis || showWindAxis || showSqmAxis) ? 4 : 0 }} barCategoryGap="2%">
 
               {/* Day / night background zones */}
               <DayNightBackground zones={dayNightZones} />
@@ -412,13 +430,30 @@ export default function WeatherChart({ data, hours, onHoursChange, sunrise, suns
                 width={showHumidAxis ? 34 : 0}
               />
 
-              {/* Pressure — tight domain, hidden axis */}
-              <YAxis yAxisId="baro" hide width={0} domain={baroDomain} />
-              {/* Wind & rain — start from 0 */}
-              <YAxis yAxisId="wind" hide width={0} domain={[0, 'dataMax + 1']} />
-              <YAxis yAxisId="rain" hide width={0} domain={[0, 'dataMax + 1']} />
-              {/* SQM — higher mag = darker sky, so invert axis */}
-              <YAxis yAxisId="sqm" hide width={0} domain={['dataMin - 0.5', 'dataMax + 0.5']} reversed />
+              {/* Pressure */}
+              <YAxis yAxisId="baro" orientation="left"
+                hide={!showBaroAxis} width={showBaroAxis ? 46 : 0}
+                domain={baroDomain}
+                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }}
+                tickLine={false} axisLine={false} unit=" hPa" />
+              {/* Wind */}
+              <YAxis yAxisId="wind" orientation="left"
+                hide={!showWindAxis} width={showWindAxis ? 36 : 0}
+                domain={[0, 'dataMax + 1']}
+                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }}
+                tickLine={false} axisLine={false} unit=" m/s" />
+              {/* Rain — right side */}
+              <YAxis yAxisId="rain" orientation="right"
+                hide={!showRainAxis} width={showRainAxis ? 36 : 0}
+                domain={[0, 'dataMax + 1']}
+                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }}
+                tickLine={false} axisLine={false} unit=" mm" />
+              {/* SQM — left, higher mag = darker sky, so invert */}
+              <YAxis yAxisId="sqm" orientation="left"
+                hide={!showSqmAxis} width={showSqmAxis ? 40 : 0}
+                domain={['dataMin - 0.5', 'dataMax + 0.5']} reversed
+                tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.35)' }}
+                tickLine={false} axisLine={false} />
 
               <Tooltip
                 content={(props) => (

@@ -10,6 +10,8 @@ import CloudSeeingGrid from './CloudSeeingGrid';
 import WeatherChart from './WeatherChart';
 import AllSkyCamera from './AllSkyCamera';
 import MeteogramEmbed from './MeteogramEmbed';
+import { WindMapCard, SatelliteCard } from './MeteoblueEmbeds';
+import RadarCard from './RadarCard';
 import WindCard from './WindCard';
 import RainCard from './RainCard';
 import AtmosphereCanvas, { computeSunPosition, AtmosphereCondition } from './AtmosphereCanvas';
@@ -692,11 +694,8 @@ export default function WeatherDashboard({ title }: Props) {
 
         <div className="space-y-3">
 
-          {/* ── Row 1: 4-col grid, 2 implicit rows ── */}
-          {/*   row-a: InstrumentPanel (col 1-3)  |  AllSkyCamera (col 4)        */}
-          {/*   row-b: WindCard (col 1) | RainCard (col 2) | SunMoonCard (col 3) */}
+          {/* ── Row 1: InstrumentPanel (col 1-3) | AllSkyCamera (col 4) ── */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-stretch">
-            {/* InstrumentPanel spans cols 1-3, row 1 */}
             <div className="md:col-span-3">
               <InstrumentPanel
                 reading={latest}
@@ -705,16 +704,17 @@ export default function WeatherDashboard({ title }: Props) {
                 isNight={period === 'night'}
               />
             </div>
-            {/* AllSkyCamera spans col 4, rows 1-2 */}
-            <div className="md:row-span-2 flex flex-col" style={{ minHeight: 0 }}>
-              <div className="flex-1 min-h-0">
-                <AllSkyCamera onRefresh={setAllskyRefreshTime} />
-              </div>
+            <div className="min-h-64 md:min-h-0 h-full">
+              <AllSkyCamera onRefresh={setAllskyRefreshTime} />
             </div>
-            {/* Wind, Rain, SunMoon in row 2 cols 1-3 */}
+          </div>
+
+          {/* ── Row 2: Wind | Rain | SunMoon | CWA Forecast ── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-stretch">
             <WindCard reading={latest} />
             <RainCard reading={latest} />
             <SunMoonCard reading={latest} />
+            <CwaForecastCard periods={cwaForecast} />
           </div>
 
           {/* ── Row 2: History chart (full width) ── */}
@@ -727,8 +727,12 @@ export default function WeatherDashboard({ title }: Props) {
             loading={chartLoading}
           />
 
-          {/* ── Row 3: CWA Forecast (full width) ── */}
-          <CwaForecastCard periods={cwaForecast} />
+          {/* ── Row 3: Radar + Wind Map + Satellite ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-stretch">
+            <RadarCard />
+            <WindMapCard />
+            <SatelliteCard />
+          </div>
 
           {/* ── Cloud & Seeing forecast ── */}
           {cloudForecast.length > 0 && (

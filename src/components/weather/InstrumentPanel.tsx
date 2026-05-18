@@ -239,11 +239,11 @@ export default function InstrumentPanel({ reading, condition, conditionKey, isNi
             {/* Outdoor temperature */}
             <div>
               <div className="flex items-start gap-1 leading-none">
-                <span className="text-6xl font-extralight"
+                <span className="text-4xl sm:text-6xl font-extralight"
                       style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
                   {r?.outsideTempC != null ? r.outsideTempC.toFixed(1) : '—'}
                 </span>
-                <span className="text-2xl mt-1" style={{ color: 'var(--ink-muted)' }}>°C</span>
+                <span className="text-lg sm:text-2xl mt-1" style={{ color: 'var(--ink-muted)' }}>°C</span>
               </div>
               <div className="text-xs mt-1.5" style={{ color: 'var(--ink-faint)' }}>
                 H {fmt(r?.outTempDayHighC ?? null)}° · L {fmt(r?.outTempDayLowC ?? null)}°
@@ -256,11 +256,11 @@ export default function InstrumentPanel({ reading, condition, conditionKey, isNi
             {/* Outdoor humidity */}
             <div>
               <div className="flex items-start gap-1 leading-none">
-                <span className="text-6xl font-extralight"
+                <span className="text-4xl sm:text-6xl font-extralight"
                       style={{ color: 'var(--ink)', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
                   {r?.outsideHumidityPercent != null ? fmtInt(r.outsideHumidityPercent) : '—'}
                 </span>
-                <span className="text-2xl mt-1" style={{ color: 'var(--ink-muted)' }}>%</span>
+                <span className="text-lg sm:text-2xl mt-1" style={{ color: 'var(--ink-muted)' }}>%</span>
               </div>
               <div className="text-xs mt-1.5" style={{ color: 'var(--ink-faint)' }}>
                 H {fmtInt(r?.outsideHumidityDayHigh ?? null)}% · L {fmtInt(r?.outsideHumidityDayLow ?? null)}%
@@ -294,10 +294,10 @@ export default function InstrumentPanel({ reading, condition, conditionKey, isNi
         <IndoorCell
           label="SQM"
           value={sqm.last != null ? sqm.last.toFixed(2) : '—'}
-          unit="mag/arcsec²"
+          unit="mag/as²"
           hiLo={
-            sqm.avg != null
-              ? t('sqmStats', { avg: sqm.avg.toFixed(2), max: sqm.max?.toFixed(2) ?? '—', min: sqm.min?.toFixed(2) ?? '—' })
+            sqm.max != null || sqm.min != null
+              ? `H ${sqm.max?.toFixed(2) ?? '—'} · L ${sqm.min?.toFixed(2) ?? '—'}`
               : '—'
           }
         />

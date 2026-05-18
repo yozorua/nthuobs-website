@@ -488,6 +488,9 @@
     "satellite": "衛星雲圖",
     "allSkyCamera": "全天相機",
     "allSkyCameraPlaceholder": "等待更新全天相機影像",
+    "allSkyAutoRefresh": "每 {seconds} 秒自動更新",
+    "radarEcho": "雷達回波",
+    "radarUnavailable": "雷達影像暫時無法使用",
     "dew": "露點",
     "conditions": {
       "Clear": "晴",

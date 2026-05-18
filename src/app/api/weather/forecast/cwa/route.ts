@@ -30,7 +30,7 @@ export async function GET() {
     const descArray: string[] = descElement?.ElementValue?.WeatherDescription ?? [];
 
     const periods = descArray
-      .filter((d: string) => typeof d === "string" && d.trim().length > 0)
+      .filter((d: string) => typeof d === "string" && d.trim().length > 0 && !d.trim().startsWith("提醒您") && !d.trim().startsWith("風浪："))
       .map((description: string) => ({ description, code: "" }));
 
     return NextResponse.json({ location: location.LocationName, forecast: periods });
