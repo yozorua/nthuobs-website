@@ -520,7 +520,7 @@
     "descPlaceholder": "Telescope, camera, exposure, processing notes…",
     "categoryField": "Category",
     "dateField": "Date Taken",
-    "fileHint": "JPG · PNG · WEBP · TIFF — max 50 MB · MP4 — max 500 MB",
+    "fileHint": "JPG · PNG · WEBP · TIFF — max 100 MB · MP4 — max 500 MB",
     "submit": "Upload",
     "uploading": "Uploading…",
     "cancel": "Cancel",

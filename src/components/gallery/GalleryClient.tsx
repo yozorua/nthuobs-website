@@ -670,7 +670,7 @@ function EquipmentDisplay({
     >
       {/* Equipment table */}
       {hasGear && (
-        <div style={{ minWidth: 0, flex: '1 1 160px' }}>
+        <div style={{ minWidth: 0 }}>
           <p className="label mb-2">
             {t('equipmentSection')}
           </p>
@@ -700,7 +700,7 @@ function EquipmentDisplay({
 
       {/* Integration table */}
       {rows.length > 0 && (
-        <div style={{ flex: '1 1 280px', minWidth: 0 }}>
+        <div style={{ minWidth: 0 }}>
           <p className="label mb-2">
             {t('integrationSection')}
           </p>
@@ -729,7 +729,7 @@ function EquipmentDisplay({
                       <td className="pr-4 pb-0.5" style={{ color: 'var(--ink-secondary)' }}>{row.exposureSec}s</td>
                       <td className="pr-4 pb-0.5" style={{ color: 'var(--ink-secondary)' }}>{row.gain || '—'}</td>
                       <td className="pr-4 pb-0.5" style={{ color: 'var(--ink-secondary)' }}>{row.binning}</td>
-                      <td className="pr-4 pb-0.5" style={{ color: 'var(--ink-faint)' }}>{row.date || '—'}</td>
+                      <td className="pr-4 pb-0.5" style={{ color: 'var(--ink-faint)' }}>{row.date ? row.date.replace(/-/g, '.') : '—'}</td>
                       <td className="pb-0.5" style={{ color: 'var(--ink-faint)' }}>{formatDuration(rowTotal)}</td>
                     </tr>
                   );
@@ -785,6 +785,8 @@ function Lightbox({
   const t = useTranslations('gallery');
   const videoRef = useRef<HTMLVideoElement>(null);
   const lightboxRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const scaleRef = useRef(1);
 
   const [editMode, setEditMode] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -823,6 +825,28 @@ function Lightbox({
   const [editLng, setEditLng] = useState<number | null>(item.lng);
   const [editShowMap, setEditShowMap] = useState(false);
   const [editLinks, setEditLinks] = useState<GalleryLink[]>(item.links ?? []);
+
+  // Keep scaleRef in sync so the wheel handler (a stale closure) reads the latest value
+  scaleRef.current = scale;
+
+  // Clamp pan so the image edges never leave the viewport
+  function clampPan(x: number, y: number, sc: number): { x: number; y: number } {
+    const container = lightboxRef.current;
+    const img = imgRef.current;
+    if (!container || !img || !img.naturalWidth) return { x, y };
+    const { width: cW, height: cH } = container.getBoundingClientRect();
+    const nat = img.naturalWidth / img.naturalHeight;
+    // Rendered image dimensions under objectFit: contain
+    let rW: number, rH: number;
+    if (cW / cH > nat) { rH = cH; rW = cH * nat; }
+    else                { rW = cW; rH = cW / nat; }
+    const maxX = Math.max(0, (rW * sc - cW) / 2);
+    const maxY = Math.max(0, (rH * sc - cH) / 2);
+    return {
+      x: Math.max(-maxX, Math.min(maxX, x)),
+      y: Math.max(-maxY, Math.min(maxY, y)),
+    };
+  }
 
   // Reset when item changes
   useEffect(() => {
@@ -910,7 +934,10 @@ function Lightbox({
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-      setScale((prev) => Math.max(0.5, Math.min(8, prev * factor)));
+      const newScale = Math.max(0.5, Math.min(8, scaleRef.current * factor));
+      scaleRef.current = newScale;
+      setScale(newScale);
+      setPan(prev => clampPan(prev.x, prev.y, newScale));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
@@ -966,25 +993,26 @@ function Lightbox({
       style={{ background: 'var(--bg)', userSelect: (dragging || isResizing) ? 'none' : undefined, cursor: isResizing ? 'col-resize' : undefined }}
       onMouseMove={(e) => {
         if (!dragging) return;
-        setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+        setPan(clampPan(e.clientX - dragStart.x, e.clientY - dragStart.y, scale));
       }}
       onMouseUp={() => setDragging(false)}
       onMouseLeave={() => setDragging(false)}
     >
       {/* Image + nav */}
       <div className="flex-1 relative flex items-center justify-center overflow-hidden min-h-0" style={{ background: '#000' }}>
-        {/* Floating close button */}
-        {!zoomMode && (
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 z-20 w-8 h-8 flex items-center justify-center text-xl leading-none transition-colors duration-150"
-            style={{ color: 'rgba(255,255,255,0.4)' }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.9)')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
-          >
-            ×
-          </button>
-        )}
+        {/* Floating close / exit-zoom button */}
+        <button
+          onClick={() => {
+            if (zoomMode) { setZoomMode(false); setScale(1); setPan({ x: 0, y: 0 }); }
+            else onClose();
+          }}
+          className="absolute top-3 left-3 z-20 w-12 h-12 flex items-center justify-center text-3xl leading-none transition-colors duration-150"
+          style={{ color: 'rgba(255,255,255,0.4)' }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.9)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.4)')}
+        >
+          ×
+        </button>
         {hasPrev && !zoomMode && (
           <button
             onClick={onPrev}
@@ -1009,6 +1037,7 @@ function Lightbox({
           {item.type === 'IMAGE' ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
+              ref={imgRef}
               key={item.id}
               src={item.webname
                 ? `/api/gallery/file/thumbs/${item.webname}`
@@ -1417,31 +1446,35 @@ function Lightbox({
               </div>
             )}
             {hasEquipData && <EquipmentDisplay equipment={item.equipment!} />}
-            {item.lat !== null && item.lng !== null && (
-              <div style={{ border: '1px solid var(--line)', overflow: 'hidden' }}>
-                <MapPicker lat={item.lat} lng={item.lng} height={180} />
-              </div>
-            )}
-            {item.links && item.links.length > 0 && (
-              <div className="mt-3 flex flex-col gap-2">
-                {item.links.map((link, i) => (
-                  <a
-                    key={i}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm transition-colors duration-150"
-                    style={{ color: 'var(--ink-secondary)' }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-secondary)')}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                      <path d="M4.5 2H2a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6.5"/>
-                      <path d="M7 1h3m0 0v3m0-3L5.5 5.5"/>
-                    </svg>
-                    {link.title}
-                  </a>
-                ))}
+            {(item.lat !== null && item.lng !== null || !!(item.links?.length)) && (
+              <div className="mt-2 flex gap-3">
+                {item.lat !== null && item.lng !== null && (
+                  <div style={{ flex: '1 1 0', minWidth: 0, border: '1px solid var(--line)', overflow: 'hidden' }}>
+                    <MapPicker lat={item.lat} lng={item.lng} height={180} />
+                  </div>
+                )}
+                {item.links && item.links.length > 0 && (
+                  <div style={{ flex: '1 1 0', minWidth: 0 }} className="flex flex-col gap-2 justify-start">
+                    {item.links.map((link, i) => (
+                      <a
+                        key={i}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm transition-colors duration-150"
+                        style={{ color: 'var(--ink-secondary)' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-secondary)')}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                          <path d="M4.5 2H2a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V6.5"/>
+                          <path d="M7 1h3m0 0v3m0-3L5.5 5.5"/>
+                        </svg>
+                        {link.title}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

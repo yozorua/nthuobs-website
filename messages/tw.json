@@ -520,7 +520,7 @@
     "descPlaceholder": "望遠鏡、相機、曝光時間、後製說明…",
     "categoryField": "分類",
     "dateField": "拍攝日期",
-    "fileHint": "JPG · PNG · WEBP · TIFF — 最大 50 MB · MP4 — 最大 500 MB",
+    "fileHint": "JPG · PNG · WEBP · TIFF — 最大 100 MB · MP4 — 最大 500 MB",
     "submit": "上傳",
     "uploading": "上傳中…",
     "cancel": "取消",

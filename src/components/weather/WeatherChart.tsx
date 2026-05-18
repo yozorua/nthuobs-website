@@ -78,42 +78,56 @@ function buildDayNightZones(
 ): Array<{ x1: string; x2: string; isDay: boolean }> {
   if (!sunrise || !sunset || data.length === 0) return [];
 
+  const sorted = [...data].sort((a, b) =>
+    a.scriptTimestamp < b.scriptTimestamp ? -1 : 1);
+
   const [riseH = 6, riseM = 0] = sunrise.split(':').map(Number);
   const [setH  = 18, setM  = 0] = sunset.split(':').map(Number);
   const riseOffsetMs = (riseH * 60 + riseM) * 60_000;
   const setOffsetMs  = (setH  * 60 + setM)  * 60_000;
 
-  const localDates = [...new Set(data.map(r => localDateStr(r.scriptTimestamp)))];
-  const zones: Array<{ x1: string; x2: string; isDay: boolean }> = [];
-
+  // One sunrise + one sunset transition per local date in the data
+  const localDates = [...new Set(sorted.map(r => localDateStr(r.scriptTimestamp)))];
+  const transitions: Array<{ ms: number; isDay: boolean }> = [];
   for (const dateStr of localDates) {
     const [y, mo, d] = dateStr.split('-').map(Number);
     const midnightUtcMs = Date.UTC(y!, mo! - 1, d!) - TZ_OFFSET_MS;
-    const sunriseUtcMs  = midnightUtcMs + riseOffsetMs;
-    const sunsetUtcMs   = midnightUtcMs + setOffsetMs;
-
-    // Only rows for this local date, in order
-    const dayRows = data
-      .filter(r => localDateStr(r.scriptTimestamp) === dateStr)
-      .sort((a, b) => a.scriptTimestamp < b.scriptTimestamp ? -1 : 1);
-    if (dayRows.length < 2) continue;
-
-    // Partition into three bands using actual data timestamps as boundaries
-    // so recharts can always locate them in the categorical X scale.
-    const preRise  = dayRows.filter(r => new Date(r.scriptTimestamp).getTime() <  sunriseUtcMs);
-    const dayBand  = dayRows.filter(r => {
-      const t = new Date(r.scriptTimestamp).getTime();
-      return t >= sunriseUtcMs && t <= sunsetUtcMs;
-    });
-    const postSet  = dayRows.filter(r => new Date(r.scriptTimestamp).getTime() >  sunsetUtcMs);
-
-    if (preRise.length >= 2)
-      zones.push({ x1: preRise[0].scriptTimestamp,  x2: preRise[preRise.length - 1].scriptTimestamp,  isDay: false });
-    if (dayBand.length >= 2)
-      zones.push({ x1: dayBand[0].scriptTimestamp,  x2: dayBand[dayBand.length - 1].scriptTimestamp,  isDay: true  });
-    if (postSet.length >= 2)
-      zones.push({ x1: postSet[0].scriptTimestamp,  x2: postSet[postSet.length - 1].scriptTimestamp,  isDay: false });
+    transitions.push({ ms: midnightUtcMs + riseOffsetMs, isDay: true  });
+    transitions.push({ ms: midnightUtcMs + setOffsetMs,  isDay: false });
   }
+  transitions.sort((a, b) => a.ms - b.ms);
+
+  // Determine day/night at the first data point
+  const firstMs = new Date(sorted[0].scriptTimestamp).getTime();
+  let isDay = false;
+  for (const t of transitions) {
+    if (t.ms <= firstMs) isDay = t.isDay;
+    else break;
+  }
+
+  // Walk data in order; split a zone whenever a transition falls between two
+  // consecutive points — no per-date partitioning, so midnight is seamless.
+  const zones: Array<{ x1: string; x2: string; isDay: boolean }> = [];
+  let zoneStart = 0;
+  let tIdx = transitions.findIndex(t => t.ms > firstMs);
+  if (tIdx === -1) tIdx = transitions.length;
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prevMs = new Date(sorted[i - 1].scriptTimestamp).getTime();
+    const currMs = new Date(sorted[i].scriptTimestamp).getTime();
+
+    while (tIdx < transitions.length &&
+           transitions[tIdx].ms > prevMs &&
+           transitions[tIdx].ms <= currMs) {
+      zones.push({ x1: sorted[zoneStart].scriptTimestamp, x2: sorted[i - 1].scriptTimestamp, isDay });
+      zoneStart = i;
+      isDay = transitions[tIdx].isDay;
+      tIdx++;
+    }
+  }
+
+  // Close the final zone
+  zones.push({ x1: sorted[zoneStart].scriptTimestamp, x2: sorted[sorted.length - 1].scriptTimestamp, isDay });
 
   return zones;
 }
@@ -130,18 +144,25 @@ function DayNightBackground({ zones }: {
 
   if (!xScale || !plotArea || !offset) return null;
 
+  // Band scale: xScale(v) returns the LEFT edge of v's band.
+  // Add bandwidth() so each zone covers through the RIGHT edge of its last band.
+  const bw: number =
+    typeof (xScale as unknown as { bandwidth?: () => number }).bandwidth === 'function'
+      ? (xScale as unknown as { bandwidth: () => number }).bandwidth()
+      : 0;
+
   return (
     <g>
       {zones.map((z, i) => {
-        const px1 = xScale(z.x1, { position: 'start' });
-        const px2 = xScale(z.x2, { position: 'end'   });
-        if (px1 == null || px2 == null || px2 <= px1) return null;
+        const px1 = xScale(z.x1);
+        const px2 = xScale(z.x2);
+        if (px1 == null || px2 == null) return null;
         return (
           <rect
             key={i}
             x={px1}
             y={offset.top}
-            width={px2 - px1}
+            width={px2 - px1 + bw}
             height={plotArea.height}
             fill={z.isDay ? 'rgba(255,230,160,0.04)' : 'rgba(20,40,100,0.12)'}
           />

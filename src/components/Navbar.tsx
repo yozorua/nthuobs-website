@@ -103,16 +103,30 @@ export default function Navbar({ session, locale }: NavbarProps) {
         {/* Desktop links + Right controls */}
         <div className="hidden md:flex items-center gap-6">
           {/* Nav links */}
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-sm tracking-wide transition-colors duration-150"
-              style={{ color: isActive(link.href) ? 'var(--ink)' : 'var(--ink-faint)' }}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const active = isActive(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm tracking-wide transition-all duration-150 pb-0.5"
+                style={{
+                  color: active ? 'var(--ink)' : 'var(--ink-faint)',
+                  borderBottom: active ? '1px solid var(--ink)' : '1px solid transparent',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = 'var(--ink)';
+                  e.currentTarget.style.borderBottomColor = 'var(--ink)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = active ? 'var(--ink)' : 'var(--ink-faint)';
+                  e.currentTarget.style.borderBottomColor = active ? 'var(--ink)' : 'transparent';
+                }}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
 
           <span style={{ color: 'var(--line)' }}>|</span>
 
