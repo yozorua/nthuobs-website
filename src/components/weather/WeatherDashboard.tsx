@@ -345,11 +345,12 @@ interface DebugPanelProps {
   sunset: string;
   onSimMinutes: (v: number | null) => void;
   onCondition: (c: string | null) => void;
+  onHideContent: () => void;
 }
 
 function DebugPanel({
   simMinutes, conditionOverride, actualMinutes, actualCondition,
-  sunrise, sunset, onSimMinutes, onCondition,
+  sunrise, sunset, onSimMinutes, onCondition, onHideContent,
 }: DebugPanelProps) {
   const displayed = simMinutes ?? actualMinutes;
 
@@ -423,6 +424,13 @@ function DebugPanel({
           actual: {actualCondition}
         </span>
       </div>
+
+      {/* Pure sky toggle */}
+      <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8 }}>
+        <button style={btnBase} onClick={onHideContent}>
+          PURE SKY
+        </button>
+      </div>
     </div>
   );
 }
@@ -447,6 +455,7 @@ export default function WeatherDashboard({ title }: Props) {
 
   const [simMinutes, setSimMinutes] = useState<number | null>(null);
   const [debugCondition, setDebugCondition] = useState<string | null>(null);
+  const [hideContent, setHideContent] = useState(false);
 
   const fetchLatest = async () => {
     try {
@@ -631,6 +640,15 @@ export default function WeatherDashboard({ title }: Props) {
   const atmosphereCondition = (debugCondition ?? condition) as AtmosphereCondition;
   const cloudForceDark = true; // weather page is always sky-mode (white text)
 
+  // Simulated Date for StarCanvas LST: today's date at the slider's clock time
+  const simDate = simMinutes !== null
+    ? (() => {
+        const d = new Date();
+        d.setHours(Math.floor(simMinutes / 60), simMinutes % 60, 0, 0);
+        return d;
+      })()
+    : null;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center" style={{ minHeight: '100vh', background: 'var(--bg)' }}>
@@ -665,12 +683,32 @@ export default function WeatherDashboard({ title }: Props) {
         condition={atmosphereCondition}
       />
       {/* Stars — z-index -1, DOM-ordered after AtmosphereCanvas so it renders on top of the sky */}
-      <StarCanvas condition={atmosphereCondition} sunElevation={sunElevation} />
+      <StarCanvas condition={atmosphereCondition} sunElevation={sunElevation} simDate={simDate} />
       {/* Overcast veil + rain streaks — z-index 0, between sky (-1) and content (1) */}
       <RainCanvas condition={atmosphereCondition} sunElevation={sunElevation} />
 
+      {/* Restore button — floats over pure sky, only visible when content is hidden */}
+      {hideContent && (
+        <button
+          onClick={() => setHideContent(false)}
+          style={{
+            position: 'fixed', bottom: 20, right: 20, zIndex: 10,
+            padding: '6px 16px', fontSize: 11, cursor: 'pointer',
+            border: '1px solid rgba(255,255,255,0.30)',
+            background: 'rgba(0,0,0,0.35)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            color: 'rgba(255,255,255,0.80)',
+            borderRadius: 6,
+            letterSpacing: '0.08em',
+          }}
+        >
+          SHOW UI
+        </button>
+      )}
+
       {/* z-index: 1 lifts all page content above the rain canvas (z: 0) */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div style={{ position: 'relative', zIndex: 1, display: hideContent ? 'none' : undefined }}>
       <div className="max-w-screen-xl mx-auto px-4 pt-8 pb-16">
 
         {/* ── Header ── */}
@@ -762,6 +800,7 @@ export default function WeatherDashboard({ title }: Props) {
             sunset={latest?.sunset ?? ''}
             onSimMinutes={setSimMinutes}
             onCondition={setDebugCondition}
+            onHideContent={() => setHideContent(true)}
           />
         </div>
       </div>

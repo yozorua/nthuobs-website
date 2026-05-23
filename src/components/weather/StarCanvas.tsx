@@ -1,168 +1,191 @@
 'use client';
 
 /**
- * StarCanvas — realistic night sky with twinkling stars, shooting stars,
- * and condition-aware cloud patches.
+ * StarCanvas — real-time star field using Yale BSC5 (9,001 stars).
+ *
+ * Coordinate pipeline each LST update (every 30 s):
+ *   RA/Dec (J2000) → Hour Angle → Altitude/Azimuth → canvas (x, y)
+ *
+ * The projection matches AtmosphereCanvas exactly: equidistant angular,
+ * HALF_VFOV = 0.65 rad, view centred on south (NTHU, 24.80°N 120.99°E).
  *
  * Layer order (z-index):
- *   AtmosphereCanvas  z: -1   (WebGL sky, fixed)
- *   StarCanvas        z: -1   (this file — DOM-ordered after, so visually on top of atmosphere)
+ *   AtmosphereCanvas  z: -1   (WebGL sky)
+ *   StarCanvas        z: -1   (DOM-ordered after atmosphere, so on top)
  *   RainCanvas        z:  0   (overcast + rain)
  *   page content      z:  1
- *
- * Stars are rendered in normalized (0–1) screen space and reprojected each
- * frame, so they stay fixed to the viewport regardless of scroll — exactly
- * what you want for a sky background.
  */
 
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { AtmosphereCondition } from './AtmosphereCanvas';
 
-// ── Tunables ──────────────────────────────────────────────────────────────────
+// ── Constants — must match AtmosphereCanvas shader ────────────────────────────
 
-const STAR_COUNT = 350;
-const FRAME_MS   = 1000 / 60;
-const LERP       = 0.03; // global alpha lerp speed
+const HALF_VFOV   = 0.65;                     // half vertical field of view (radians)
+const LAT_RAD     = 24.80 * (Math.PI / 180);  // NTHU Observatory latitude
+const LON_DEG     = 120.99;                   // NTHU longitude (east)
+const D2R         = Math.PI / 180;
 
-// Shooting stars
-const SHOOT_INTERVAL_MIN = 9_000;  // ms between shots
+const FRAME_MS           = 1000 / 60;
+const LERP               = 0.03;
+const LST_UPDATE_MS      = 30_000;   // recompute positions every 30 s (stars barely move)
+const SHOOT_INTERVAL_MIN = 9_000;
 const SHOOT_INTERVAL_MAX = 28_000;
-const SHOOT_SPEED        = 18;     // px / frame
-const SHOOT_TAIL         = 160;    // max tail length px
+const SHOOT_SPEED        = 18;       // px/frame
+const SHOOT_TAIL         = 160;      // px
+const CLOUD_COUNT        = 7;
+const CLOUD_SPEED        = 0.00010; // normalized units / frame
 
-// Cloud patches (PartlyCloudy night)
-const CLOUD_COUNT       = 7;
-const CLOUD_SPEED_MIN   = 0.00005; // normalized/frame
-const CLOUD_SPEED_MAX   = 0.00015;
-const CLOUD_ALPHA       = 0.85;    // max opacity of dark cloud blobs
-
-// ── Interfaces ────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Star {
-  nx: number;     // 0–1 normalized x
-  ny: number;     // 0–1 normalized y
-  size: number;   // base radius px (at 1×)
+  ra: number; dec: number; vmag: number;
+  r: number; g: number; b: number;   // 0–255 blackbody RGB
+  size: number;
   baseAlpha: number;
   twinklePhase: number;
-  twinkleSpeed: number; // rad / frame
+  twinkleSpeed: number;
   twinkleAmp: number;
-  // Color temperature — mostly blue-white, occasional warm
-  r: number; g: number; b: number;
+  px: number; py: number;  // cached canvas position (updated every LST_UPDATE_MS)
+  visible: boolean;
 }
 
 interface ShootingStar {
-  x: number; y: number;   // viewport px, start
-  vx: number; vy: number; // velocity px/frame
-  traveled: number;       // px traveled so far
-  totalDist: number;      // px before fade-out
-  alpha: number;
+  x: number; y: number;
+  vx: number; vy: number;
+  traveled: number; totalDist: number; alpha: number;
 }
 
 interface CloudPatch {
-  nx: number; ny: number; // center, normalized
-  nrx: number; nry: number; // radii, normalized
-  vnx: number;              // drift speed (normalized/frame)
-  alpha: number;
+  nx: number; ny: number; nrx: number; nry: number; vnx: number; alpha: number;
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Colour temperature → RGB (Tanner Helland's algorithm) ────────────────────
 
-/** Stars fade in when sun is below horizon; fully visible past civil twilight. */
+function kelvinToRGB(K: number): [number, number, number] {
+  const t = Math.max(1000, Math.min(40000, K)) / 100;
+  let r: number, g: number, b: number;
+  if (t <= 66) {
+    r = 255;
+    g = Math.min(255, Math.max(0, 99.4708025861 * Math.log(t) - 161.1195681661));
+    b = t <= 19 ? 0 : Math.min(255, Math.max(0, 138.5177312231 * Math.log(t - 10) - 305.0447927307));
+  } else {
+    r = Math.min(255, Math.max(0, 329.698727446 * Math.pow(t - 60, -0.1332047592)));
+    g = Math.min(255, Math.max(0, 288.1221695283 * Math.pow(t - 60, -0.0755148492)));
+    b = 255;
+  }
+  return [Math.round(r), Math.round(g), Math.round(b)];
+}
+
+// ── Visual magnitude → radius + base alpha (non-linear perceptual scale) ─────
+
+function magToProps(vmag: number): { size: number; baseAlpha: number } {
+  const brightness = Math.max(0, (6.5 - vmag) / 8.0);  // 0 (faint) → ~1 (Sirius)
+  return {
+    size:      0.4 + Math.pow(brightness, 1.35) * 2.9,
+    baseAlpha: 0.30 + brightness * 0.70,
+  };
+}
+
+// ── LST (Local Sidereal Time) in radians ─────────────────────────────────────
+
+function computeLSTrad(date: Date): number {
+  const JD   = date.getTime() / 86_400_000 + 2_440_587.5;
+  const T    = (JD - 2_451_545.0) / 36_525;
+  let GMST   = 280.46061837
+               + 360.98564736629 * (JD - 2_451_545.0)
+               + 0.000387933 * T * T
+               - T * T * T / 38_710_000;
+  GMST = ((GMST % 360) + 360) % 360;
+  return ((GMST + LON_DEG) % 360 + 360) % 360 * D2R;
+}
+
+// ── RA/Dec → canvas (x, y) via equidistant-angular projection ────────────────
+//
+// Matches the AtmosphereCanvas GLSL shader exactly:
+//   thetaV = elevation,  thetaH = azimuth-from-south
+//   screen_x = thetaH / (HALF_VFOV × aspect)      ∈ [−1, +1]
+//   screen_y = thetaV / HALF_VFOV − 1             ∈ [−1, +1]  (WebGL convention)
+//
+// Canvas pixels:  x = (screen_x + 1)/2 × W
+//                 y = (1 − screen_y)/2 × H   (y inverted: 0 = top)
+
+function projectStar(
+  ra: number, dec: number,
+  lstRad: number,
+  W: number, H: number,
+): { px: number; py: number; visible: boolean } {
+  const H_ = lstRad - ra;                           // hour angle
+
+  const sinAlt =
+    Math.sin(LAT_RAD) * Math.sin(dec) +
+    Math.cos(LAT_RAD) * Math.cos(dec) * Math.cos(H_);
+  const alt = Math.asin(Math.max(-1, Math.min(1, sinAlt)));
+  if (alt <= 0) return { px: 0, py: 0, visible: false };   // below horizon
+
+  const aspect = W / H;
+
+  // Azimuth from south (0=S, +π/2=W, -π/2=E) — Meeus, Astronomical Algorithms §13
+  const azFromSouth = Math.atan2(
+    Math.sin(H_) * Math.cos(dec),
+    Math.cos(H_) * Math.sin(LAT_RAD) * Math.cos(dec) - Math.sin(dec) * Math.cos(LAT_RAD),
+  );
+
+  const nx = azFromSouth / (HALF_VFOV * aspect);   // −1 = left edge, +1 = right edge
+  if (nx < -1 || nx > 1) return { px: 0, py: 0, visible: false };
+
+  const altFrac = alt / (2 * HALF_VFOV);           // 0 = horizon, 1 = top of FOV
+  if (altFrac > 1) return { px: 0, py: 0, visible: false };
+
+  return {
+    px:      (nx + 1) / 2 * W,
+    py:      (1 - altFrac) * H,
+    visible: true,
+  };
+}
+
+// ── Night factor: 0 (day) → 1 (full night past civil twilight) ───────────────
+
 function nightFactor(sunElevation: number): number {
-  const FULL_NIGHT = -0.105; // ≈ −6° civil twilight end
-  const HORIZON    =  0.0;
-  if (sunElevation <= FULL_NIGHT) return 1;
-  if (sunElevation >= HORIZON)    return 0;
-  const t = (HORIZON - sunElevation) / (HORIZON - FULL_NIGHT);
-  return t * t * (3 - 2 * t); // smoothstep
+  const DARK = -0.105; const LIGHT = 0.0;
+  if (sunElevation <= DARK)  return 1;
+  if (sunElevation >= LIGHT) return 0;
+  const t = (LIGHT - sunElevation) / (LIGHT - DARK);
+  return t * t * (3 - 2 * t);
 }
 
-/** Maximum star opacity based on weather — clouds hide stars. */
 function conditionStarAlpha(cond: AtmosphereCondition): number {
   switch (cond) {
     case 'Clear':        return 1.00;
     case 'Windy':        return 0.95;
-    case 'PartlyCloudy': return 0.55; // cloud patches handle the rest
+    case 'PartlyCloudy': return 0.55;
     case 'Cloudy':       return 0.00;
     case 'Rainy':        return 0.00;
     default:             return 0.85;
   }
 }
 
-/** Show cloud patches only for PartlyCloudy at night. */
-function showClouds(cond: AtmosphereCondition): boolean {
-  return cond === 'PartlyCloudy';
-}
-
 function rand(lo: number, hi: number) { return lo + Math.random() * (hi - lo); }
 
-function makeStars(): Star[] {
-  return Array.from({ length: STAR_COUNT }, (): Star => {
-    // Vary size with a power distribution: most stars tiny, a few prominent
-    const tier = Math.random();
-    let size: number;
-    if (tier < 0.75) size = rand(0.4, 1.0);       // dim background stars
-    else if (tier < 0.93) size = rand(1.0, 1.7);   // mid-range
-    else size = rand(1.7, 2.8);                     // bright foreground stars
-
-    // Color temperature: blue-white (hot) to slightly warm (cooler)
-    const colorRoll = Math.random();
-    let r = 255, g = 255, b = 255;
-    if (colorRoll < 0.55) {
-      // Blue-white (O/B/A type)
-      r = Math.round(rand(200, 240));
-      g = Math.round(rand(215, 245));
-      b = 255;
-    } else if (colorRoll < 0.80) {
-      // Pure white (F/G)
-      r = g = b = 255;
-    } else if (colorRoll < 0.95) {
-      // Warm yellow (G/K)
-      r = 255;
-      g = Math.round(rand(235, 250));
-      b = Math.round(rand(200, 230));
-    } else {
-      // Orange-red (M type / giants)
-      r = 255;
-      g = Math.round(rand(180, 220));
-      b = Math.round(rand(140, 180));
-    }
-
-    return {
-      nx: Math.random(),
-      ny: Math.random() * 0.90, // keep mostly in upper 90% of sky
-      size,
-      baseAlpha: rand(0.55, 1.0),
-      twinklePhase: rand(0, Math.PI * 2),
-      twinkleSpeed: rand(0.015, 0.055),
-      twinkleAmp:   rand(0.08, 0.30),
-      r, g, b,
-    };
-  });
-}
-
 function makeCloudPatches(): CloudPatch[] {
-  return Array.from({ length: CLOUD_COUNT }, (): CloudPatch => ({
+  return Array.from({ length: CLOUD_COUNT }, () => ({
     nx:  Math.random(),
     ny:  Math.random() * 0.85,
     nrx: rand(0.08, 0.24),
     nry: rand(0.04, 0.12),
-    vnx: (Math.random() < 0.5 ? 1 : -1) * rand(CLOUD_SPEED_MIN, CLOUD_SPEED_MAX),
-    alpha: rand(0.5, CLOUD_ALPHA),
+    vnx: (Math.random() < 0.5 ? 1 : -1) * rand(CLOUD_SPEED * 0.5, CLOUD_SPEED * 1.5),
+    alpha: rand(0.5, 0.85),
   }));
 }
 
 function makeShootingStar(W: number, H: number): ShootingStar {
-  // Spawn near top half of screen, moving downward at a shallow angle
-  const angle = rand(-0.6, 0.6) + Math.PI * 0.22; // roughly top-right to bottom-left
-  const x = rand(W * 0.1, W * 0.9);
-  const y = rand(H * 0.02, H * 0.45);
-  const speed = SHOOT_SPEED;
+  const angle = rand(-0.6, 0.6) + Math.PI * 0.22;
   return {
-    x, y,
-    vx: Math.cos(angle) * speed,
-    vy: Math.sin(angle) * speed,
+    x: rand(W * 0.1, W * 0.9),
+    y: rand(H * 0.02, H * 0.45),
+    vx: Math.cos(angle) * SHOOT_SPEED,
+    vy: Math.sin(angle) * SHOOT_SPEED,
     traveled: 0,
     totalDist: rand(SHOOT_TAIL * 2, SHOOT_TAIL * 4.5),
     alpha: 1,
@@ -173,22 +196,30 @@ function makeShootingStar(W: number, H: number): ShootingStar {
 
 interface Props {
   condition:    AtmosphereCondition;
-  sunElevation: number; // radians; negative = below horizon (night)
+  sunElevation: number;
+  /** Simulated time from the debug slider; null = use real clock. */
+  simDate?:     Date | null;
 }
 
-export default function StarCanvas({ condition, sunElevation }: Props) {
-  const canvasRef      = useRef<HTMLCanvasElement>(null);
-  const conditionRef   = useRef(condition);
-  const sunRef         = useRef(sunElevation);
-  const starsRef       = useRef<Star[]>([]);
-  const cloudsRef      = useRef<CloudPatch[]>([]);
-  const shootingRef    = useRef<ShootingStar | null>(null);
-  const rafRef         = useRef<number>(0);
-  const globalAlpha    = useRef(0);  // current lerped alpha
-  const nextShootMs    = useRef(0);  // rAF timestamp for next shooting star
+export default function StarCanvas({ condition, sunElevation, simDate }: Props) {
+  const canvasRef    = useRef<HTMLCanvasElement>(null);
+  const condRef      = useRef(condition);
+  const sunRef       = useRef(sunElevation);
+  const simDateRef   = useRef(simDate);
+  const starsRef     = useRef<Star[]>([]);
+  const cloudsRef    = useRef<CloudPatch[]>(makeCloudPatches());
+  const shootingRef  = useRef<ShootingStar | null>(null);
+  const rafRef       = useRef<number>(0);
+  const globalAlpha  = useRef(0);
+  const nextShootMs  = useRef(0);
+  const lastLSTms    = useRef(0);   // rAF timestamp of last position update
 
-  useEffect(() => { conditionRef.current = condition;    }, [condition]);
-  useEffect(() => { sunRef.current       = sunElevation; }, [sunElevation]);
+  useEffect(() => { condRef.current    = condition;    }, [condition]);
+  useEffect(() => { sunRef.current     = sunElevation; }, [sunElevation]);
+  useEffect(() => {
+    simDateRef.current = simDate ?? null;
+    lastLSTms.current  = 0; // force immediate reproject when sim time changes
+  }, [simDate]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -196,90 +227,116 @@ export default function StarCanvas({ condition, sunElevation }: Props) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    starsRef.current  = makeStars();
-    cloudsRef.current = makeCloudPatches();
+    // ── Load catalog ───────────────────────────────────────────────────────
+    let mounted = true;
+    fetch('/data/stars.json')
+      .then(r => r.json() as Promise<[number, number, number, number][]>)
+      .then(entries => {
+        if (!mounted) return;
+        const stars: Star[] = entries.map(([ra, dec, vmag, kelvin]) => {
+          const [r, g, b] = kelvinToRGB(kelvin);
+          const { size, baseAlpha } = magToProps(vmag);
+          return {
+            ra, dec, vmag, r, g, b, size, baseAlpha,
+            twinklePhase: Math.random() * Math.PI * 2,
+            twinkleSpeed: rand(0.015, 0.055),
+            twinkleAmp:   vmag > 4 ? rand(0.10, 0.30) : rand(0.05, 0.18),  // brighter stars twinkle less
+            px: 0, py: 0, visible: false,
+          };
+        });
+        starsRef.current = stars;
+        lastLSTms.current = 0; // force immediate position update on next frame
+      })
+      .catch(() => { /* silent — random fallback stars would show nothing */ });
 
+    // ── Resize ────────────────────────────────────────────────────────────
     const resize = () => {
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
+      lastLSTms.current = 0; // reproject on resize
     };
     resize();
     window.addEventListener('resize', resize);
 
+    // ── rAF loop ──────────────────────────────────────────────────────────
     let lastTs = 0;
 
     const draw = (ts: number) => {
       const dt   = lastTs > 0 ? Math.min((ts - lastTs) / FRAME_MS, 4) : 1;
       lastTs     = ts;
 
-      const cond = conditionRef.current;
+      const cond = condRef.current;
       const elev = sunRef.current;
       const W    = canvas.width;
       const H    = canvas.height;
+      const stars = starsRef.current;
 
-      // Global alpha = night-factor × condition-factor (lerped for smooth transitions)
+      // Global lerped alpha
       const target = nightFactor(elev) * conditionStarAlpha(cond);
       globalAlpha.current += (target - globalAlpha.current) * LERP * dt;
       const gA = globalAlpha.current;
 
       ctx.clearRect(0, 0, W, H);
 
-      if (gA < 0.005) {
+      if (gA < 0.005 || stars.length === 0) {
         rafRef.current = requestAnimationFrame(draw);
         return;
       }
 
-      // ── 1. Stars ──────────────────────────────────────────────────────────
-      for (const s of starsRef.current) {
+      // ── Reproject when LST has advanced enough ─────────────────────────
+      if (ts - lastLSTms.current > LST_UPDATE_MS || lastLSTms.current === 0) {
+        const lstRad = computeLSTrad(simDateRef.current ?? new Date());
+        for (const s of stars) {
+          const pos = projectStar(s.ra, s.dec, lstRad, W, H);
+          s.px = pos.px; s.py = pos.py; s.visible = pos.visible;
+        }
+        lastLSTms.current = ts;
+      }
+
+      // ── Draw stars ────────────────────────────────────────────────────
+      for (const s of stars) {
+        if (!s.visible) continue;
+
         s.twinklePhase += s.twinkleSpeed * dt;
         const twinkle = 1 - s.twinkleAmp * (0.5 + 0.5 * Math.sin(s.twinklePhase));
         const alpha   = gA * s.baseAlpha * twinkle;
         if (alpha < 0.01) continue;
 
-        const px = s.nx * W;
-        const py = s.ny * H;
-
-        // Inner bright core
+        // Core dot
         ctx.globalAlpha = alpha;
         ctx.fillStyle   = `rgb(${s.r},${s.g},${s.b})`;
         ctx.beginPath();
-        ctx.arc(px, py, s.size * 0.6, 0, Math.PI * 2);
+        ctx.arc(s.px, s.py, s.size * 0.60, 0, Math.PI * 2);
         ctx.fill();
 
-        // Soft glow for brighter stars
-        if (s.size > 1.2) {
-          const glowR = s.size * 3.5;
-          const grad  = ctx.createRadialGradient(px, py, 0, px, py, glowR);
+        // Tight glow for brighter stars only — small radius, fast falloff
+        if (s.size > 1.3) {
+          const glowR = s.size * 2.0;
+          const grad  = ctx.createRadialGradient(s.px, s.py, 0, s.px, s.py, glowR);
           grad.addColorStop(0,   `rgba(${s.r},${s.g},${s.b},${(alpha * 0.35).toFixed(3)})`);
+          grad.addColorStop(0.4, `rgba(${s.r},${s.g},${s.b},${(alpha * 0.10).toFixed(3)})`);
           grad.addColorStop(1,   'rgba(0,0,0,0)');
           ctx.globalAlpha = 1;
           ctx.fillStyle   = grad;
           ctx.beginPath();
-          ctx.arc(px, py, glowR, 0, Math.PI * 2);
+          ctx.arc(s.px, s.py, glowR, 0, Math.PI * 2);
           ctx.fill();
         }
       }
       ctx.globalAlpha = 1;
 
-      // ── 2. Cloud patches (PartlyCloudy) ──────────────────────────────────
-      if (showClouds(cond) && gA > 0.05) {
+      // ── Cloud patches (PartlyCloudy) ──────────────────────────────────
+      if (cond === 'PartlyCloudy' && gA > 0.05) {
         for (const c of cloudsRef.current) {
-          // Drift
           c.nx += c.vnx * dt;
-          if (c.nx < -c.nrx)     c.nx = 1 + c.nrx;
-          if (c.nx > 1 + c.nrx)  c.nx = -c.nrx;
-
-          const cx = c.nx * W;
-          const cy = c.ny * H;
-          const rx = c.nrx * W;
-          const ry = c.nry * H;
-
-          // Dark semi-transparent blob that covers stars beneath it
+          if (c.nx < -c.nrx)    c.nx = 1 + c.nrx;
+          if (c.nx > 1 + c.nrx) c.nx = -c.nrx;
+          const cx = c.nx * W, cy = c.ny * H;
+          const rx = c.nrx * W, ry = c.nry * H;
           const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
           grad.addColorStop(0,    `rgba(0,0,0,${(c.alpha * gA).toFixed(3)})`);
           grad.addColorStop(0.65, `rgba(0,0,0,${(c.alpha * gA * 0.5).toFixed(3)})`);
           grad.addColorStop(1,    'rgba(0,0,0,0)');
-
           ctx.save();
           ctx.translate(cx, cy);
           ctx.scale(1, ry / rx);
@@ -291,12 +348,11 @@ export default function StarCanvas({ condition, sunElevation }: Props) {
         }
       }
 
-      // ── 3. Shooting star ─────────────────────────────────────────────────
+      // ── Shooting star ─────────────────────────────────────────────────
       if (cond === 'Clear' || cond === 'Windy') {
-        // Schedule next shooting star
-        if (nextShootMs.current === 0) {
+        if (nextShootMs.current === 0)
           nextShootMs.current = ts + rand(SHOOT_INTERVAL_MIN, SHOOT_INTERVAL_MAX);
-        }
+
         if (ts >= nextShootMs.current && !shootingRef.current && gA > 0.5) {
           shootingRef.current = makeShootingStar(W, H);
           nextShootMs.current = ts + rand(SHOOT_INTERVAL_MIN, SHOOT_INTERVAL_MAX);
@@ -304,34 +360,28 @@ export default function StarCanvas({ condition, sunElevation }: Props) {
 
         const ss = shootingRef.current;
         if (ss) {
-          ss.x        += ss.vx * dt;
-          ss.y        += ss.vy * dt;
+          ss.x += ss.vx * dt;
+          ss.y += ss.vy * dt;
           ss.traveled += SHOOT_SPEED * dt;
 
-          // Fade out as it nears end of travel
           const fadeStart = ss.totalDist * 0.65;
-          if (ss.traveled > fadeStart) {
+          if (ss.traveled > fadeStart)
             ss.alpha = Math.max(0, 1 - (ss.traveled - fadeStart) / (ss.totalDist - fadeStart));
-          }
 
           if (ss.traveled < ss.totalDist && ss.alpha > 0.01) {
-            const tailLen = Math.min(ss.traveled, SHOOT_TAIL);
-            const tailX   = ss.x - ss.vx / SHOOT_SPEED * tailLen;
-            const tailY   = ss.y - ss.vy / SHOOT_SPEED * tailLen;
-
-            const grad = ctx.createLinearGradient(tailX, tailY, ss.x, ss.y);
+            const tail = Math.min(ss.traveled, SHOOT_TAIL);
+            const tx   = ss.x - ss.vx / SHOOT_SPEED * tail;
+            const ty   = ss.y - ss.vy / SHOOT_SPEED * tail;
+            const grad = ctx.createLinearGradient(tx, ty, ss.x, ss.y);
             grad.addColorStop(0, 'rgba(255,255,255,0)');
             grad.addColorStop(1, `rgba(255,255,255,${(ss.alpha * gA).toFixed(3)})`);
-
             ctx.beginPath();
-            ctx.moveTo(tailX, tailY);
+            ctx.moveTo(tx, ty);
             ctx.lineTo(ss.x, ss.y);
             ctx.strokeStyle = grad;
             ctx.lineWidth   = 1.5;
             ctx.lineCap     = 'round';
             ctx.stroke();
-
-            // Bright tip
             ctx.globalAlpha = ss.alpha * gA;
             ctx.fillStyle   = 'white';
             ctx.beginPath();
@@ -343,7 +393,6 @@ export default function StarCanvas({ condition, sunElevation }: Props) {
           }
         }
       } else {
-        // Clear shooting star if condition changes
         shootingRef.current = null;
         nextShootMs.current = 0;
       }
@@ -353,6 +402,7 @@ export default function StarCanvas({ condition, sunElevation }: Props) {
 
     rafRef.current = requestAnimationFrame(draw);
     return () => {
+      mounted = false;
       window.removeEventListener('resize', resize);
       cancelAnimationFrame(rafRef.current);
     };
