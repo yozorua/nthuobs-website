@@ -59,7 +59,7 @@ export default function Footer() {
         </div>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-6" style={{ borderTop: '1px solid var(--line)' }}>
           <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
-            © {new Date().getFullYear()} NTHU Observatory. {t('rights')}
+            © 2019–{new Date().getFullYear()} {locale === 'tw' ? '國立清華大學天文台' : 'NTHU Observatory'}. {t('rights')}
           </p>
           <div className="flex gap-5">
             {[

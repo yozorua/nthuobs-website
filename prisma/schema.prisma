@@ -212,6 +212,7 @@ model GalleryItem {
   lng         Float?
   links       Json?
   isPublic    Boolean   @default(true)
+  showOnHome  Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

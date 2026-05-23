@@ -59,6 +59,7 @@ export default async function GalleryPage({
     lat: item.lat ?? null,
     lng: item.lng ?? null,
     links: (item.links as GalleryItemData['links']) ?? null,
+    showOnHome: item.showOnHome,
     uploaderEn:
       [item.user.firstNameEn, item.user.lastNameEn].filter(Boolean).join(' ') ||
       item.user.name || '',

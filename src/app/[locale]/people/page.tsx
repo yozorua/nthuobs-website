@@ -73,7 +73,8 @@ function MemberGrid({ users, emptyLabel, locale }: { users: UserRow[]; emptyLabe
       {users.map((u) => {
         const { primary, secondary } = displayName(u, locale);
         const initials = primary.charAt(0).toUpperCase();
-        const imageUrl = u.image ? `${u.image}?t=${u.updatedAt.getTime()}` : null;
+        const sep = u.image?.includes('?') ? '&' : '?';
+        const imageUrl = u.image ? `${u.image}${sep}t=${u.updatedAt.getTime()}` : null;
         return (
           <div
             key={u.id}

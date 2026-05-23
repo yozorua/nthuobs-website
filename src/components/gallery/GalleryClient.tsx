@@ -49,6 +49,7 @@ export type GalleryItemData = {
   lat: number | null;
   lng: number | null;
   links: GalleryLink[] | null;
+  showOnHome: boolean;
 };
 
 // ─── Constants & helpers ─────────────────────────────────────────────────────
@@ -767,6 +768,7 @@ function Lightbox({
   hasPrev,
   hasNext,
   canManage,
+  canToggleHome,
   onDeleted,
   onSaved,
   locale,
@@ -778,6 +780,7 @@ function Lightbox({
   hasPrev: boolean;
   hasNext: boolean;
   canManage: boolean;
+  canToggleHome: boolean;
   onDeleted: () => void;
   onSaved: (updated: Partial<GalleryItemData>) => void;
   locale: string;
@@ -792,6 +795,8 @@ function Lightbox({
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showOnHome, setShowOnHome] = useState(item.showOnHome);
+  const [togglingHome, setTogglingHome] = useState(false);
 
   // Zoom state
   const [zoomMode, setZoomMode] = useState(false);
@@ -873,6 +878,7 @@ function Lightbox({
     setEditLng(item.lng);
     setEditShowMap(false);
     setEditLinks(item.links ?? []);
+    setShowOnHome(item.showOnHome);
   }, [item.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -991,6 +997,23 @@ function Lightbox({
       onDeleted();
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const toggleShowOnHome = async () => {
+    setTogglingHome(true);
+    const next = !showOnHome;
+    try {
+      const res = await fetch(`/api/gallery/${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showOnHome: next }),
+      });
+      if (!res.ok) throw new Error();
+      setShowOnHome(next);
+      onSaved({ showOnHome: next });
+    } finally {
+      setTogglingHome(false);
     }
   };
 
@@ -1378,6 +1401,30 @@ function Lightbox({
                 )}
               </div>
               <div className="flex items-center gap-0.5 flex-shrink-0">
+                {/* Show on home toggle */}
+                {canToggleHome && !editMode && (
+                  <button
+                    onClick={toggleShowOnHome}
+                    disabled={togglingHome}
+                    aria-label={showOnHome ? t('hideFromHome') : t('showOnHome')}
+                    title={showOnHome ? t('hideFromHome') : t('showOnHome')}
+                    className="flex items-center justify-center w-8 h-8 transition-colors duration-150"
+                    style={{ color: showOnHome ? 'var(--ink)' : 'var(--ink-faint)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = showOnHome ? 'var(--ink-secondary)' : 'var(--ink)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = showOnHome ? 'var(--ink)' : 'var(--ink-faint)')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      {showOnHome ? (
+                        <path d="M7 1L8.5 5h4L9.5 8l1.5 4L7 10l-4 2 1.5-4L1.5 5h4z"/>
+                      ) : (
+                        <>
+                          <path d="M7 1L8.5 5h4L9.5 8l1.5 4L7 10l-4 2 1.5-4L1.5 5h4z" strokeDasharray="2 2"/>
+                          <path d="M2 2l10 10" strokeWidth="1.5"/>
+                        </>
+                      )}
+                    </svg>
+                  </button>
+                )}
                 {/* Edit icon */}
                 {canManage && !editMode && (
                   <button
@@ -1526,6 +1573,9 @@ export default function GalleryClient({
     lightboxItem &&
     sessionUserId &&
     (lightboxItem.userId === sessionUserId || MANAGE_ROLES.includes(sessionUserRole ?? '')),
+  );
+  const canToggleHome = Boolean(
+    lightboxItem && sessionUserId && MANAGE_ROLES.includes(sessionUserRole ?? ''),
   );
 
   // Scroll lock
@@ -1684,6 +1734,7 @@ export default function GalleryClient({
           hasPrev={lightboxIdx > 0}
           hasNext={lightboxIdx < filtered.length - 1}
           canManage={canManage}
+          canToggleHome={canToggleHome}
           onDeleted={onDeleted}
           onSaved={onSaved}
           locale={locale}

@@ -27,6 +27,10 @@ export async function PATCH(
   }
 
   const body = await request.json();
+
+  // Only MANAGER/ADMIN may change homepage visibility
+  const canToggleHome = MANAGE_ROLES.includes(role);
+
   const updated = await db.galleryItem.update({
     where: { id },
     data: {
@@ -38,6 +42,7 @@ export async function PATCH(
       lat: body.lat !== undefined ? (body.lat ?? null) : item.lat,
       lng: body.lng !== undefined ? (body.lng ?? null) : item.lng,
       links: body.links !== undefined ? (body.links ?? undefined) : undefined,
+      showOnHome: (canToggleHome && body.showOnHome !== undefined) ? Boolean(body.showOnHome) : item.showOnHome,
     },
   });
 
@@ -51,6 +56,7 @@ export async function PATCH(
     lat: updated.lat ?? null,
     lng: updated.lng ?? null,
     links: updated.links ?? null,
+    showOnHome: updated.showOnHome,
   });
 }
 

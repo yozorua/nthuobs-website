@@ -54,7 +54,11 @@ body {
 }
 
 ::selection {
-  background: rgba(26, 58, 92, 0.15);
+  background: rgba(26, 58, 92, 0.2);
+  color: var(--ink);
+}
+.dark ::selection {
+  background: rgba(90, 143, 191, 0.45);
   color: var(--ink);
 }
 

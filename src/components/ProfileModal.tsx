@@ -13,7 +13,7 @@ interface Props {
 
 export default function ProfileModal({ open, onClose }: Props) {
   const t = useTranslations('profile');
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const router = useRouter();
 
   const [form, setForm] = useState({
@@ -76,6 +76,7 @@ export default function ProfileModal({ open, onClose }: Props) {
     if (res.ok) {
       const { url } = await res.json();
       setAvatarUrl(url);
+      await updateSession(); // forces JWT to re-read image from DB so useSession() stays fresh
       router.refresh(); // re-runs layout → reads new DB image → updates Navbar
     } else {
       setAvatarError(t('avatarUploadError'));

@@ -161,7 +161,7 @@ export default async function VisitPage({
             <p className="label mb-4">{t('applyLabel')}</p>
             <div className="space-y-3">
               <a
-                href="https://docs.google.com/forms/d/e/1FAIpQLScgXImCypCFFM2owN1xkqrHmqughDZLAi2slBWZCy_9kTcSUA/viewform"
+                href="https://forms.gle/kBcLBV6hjER49mJMA"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn block text-center text-xs"

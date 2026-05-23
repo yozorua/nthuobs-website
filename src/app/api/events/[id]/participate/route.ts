@@ -6,8 +6,12 @@ const memberRoles = ["MEMBER", "OPERATOR", "MANAGER", "ADMIN"];
 
 async function getSession() {
   const session = await auth();
-  const role = (session?.user as { role?: string })?.role;
-  if (!session?.user?.id || !memberRoles.includes(role ?? "")) return null;
+  if (!session?.user?.id) return null;
+  const dbUser = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+  if (!dbUser || !memberRoles.includes(dbUser.role)) return null;
   return session;
 }
 

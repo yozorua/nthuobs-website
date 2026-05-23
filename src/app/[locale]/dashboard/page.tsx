@@ -72,14 +72,22 @@ export default async function DashboardPage({
   };
   const roleDisplay = t(roleKeyMap[dbUser.role] ?? 'roleVisitor');
 
-  const links = t.raw('links') as Array<{ label: string; desc: string }>;
-  const linkHrefs = [
+  const isAdminOrManager = dbUser.role === 'ADMIN' || dbUser.role === 'MANAGER';
+  const manageEventsLink = t.raw('manageEventsLink') as { label: string; desc: string };
+  const baseLinks = t.raw('links') as Array<{ label: string; desc: string }>;
+  const baseHrefs = [
     `/${locale}/schedule`,
     `/${locale}/dashboard/events`,
     `/${locale}/calendar`,
     `/${locale}/visit`,
     'mailto:nthuobs@gmail.com',
   ];
+  const links = isAdminOrManager
+    ? [manageEventsLink, ...baseLinks]
+    : baseLinks;
+  const linkHrefs = isAdminOrManager
+    ? [`/${locale}/admin/events`, ...baseHrefs]
+    : baseHrefs;
 
   const stats = [
     { label: t('role'), value: roleDisplay },

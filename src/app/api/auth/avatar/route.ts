@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { writeFile, mkdir } from 'fs/promises';
@@ -38,6 +39,10 @@ export async function POST(request: NextRequest) {
     where: { id: session.user.id },
     data: { image: imageUrl },
   });
+
+  // Bust the server-side route cache so /people reflects the new avatar immediately
+  revalidatePath('/en/people');
+  revalidatePath('/tw/people');
 
   return NextResponse.json({ url: imageUrl });
 }

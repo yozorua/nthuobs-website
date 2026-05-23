@@ -12,7 +12,14 @@ export default function HeroSlideshow({
   images: string[];
   fallback: string;
 }) {
-  const all = images.length > 0 ? images : [fallback];
+  const [all] = useState<string[]>(() => {
+    const src = images.length > 0 ? [...images] : [fallback];
+    for (let i = src.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [src[i], src[j]] = [src[j], src[i]];
+    }
+    return src;
+  });
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {

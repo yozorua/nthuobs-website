@@ -15,7 +15,7 @@ export default async function HomePage({
   const t = await getTranslations({ locale, namespace: 'home' });
 
   const heroItems = await db.galleryItem.findMany({
-    where: { isPublic: true, type: 'IMAGE' },
+    where: { isPublic: true, showOnHome: true, type: 'IMAGE' },
     orderBy: { createdAt: 'desc' },
     take: 20,
     select: { heroname: true },
@@ -27,8 +27,8 @@ export default async function HomePage({
   const stats = [
     { num: '1971', label: t('yearFounded') },
     { num: '25 cm', label: t('largestRefractor') },
-    { num: '16″', label: t('cassegrain') },
-    { num: '2', label: t('celestron') },
+    { num: '50+', label: t('membersGrown') },
+    { num: '100+', label: t('toursHosted') },
   ];
 
   const services = t.raw('services') as Array<{ title: string; desc: string }>;
@@ -105,7 +105,7 @@ export default async function HomePage({
         <Image src="/dome_view.png" alt="Observatory dome" fill className="object-cover" />
         <div className="absolute inset-0 bg-black/50" />
         <div className="absolute inset-0 flex items-center justify-center">
-          <p className="text-white/70 text-xs font-light tracking-ultra uppercase">
+          <p className="text-white/70 text-sm font-light tracking-ultra uppercase">
             {t('exploring')}
           </p>
         </div>

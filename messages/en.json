@@ -28,14 +28,14 @@
     "planVisit": "Plan a Visit",
     "aboutLabel": "About",
     "aboutHeading": "A benchmark in Taiwan's astronomical education",
-    "aboutP1": "The NTHU Observatory was established in 1971 when Professor Hong-Yee Chiu led a group of students in handcrafting telescopes from scratch. Today it houses the largest refracting telescope in Taiwan — a 25 cm refractor — and continues its mission of education and public outreach.",
+    "aboutP1": "The original NTHU Observatory was established in 1971 when Professor Hong-Yee Chiu led a group of students in handcrafting telescopes from scratch. Today it houses the largest refracting telescope in Taiwan — a 25 cm refractor — and continues its mission of education and public outreach.",
     "aboutP2": "Located on the 8th floor of the Physics Building at National Tsing Hua University in Hsinchu, the observatory offers guided visits, public open days, and real-time weather monitoring for observation planning.",
     "readHistory": "Read the history",
     "yearFounded": "Year Founded",
     "largestRefractor": "Largest Refractor in Taiwan",
-    "cassegrain": "Handmade Cassegrain Reflector",
-    "celestron": "Celestron 8 Telescopes",
-    "exploring": "Exploring the cosmos from Hsinchu, Taiwan",
+    "membersGrown": "Observatory members trained since 2019",
+    "toursHosted": "Guided tours hosted to date",
+    "exploring": "Exploring the cosmos from the city",
     "servicesLabel": "Services",
     "servicesHeading": "What we offer",
     "visitLabel": "Visit Registration",
@@ -62,18 +62,18 @@
       },
       {
         "title": "Observation Sessions",
-        "desc": "Regular sessions using our 25 cm refractor, 16-inch Cassegrain, and Celestron 8 telescopes."
+        "desc": "Regular sessions using our 25 cm refractor and smaller telescopes, including sidewalk astronomy activities."
       },
       {
-        "title": "News & Gallery",
-        "desc": "Updates on observations, events, and astronomical imagery captured at the observatory."
+        "title": "Outreach & Results",
+        "desc": "Regular sharing of astronomy news, event updates, and astrophotography from the observatory."
       }
     ]
   },
   "about": {
     "sinceLabel": "Since 1971",
     "title": "About the Observatory",
-    "p1": "The NTHU Observatory was established in 1971 by Professor Hong-Yee Chiu, who returned from the United States to teach at the Physics Department of National Tsing Hua University. Together with a group of motivated students, he ground an 8-inch Newtonian mirror, built a mirror grinding machine, and later completed a 16-inch Cassegrain reflector — entirely by hand.",
+    "p1": "The original NTHU Observatory was established in 1971 by Professor Hong-Yee Chiu, who returned from the United States to teach at the Physics Department of National Tsing Hua University. Together with a group of motivated students, he ground an 8-inch Newtonian mirror, built a mirror grinding machine, and later completed a 16-inch Cassegrain reflector — entirely by hand.",
     "p2": "In November 1971, all instruments atop the old Physics Building were installed and calibrated, and the founding meeting of the Astronomy Club was held. The observatory and the club were inseparable in those early years.",
     "p3": "In 1988, the old Physics Building was demolished and the department relocated to its current location beside the sports field. The observatory was rebuilt in 1991 through the efforts of Professors Chun-shan Shen and Dean-Yi Chou, returning to Physics Department management and formally separating from the Astronomy Club.",
     "p4": "After more than two decades of use, the facility fell into disrepair. In 2018, then-department chair Ite A. Yu initiated a major renovation campaign with alumni from the class of 1978. Under the planning of Professor Shih-Ping Lai of the Institute of Astronomy, the equatorial mount and dome were fully renovated in May 2019.",
@@ -101,11 +101,11 @@
       },
       {
         "date": "Mid July",
-        "event": "8-inch Newtonian telescope and grinding machine completed"
+        "event": "Mirror grinding machine and 8-inch Newtonian telescope completed"
       },
       {
         "date": "Early August",
-        "event": "Preparations for the 16-inch Cassegrain begin"
+        "event": "Preparations to build the 16-inch Cassegrain reflector begin"
       },
       {
         "date": "Late August",
@@ -113,7 +113,7 @@
       },
       {
         "date": "Late November",
-        "event": "16-inch fully installed and calibrated; founding meeting held"
+        "event": "16-inch telescope fully installed and calibrated; founding meeting of the Astronomy Club held"
       }
     ],
     "photosLabel": "Historical Record",
@@ -264,6 +264,7 @@
     "upcomingEventsLabel": "Upcoming Events",
     "noEvents": "No registered events.",
     "quickLinks": "Quick Links",
+    "manageEventsLink": { "label": "Manage Events", "desc": "Manage and edit guided tour events" },
     "links": [
       {
         "label": "Schedule Management",
@@ -540,6 +541,8 @@
     "saveEdit": "Save",
     "savingEdit": "Saving…",
     "cancelEdit": "Cancel",
+    "showOnHome": "Show on homepage",
+    "hideFromHome": "Hide from homepage",
     "uploadError": "Upload failed. Please try again.",
     "fileTooLarge": "File is too large.",
     "fileTypeError": "Unsupported file type.",
