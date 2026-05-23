@@ -15,6 +15,7 @@ import RadarCard from './RadarCard';
 import WindCard from './WindCard';
 import RainCard from './RainCard';
 import AtmosphereCanvas, { computeSunPosition, AtmosphereCondition } from './AtmosphereCanvas';
+import StarCanvas from './StarCanvas';
 import RainCanvas from './RainCanvas';
 
 const REFRESH_MS = 5_000;
@@ -663,6 +664,8 @@ export default function WeatherDashboard({ title }: Props) {
         sunAzimuth={sunAzimuth}
         condition={atmosphereCondition}
       />
+      {/* Stars — z-index -1, DOM-ordered after AtmosphereCanvas so it renders on top of the sky */}
+      <StarCanvas condition={atmosphereCondition} sunElevation={sunElevation} />
       {/* Overcast veil + rain streaks — z-index 0, between sky (-1) and content (1) */}
       <RainCanvas condition={atmosphereCondition} sunElevation={sunElevation} />
 
