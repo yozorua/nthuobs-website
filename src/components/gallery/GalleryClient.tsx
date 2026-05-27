@@ -769,6 +769,7 @@ function Lightbox({
   hasNext,
   canManage,
   canToggleHome,
+  canDownload,
   onDeleted,
   onSaved,
   locale,
@@ -781,6 +782,7 @@ function Lightbox({
   hasNext: boolean;
   canManage: boolean;
   canToggleHome: boolean;
+  canDownload: boolean;
   onDeleted: () => void;
   onSaved: (updated: Partial<GalleryItemData>) => void;
   locale: string;
@@ -1456,19 +1458,33 @@ function Lightbox({
                   </button>
                 )}
                 {/* Download */}
-                <a
-                  href={`/api/gallery/file/${item.filename}`}
-                  download
-                  aria-label={t('download')}
-                  className="flex items-center justify-center w-8 h-8 transition-colors duration-150"
-                  style={{ color: 'var(--ink-faint)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
-                >
-                  <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M7.5 1.5v8M4.5 7l3 3 3-3M1.5 13.5h12"/>
-                  </svg>
-                </a>
+                {canDownload ? (
+                  <a
+                    href={`/api/gallery/file/${item.filename}`}
+                    download
+                    aria-label={t('download')}
+                    title={t('download')}
+                    className="flex items-center justify-center w-8 h-8 transition-colors duration-150"
+                    style={{ color: 'var(--ink-faint)' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7.5 1.5v8M4.5 7l3 3 3-3M1.5 13.5h12"/>
+                    </svg>
+                  </a>
+                ) : (
+                  <span
+                    aria-label={t('downloadMemberOnly')}
+                    title={t('downloadMemberOnly')}
+                    className="flex items-center justify-center w-8 h-8 cursor-not-allowed"
+                    style={{ color: 'var(--ink-faint)', opacity: 0.3 }}
+                  >
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7.5 1.5v8M4.5 7l3 3 3-3M1.5 13.5h12"/>
+                    </svg>
+                  </span>
+                )}
                 {/* Fullscreen — images only */}
                 {item.type === 'IMAGE' && (
                   <button
@@ -1566,6 +1582,7 @@ export default function GalleryClient({
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const canUpload = Boolean(sessionUserRole && MEMBER_ROLES.includes(sessionUserRole));
+  const canDownload = canUpload;
 
   const filtered = activeCategory === 'all' ? items : items.filter((i) => i.category === activeCategory);
   const lightboxItem = lightboxIdx !== null ? (filtered[lightboxIdx] ?? null) : null;
@@ -1735,6 +1752,7 @@ export default function GalleryClient({
           hasNext={lightboxIdx < filtered.length - 1}
           canManage={canManage}
           canToggleHome={canToggleHome}
+          canDownload={canDownload}
           onDeleted={onDeleted}
           onSaved={onSaved}
           locale={locale}
