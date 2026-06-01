@@ -17,9 +17,10 @@ model User {
   lastNameEn     String?
   firstNameZh    String?
   lastNameZh     String?
-  contactEmail   String?
-  phone          String?
-  emailVerified  DateTime?
+  contactEmail        String?
+  phone               String?
+  receiveEventEmails  Boolean              @default(true)
+  emailVerified       DateTime?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   accounts       Account[]

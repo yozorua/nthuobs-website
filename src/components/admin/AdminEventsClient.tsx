@@ -58,6 +58,7 @@ export default function AdminEventsClient({ initialEvents, locale }: Props) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [sendAnnouncement, setSendAnnouncement] = useState(false);
 
   const [participantsEvent, setParticipantsEvent] = useState<Event | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -72,7 +73,7 @@ export default function AdminEventsClient({ initialEvents, locale }: Props) {
     ADMIN: t('roleAdmin'),
   };
 
-  const openCreate = () => { setEditing(null); setForm(emptyForm); setShowModal(true); };
+  const openCreate = () => { setEditing(null); setForm(emptyForm); setSendAnnouncement(true); setShowModal(true); };
   const openEdit = (ev: Event) => {
     setEditing(ev);
     setForm({
@@ -119,7 +120,7 @@ export default function AdminEventsClient({ initialEvents, locale }: Props) {
         const res = await fetch('/api/admin/events', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
+          body: JSON.stringify({ ...form, sendAnnouncement }),
         });
         if (res.ok) {
           const created = await res.json();
@@ -267,6 +268,12 @@ export default function AdminEventsClient({ initialEvents, locale }: Props) {
                 <input type="checkbox" checked={form.isPublic} onChange={e => setForm(f => ({ ...f, isPublic: e.target.checked }))} />
                 <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('fieldPublic')}</span>
               </label>
+              {!editing && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={sendAnnouncement} onChange={e => setSendAnnouncement(e.target.checked)} />
+                  <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('fieldAnnouncement')}</span>
+                </label>
+              )}
               <div className="flex gap-3 pt-2">
                 <button type="submit" disabled={saving} className="btn flex-1">{saving ? t('saving') : t('save')}</button>
                 <button type="button" onClick={() => setShowModal(false)} className="btn-outline">{t('cancel')}</button>

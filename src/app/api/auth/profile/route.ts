@@ -8,7 +8,7 @@ export async function GET() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { firstNameEn: true, lastNameEn: true, firstNameZh: true, lastNameZh: true, contactEmail: true, phone: true },
+    select: { firstNameEn: true, lastNameEn: true, firstNameZh: true, lastNameZh: true, contactEmail: true, phone: true, receiveEventEmails: true },
   });
 
   return NextResponse.json(user);
@@ -47,7 +47,7 @@ export async function PATCH(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { firstNameEn, lastNameEn, firstNameZh, lastNameZh, contactEmail, phone } = await request.json();
+  const { firstNameEn, lastNameEn, firstNameZh, lastNameZh, contactEmail, phone, receiveEventEmails } = await request.json();
 
   if (!firstNameEn?.trim() || !lastNameEn?.trim() || !phone?.trim()) {
     return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });
@@ -62,6 +62,7 @@ export async function PATCH(request: NextRequest) {
       lastNameZh: lastNameZh?.trim() || null,
       contactEmail: contactEmail?.trim() || null,
       phone: phone.trim(),
+      receiveEventEmails: receiveEventEmails !== false,
     },
   });
 

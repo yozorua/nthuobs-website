@@ -148,6 +148,7 @@ function buildEmailHtml(opts: {
     <td style="padding:20px 32px;border-top:1px solid #e8e8e8;background:#fafafa;">
       <p style="margin:0;font-size:11px;color:#bbb;line-height:1.6;">
         國立清華大學天文台 &nbsp;·&nbsp; NTHU Observatory<br>
+        如需關閉提醒信件，請至網站 → 成員入口 → 編輯資料中取消勾選<br>
         此為系統自動發送之提醒郵件，請勿直接回覆。<br>
         This is an automated reminder. Please do not reply to this email.
       </p>
@@ -183,6 +184,7 @@ async function sendReminders(): Promise<void> {
               lastNameZh: true,
               email: true,
               contactEmail: true,
+              receiveEventEmails: true,
             },
           },
         },
@@ -215,6 +217,7 @@ async function sendReminders(): Promise<void> {
     let sent = 0;
     for (const participation of event.participations) {
       const user = participation.user;
+      if (!user.receiveEventEmails) continue;
       const to = user.contactEmail ?? user.email;
       // Greeting uses Chinese first name only; fall back to English first name or full name
       const displayName = user.firstNameZh ?? user.firstNameEn ?? user.name ?? to;

@@ -20,6 +20,7 @@ export default function ProfileModal({ open, onClose }: Props) {
     lastNameZh: '', firstNameZh: '',
     firstNameEn: '', lastNameEn: '',
     contactEmail: '', phone: '',
+    receiveEventEmails: true,
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'saving' | 'error' | 'saved'>('idle');
 
@@ -45,6 +46,7 @@ export default function ProfileModal({ open, onClose }: Props) {
           lastNameEn: data.lastNameEn ?? '',
           contactEmail: data.contactEmail ?? '',
           phone: data.phone ?? '',
+          receiveEventEmails: data.receiveEventEmails !== false,
         });
         setAvatarUrl(session?.user?.image ?? null);
         setStatus('idle');
@@ -211,6 +213,16 @@ export default function ProfileModal({ open, onClose }: Props) {
                 <div>
                   <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('phone')}</label>
                   <input type="tel" className="input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))} inputMode="numeric" pattern="[0-9]*" required />
+                </div>
+                <div className="pt-2" style={{ borderTop: '1px solid var(--line)' }}>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form.receiveEventEmails}
+                      onChange={e => setForm(f => ({ ...f, receiveEventEmails: e.target.checked }))}
+                    />
+                    <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('receiveEventEmails')}</span>
+                  </label>
                 </div>
                 {status === 'error' && <p className="text-xs" style={{ color: '#cc4444' }}>{t('error')}</p>}
                 {status === 'saved' && <p className="text-xs" style={{ color: '#44aa66' }}>{t('saved')}</p>}
