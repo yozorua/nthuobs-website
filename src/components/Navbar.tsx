@@ -20,6 +20,17 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [servicesOpen, setServicesOpen] = useState(false);
+  const servicesRef = useRef<HTMLDivElement>(null);
+  const servicesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openServices = () => {
+    if (servicesTimerRef.current) clearTimeout(servicesTimerRef.current);
+    setServicesOpen(true);
+  };
+  const closeServices = () => {
+    servicesTimerRef.current = setTimeout(() => setServicesOpen(false), 180);
+  };
   const { theme, setTheme } = useTheme();
   const { data: clientSession } = useSession();
   // Prefer server session image (layout reads DB) — updates on router.refresh()
@@ -36,6 +47,11 @@ export default function Navbar({ session, locale }: NavbarProps) {
     { href: `/${locale}/weather`, label: t('weather') },
   ];
 
+  const serviceLinks = [
+    { href: `/${locale}/services/plate-solve`, label: t('plateSolve') },
+  ];
+  const isServicesActive = serviceLinks.some(l => pathname === l.href);
+
   const switchLocale = () => {
     const otherLocale = locale === 'en' ? 'tw' : 'en';
     const newPath = pathname.replace(`/${locale}`, `/${otherLocale}`);
@@ -48,6 +64,9 @@ export default function Navbar({ session, locale }: NavbarProps) {
     const handleClickOutside = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
+      }
+      if (servicesRef.current && !servicesRef.current.contains(e.target as Node)) {
+        setServicesOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -136,6 +155,74 @@ export default function Navbar({ session, locale }: NavbarProps) {
               </Link>
             );
           })}
+
+          {/* Services dropdown */}
+          <div
+            className="relative"
+            ref={servicesRef}
+            onMouseEnter={openServices}
+            onMouseLeave={closeServices}
+          >
+            <button
+              className="flex items-center gap-1 text-sm tracking-wide transition-all duration-150 pb-0.5"
+              style={{
+                color: isServicesActive || servicesOpen ? 'var(--ink)' : 'var(--ink-faint)',
+                borderBottom: isServicesActive ? '1px solid var(--ink)' : '1px solid transparent',
+              }}
+            >
+              {t('services')}
+              <span
+                style={{
+                  fontSize: '0.55rem',
+                  opacity: 0.5,
+                  display: 'inline-block',
+                  transition: 'transform 0.15s',
+                  transform: servicesOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              >
+                ▾
+              </span>
+            </button>
+
+            {servicesOpen && (
+              <div
+                className="absolute left-0 z-50"
+                style={{
+                  top: 'calc(100% + 10px)',
+                  minWidth: 200,
+                  background: 'var(--bg)',
+                  border: '1px solid var(--line)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
+                  animation: 'navDropdownIn 0.15s ease-out',
+                }}
+                onMouseEnter={openServices}
+                onMouseLeave={closeServices}
+              >
+                <p className="px-4 pt-3 pb-2 text-xs tracking-widest uppercase" style={{ color: 'var(--ink-faint)' }}>
+                  {t('services')}
+                </p>
+                <div style={{ borderTop: '1px solid var(--line)' }} />
+                {serviceLinks.map(link => {
+                  const active = isActive(link.href);
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setServicesOpen(false)}
+                      className="hover-bg flex items-center gap-3 px-4 py-3 text-sm tracking-wide"
+                      style={{ color: active ? 'var(--ink)' : 'var(--ink-secondary)' }}
+                    >
+                      <span style={{
+                        width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+                        background: active ? 'var(--ink)' : 'var(--line-dark)',
+                      }} />
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           <span style={{ color: 'var(--line)' }}>|</span>
 
@@ -333,6 +420,20 @@ export default function Navbar({ session, locale }: NavbarProps) {
               {link.label}
             </Link>
           ))}
+          <div>
+            <p className="text-xs mb-2" style={{ color: 'var(--ink-faint)' }}>{t('services')}</p>
+            {serviceLinks.map(link => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                className="text-sm tracking-wide pl-3 block"
+                style={{ color: 'var(--ink-secondary)' }}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
           <div className="flex items-center gap-4 pt-2" style={{ borderTop: '1px solid var(--line)' }}>
             <button onClick={switchLocale} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>
               {locale === 'en' ? '中文' : 'EN'}
