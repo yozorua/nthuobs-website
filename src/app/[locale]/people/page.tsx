@@ -1,99 +1,10 @@
 import { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { db } from '@/lib/db';
+import { MemberGrid } from '@/components/people/PeopleGrid';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'People' };
-
-function displayName(
-  user: {
-    firstNameEn?: string | null;
-    lastNameEn?: string | null;
-    firstNameZh?: string | null;
-    lastNameZh?: string | null;
-    name?: string | null;
-  },
-  locale: string,
-): { primary: string; secondary: string | null } {
-  const en =
-    [user.firstNameEn, user.lastNameEn].filter(Boolean).join(' ') ||
-    user.name ||
-    'Unknown';
-  const zh =
-    [user.lastNameZh, user.firstNameZh].filter(Boolean).join('') || null;
-
-  if (locale === 'tw' && zh) {
-    return { primary: zh, secondary: en };
-  }
-  return { primary: en, secondary: zh };
-}
-
-function Avatar({
-  image,
-  initials,
-}: {
-  image?: string | null;
-  initials: string;
-}) {
-  if (image) {
-    return (
-      <div className="w-16 h-16 shrink-0 overflow-hidden" style={{ border: '1px solid var(--line)' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={image} alt="" width={64} height={64} className="w-full h-full object-cover" />
-      </div>
-    );
-  }
-  return (
-    <div
-      className="w-16 h-16 flex items-center justify-center shrink-0 text-base font-light"
-      style={{ background: 'var(--bg-muted)', border: '1px solid var(--line)', color: 'var(--ink-faint)' }}
-    >
-      {initials}
-    </div>
-  );
-}
-
-type UserRow = {
-  id: string;
-  name: string | null;
-  image: string | null;
-  firstNameEn: string | null;
-  lastNameEn: string | null;
-  firstNameZh: string | null;
-  lastNameZh: string | null;
-  updatedAt: Date;
-};
-
-function MemberGrid({ users, emptyLabel, locale }: { users: UserRow[]; emptyLabel: string; locale: string }) {
-  if (users.length === 0) {
-    return <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>{emptyLabel}</p>;
-  }
-  return (
-    <div className="flex flex-wrap gap-px">
-      {users.map((u) => {
-        const { primary, secondary } = displayName(u, locale);
-        const initials = primary.charAt(0).toUpperCase();
-        const sep = u.image?.includes('?') ? '&' : '?';
-        const imageUrl = u.image ? `${u.image}${sep}t=${u.updatedAt.getTime()}` : null;
-        return (
-          <div
-            key={u.id}
-            className="p-5 flex flex-col items-center text-center gap-3"
-            style={{ background: 'var(--bg)', width: '10rem', border: '1px solid var(--line)' }}
-          >
-            <Avatar image={imageUrl} initials={initials} />
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>{primary}</p>
-              {secondary && (
-                <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>{secondary}</p>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export default async function PeoplePage({
   params,
@@ -107,10 +18,16 @@ export default async function PeoplePage({
     id: true,
     name: true,
     image: true,
+    role: true,
     firstNameEn: true,
     lastNameEn: true,
     firstNameZh: true,
     lastNameZh: true,
+    contactEmail: true,
+    bio: true,
+    website: true,
+    department: true,
+    showPublicProfile: true,
     updatedAt: true,
   };
 

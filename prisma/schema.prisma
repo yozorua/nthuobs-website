@@ -20,6 +20,10 @@ model User {
   lastNameZh     String?
   contactEmail        String?
   phone               String?
+  bio                 String?
+  website             String?
+  department          String?
+  showPublicProfile   Boolean              @default(false)
   receiveEventEmails  Boolean              @default(true)
   emailVerified       DateTime?
   createdAt      DateTime             @default(now())

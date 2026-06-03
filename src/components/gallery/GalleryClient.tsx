@@ -286,6 +286,8 @@ function EquipmentForm({
 
 // ─── Upload Modal ─────────────────────────────────────────────────────────────
 
+const DRAFT_KEY = 'gallery-upload-draft';
+
 function UploadModal({
   onClose,
   onUploaded,
@@ -312,6 +314,66 @@ function UploadModal({
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [fileRequired, setFileRequired] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+
+  // Check for saved draft on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const meaningful = !!(
+          parsed?.title?.trim() ||
+          parsed?.description?.trim() ||
+          parsed?.takenAt ||
+          EQUIP_FIELDS.some((f) => parsed?.eq?.[f]?.trim()) ||
+          (parsed?.eq?.integration?.length > 0) ||
+          (parsed?.links?.length > 0)
+        );
+        if (meaningful) {
+          setHasDraft(true);
+          setDraftSavedAt(parsed._savedAt ?? null);
+        }
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  // Auto-save draft on every form change (debounced 800ms), skip initial mount
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      const draft = { title, description, category, takenAt, eq, lat, lng, links, _savedAt: new Date().toISOString() };
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* ignore */ }
+    }, 800);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [title, description, category, takenAt, eq, lat, lng, links]);
+
+  const restoreDraft = () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (d.title !== undefined) setTitle(d.title);
+      if (d.description !== undefined) setDescription(d.description);
+      if (d.category !== undefined) setCategory(d.category);
+      if (d.takenAt !== undefined) setTakenAt(d.takenAt);
+      if (d.eq !== undefined) setEq(d.eq);
+      if (d.lat !== undefined) setLat(d.lat);
+      if (d.lng !== undefined) setLng(d.lng);
+      if (d.links !== undefined) setLinks(d.links);
+    } catch { /* ignore */ }
+    setHasDraft(false);
+  };
+
+  const clearDraft = () => {
+    try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+    setHasDraft(false);
+  };
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -327,6 +389,7 @@ function UploadModal({
     const max = isImg ? 100 * 1024 * 1024 : 500 * 1024 * 1024;
     if (f.size > max) { setError(t('fileTooLarge')); return; }
     setFile(f);
+    setFileRequired(false);
     if (!title) setTitle(f.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' '));
   };
 
@@ -340,7 +403,8 @@ function UploadModal({
   const hasEquipment = EQUIP_FIELDS.some((f) => eq[f]) || eq.integration.length > 0;
 
   const submit = async () => {
-    if (!file || !title.trim()) return;
+    if (!file) { setFileRequired(true); return; }
+    if (!title.trim()) return;
     setUploading(true);
     setError(null);
 
@@ -375,6 +439,7 @@ function UploadModal({
         xhr.open('POST', '/api/gallery');
         xhr.send(fd);
       });
+      clearDraft();
       onUploaded(result);
     } catch (err) {
       setError(`${t('uploadError')} (${err instanceof Error ? err.message : 'unknown'})`);
@@ -391,7 +456,7 @@ function UploadModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl"
+        className="w-full max-w-4xl"
         style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -404,37 +469,35 @@ function UploadModal({
           <button onClick={onClose} className="text-xl leading-none" style={{ color: 'var(--ink-faint)' }}>×</button>
         </div>
 
-        <div className="px-6 py-5 flex flex-col gap-5">
-          {/* Drop zone */}
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={onDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className="cursor-pointer flex flex-col items-center justify-center gap-2 py-8 text-sm transition-colors duration-150"
-            style={{
-              border: `1px dashed ${dragOver ? 'var(--ink)' : 'var(--line)'}`,
-              background: dragOver ? 'var(--bg-warm)' : 'transparent',
-              color: 'var(--ink-faint)',
-            }}
-          >
-            {file ? (
-              <>
-                <span className="text-lg" style={{ color: 'var(--ink-secondary)' }}>
-                  {file.type.startsWith('video/') ? '▶' : '◈'}
+        {/* Draft restore banner */}
+        {hasDraft && (
+          <div className="px-6 py-2.5 flex items-center justify-between" style={{ background: 'rgba(202,138,4,0.1)', borderBottom: '1px solid rgba(202,138,4,0.3)' }}>
+            <p className="text-xs" style={{ color: 'rgba(161,110,0,1)' }}>
+              {t('draftFound')}
+              {draftSavedAt && (
+                <span style={{ color: 'var(--ink-faint)' }}>
+                  {' '}· {new Date(draftSavedAt).toLocaleString()}
                 </span>
-                <span style={{ color: 'var(--ink-secondary)' }}>{file.name}</span>
-                <span className="text-xs">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
-              </>
-            ) : (
-              <>
-                <span className="text-2xl opacity-30">+</span>
-                <span>{t('dropHere')}</span>
-                <span className="text-xs">{t('orClick')}</span>
-                <span className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>{t('fileHint')}</span>
-              </>
-            )}
+              )}
+            </p>
+            <div className="flex items-center gap-4">
+              <button onClick={restoreDraft} className="text-xs tracking-wide" style={{ color: 'var(--ink)' }}
+                onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+              >
+                {t('draftRestore')}
+              </button>
+              <button onClick={clearDraft} className="text-xs" style={{ color: 'var(--ink-faint)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-faint)')}
+              >
+                {t('draftDiscard')}
+              </button>
+            </div>
           </div>
+        )}
+
+        <div className="px-6 py-5 flex flex-col gap-5">
           <input
             ref={fileInputRef}
             type="file"
@@ -443,186 +506,149 @@ function UploadModal({
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
           />
 
-          {/* Title */}
-          <div>
-            <label className="label block mb-1.5">{t('titleField')}</label>
-            <input
-              className="input"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('titlePlaceholder')}
-              maxLength={120}
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="label block mb-1.5">{t('descField')}</label>
-            <textarea
-              className="input resize-none"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('descPlaceholder')}
-            />
-          </div>
-
-          {/* Category + Date */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label block mb-1.5">{t('categoryField')}</label>
-              <select className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
-                {CATEGORIES.filter((c) => c !== 'all').map((c) => (
-                  <option key={c} value={c}>{t((`categories.${c}`) as Parameters<typeof t>[0])}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label block mb-1.5">{t('dateField')}</label>
-              <input type="date" className="input" value={takenAt} onChange={(e) => setTakenAt(e.target.value)} />
-            </div>
-          </div>
-
-          {/* Divider */}
-          <hr style={{ borderColor: 'var(--line)', borderTopWidth: 1, borderStyle: 'solid' }} />
-
-          {/* Equipment + Integration */}
-          <EquipmentForm value={eq} onChange={setEq} />
-
-          {/* Divider */}
-          <hr style={{ borderColor: 'var(--line)', borderTopWidth: 1, borderStyle: 'solid' }} />
-
-          {/* Location */}
-          <div>
-            {showMap ? (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="label">{t('locationField')}</label>
-                  <div className="flex items-center gap-3">
-                    {lat !== null && (
-                      <button
-                        type="button"
-                        onClick={() => { setLat(null); setLng(null); }}
-                        className="text-xs tracking-ultra uppercase transition-colors duration-150"
-                        style={{ color: '#c0392b' }}
-                      >
-                        {t('removeLocation')}
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setShowMap(false)}
-                      className="text-xs tracking-ultra uppercase transition-colors duration-150"
-                      style={{ color: 'var(--ink-faint)' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--ink)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-                <div style={{ border: '1px solid var(--line)', overflow: 'hidden' }}>
-                  <MapPicker lat={lat} lng={lng} onChange={(la, lo) => { setLat(la); setLng(lo); }} />
-                </div>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
-                    {lat !== null ? `${lat.toFixed(5)}, ${lng!.toFixed(5)}` : t('clickToPin')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!navigator.geolocation) return;
-                      navigator.geolocation.getCurrentPosition((pos) => {
-                        setLat(pos.coords.latitude);
-                        setLng(pos.coords.longitude);
-                      });
-                    }}
-                    className="btn-outline text-xs"
-                  >
-                    {t('useMyLocation')}
-                  </button>
-                </div>
-              </>
-            ) : lat !== null ? (
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="label mb-0.5 block">{t('locationField')}</label>
-                  <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
-                    {lat.toFixed(5)}, {lng!.toFixed(5)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button type="button" onClick={() => setShowMap(true)} className="btn-outline text-xs">
-                    {t('edit')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setLat(null); setLng(null); }}
-                    className="text-xs tracking-ultra uppercase"
-                    style={{ color: '#c0392b' }}
-                  >
-                    {t('removeLocation')}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <label className="label">{t('locationField')}</label>
-                <button type="button" onClick={() => setShowMap(true)} className="btn-outline text-xs">
-                  {t('addLocation')}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* External Links */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="label">{t('linksField')}</label>
-              <button
-                type="button"
-                onClick={() => setLinks(l => [...l, { title: '', url: '' }])}
-                className="btn-outline text-xs"
+          {/* Two-column body */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left — drop zone + basic info */}
+            <div className="flex flex-col gap-4">
+              {/* Drop zone */}
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={onDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className="cursor-pointer flex flex-col items-center justify-center gap-2 py-8 text-sm transition-colors duration-150"
+                style={{
+                  border: `1px dashed ${fileRequired ? '#c0392b' : dragOver ? 'var(--ink)' : 'var(--line)'}`,
+                  background: dragOver ? 'var(--bg-warm)' : fileRequired ? 'rgba(192,57,43,0.04)' : 'transparent',
+                  color: 'var(--ink-faint)',
+                }}
               >
-                {t('addLink')}
-              </button>
-            </div>
-            {links.map((link, i) => (
-              <div key={i} className="flex gap-2 mb-2">
-                <input
-                  className="input text-sm"
-                  style={{ flex: '0 0 36%' }}
-                  placeholder={t('linkTitle')}
-                  value={link.title}
-                  onChange={(e) => setLinks(l => l.map((lk, j) => j === i ? { ...lk, title: e.target.value } : lk))}
-                />
-                <input
-                  className="input text-sm flex-1"
-                  placeholder="https://..."
-                  value={link.url}
-                  onChange={(e) => setLinks(l => l.map((lk, j) => j === i ? { ...lk, url: e.target.value } : lk))}
-                />
-                <button
-                  type="button"
-                  onClick={() => setLinks(l => l.filter((_, j) => j !== i))}
-                  className="flex items-center justify-center w-8 h-8 text-lg leading-none flex-shrink-0 transition-colors duration-150"
-                  style={{ color: 'var(--ink-faint)' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = '#c0392b')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}
-                >
-                  ×
-                </button>
+                {file ? (
+                  <>
+                    <span className="text-lg" style={{ color: 'var(--ink-secondary)' }}>
+                      {file.type.startsWith('video/') ? '▶' : '◈'}
+                    </span>
+                    <span style={{ color: 'var(--ink-secondary)' }}>{file.name}</span>
+                    <span className="text-xs">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-2xl opacity-30">+</span>
+                    <span>{t('dropHere')}</span>
+                    <span className="text-xs">{t('orClick')}</span>
+                    <span className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>{t('fileHintImage')}</span>
+                    <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>{t('fileHintVideo')}</span>
+                    {fileRequired && (
+                      <span className="text-xs mt-1" style={{ color: '#c0392b' }}>{t('fileRequired')}</span>
+                    )}
+                  </>
+                )}
               </div>
-            ))}
+              <div>
+                <label className="label block mb-1.5">{t('titleField')}</label>
+                <input
+                  className="input"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder={t('titlePlaceholder')}
+                  maxLength={120}
+                />
+              </div>
+              <div>
+                <label className="label block mb-1.5">{t('descField')}</label>
+                <textarea
+                  className="input resize-none"
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={t('descPlaceholder')}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label block mb-1.5">{t('categoryField')}</label>
+                  <select className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
+                    {CATEGORIES.filter((c) => c !== 'all').map((c) => (
+                      <option key={c} value={c}>{t((`categories.${c}`) as Parameters<typeof t>[0])}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label block mb-1.5">{t('dateField')}</label>
+                  <input type="date" className="input" value={takenAt} onChange={(e) => setTakenAt(e.target.value)} />
+                </div>
+              </div>
+            </div>
+
+            {/* Right — equipment, location, links */}
+            <div className="flex flex-col gap-4">
+              <EquipmentForm value={eq} onChange={setEq} />
+
+              <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
+                {showMap ? (
+                  <>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="label">{t('locationField')}</label>
+                      <div className="flex items-center gap-3">
+                        {lat !== null && (
+                          <button type="button" onClick={() => { setLat(null); setLng(null); }} className="text-xs tracking-ultra uppercase" style={{ color: '#c0392b' }}>
+                            {t('removeLocation')}
+                          </button>
+                        )}
+                        <button type="button" onClick={() => setShowMap(false)} className="text-xs" style={{ color: 'var(--ink-faint)' }}>×</button>
+                      </div>
+                    </div>
+                    <div style={{ border: '1px solid var(--line)', overflow: 'hidden' }}>
+                      <MapPicker lat={lat} lng={lng} onChange={(la, lo) => { setLat(la); setLng(lo); }} />
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                        {lat !== null ? `${lat.toFixed(5)}, ${lng!.toFixed(5)}` : t('clickToPin')}
+                      </span>
+                      <button type="button" onClick={() => { if (!navigator.geolocation) return; navigator.geolocation.getCurrentPosition((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); }); }} className="btn-outline text-xs">
+                        {t('useMyLocation')}
+                      </button>
+                    </div>
+                  </>
+                ) : lat !== null ? (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <label className="label mb-0.5 block">{t('locationField')}</label>
+                      <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>{lat.toFixed(5)}, {lng!.toFixed(5)}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button type="button" onClick={() => setShowMap(true)} className="btn-outline text-xs">{t('edit')}</button>
+                      <button type="button" onClick={() => { setLat(null); setLng(null); }} className="text-xs tracking-ultra uppercase" style={{ color: '#c0392b' }}>{t('removeLocation')}</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <label className="label">{t('locationField')}</label>
+                    <button type="button" onClick={() => setShowMap(true)} className="btn-outline text-xs">{t('addLocation')}</button>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="label">{t('linksField')}</label>
+                  <button type="button" onClick={() => setLinks(l => [...l, { title: '', url: '' }])} className="btn-outline text-xs">{t('addLink')}</button>
+                </div>
+                {links.map((link, i) => (
+                  <div key={i} className="flex gap-2 mb-2">
+                    <input className="input text-sm" style={{ flex: '0 0 36%' }} placeholder={t('linkTitle')} value={link.title} onChange={(e) => setLinks(l => l.map((lk, j) => j === i ? { ...lk, title: e.target.value } : lk))} />
+                    <input className="input text-sm flex-1" placeholder="https://..." value={link.url} onChange={(e) => setLinks(l => l.map((lk, j) => j === i ? { ...lk, url: e.target.value } : lk))} />
+                    <button type="button" onClick={() => setLinks(l => l.filter((_, j) => j !== i))} className="flex items-center justify-center w-8 h-8 text-lg leading-none flex-shrink-0 transition-colors duration-150" style={{ color: 'var(--ink-faint)' }} onMouseEnter={(e) => (e.currentTarget.style.color = '#c0392b')} onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}>×</button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Progress */}
           {uploading && progress > 0 && (
             <div className="h-px w-full" style={{ background: 'var(--line)' }}>
-              <div
-                className="h-full transition-all duration-300"
-                style={{ width: `${progress}%`, background: 'var(--ink)' }}
-              />
+              <div className="h-full transition-all duration-300" style={{ width: `${progress}%`, background: 'var(--ink)' }} />
             </div>
           )}
 
@@ -631,14 +657,8 @@ function UploadModal({
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-1">
             <button onClick={onClose} className="btn-outline" disabled={uploading}>{t('cancel')}</button>
-            <button
-              onClick={submit}
-              className="btn"
-              disabled={uploading || !file || !title.trim()}
-            >
-              {uploading
-                ? `${t('uploading')}${progress > 0 ? ` ${progress}%` : ''}`
-                : t('submit')}
+            <button onClick={submit} className="btn" disabled={uploading || !title.trim()}>
+              {uploading ? `${t('uploading')}${progress > 0 ? ` ${progress}%` : ''}` : t('submit')}
             </button>
           </div>
         </div>

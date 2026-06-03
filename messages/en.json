@@ -170,7 +170,11 @@
     "joinLabel": "Join the Team",
     "joinDesc": "Interested in joining the observatory management team? We welcome NTHU students with a passion for astronomy and public outreach. Reach out via email to learn about current openings.",
     "contactUs": "Contact Us",
-    "webManagersLabel": "Web Managers"
+    "webManagersLabel": "Web Managers",
+    "popupEmail": "Email",
+    "popupBio": "About",
+    "popupWebsite": "Website",
+    "popupClose": "Close"
   },
   "calendar": {
     "label": "Events & Schedule",
@@ -586,7 +590,13 @@
     "linksField": "External Links",
     "addLink": "+ Add Link",
     "linkTitle": "Title",
-    "linkUrl": "URL"
+    "linkUrl": "URL",
+    "fileHintImage": "JPG · PNG · WEBP · TIFF — max 100 MB",
+    "fileHintVideo": "MP4 — max 500 MB",
+    "draftFound": "You have an unsaved draft.",
+    "draftRestore": "Restore",
+    "draftDiscard": "Discard",
+    "fileRequired": "Please select a file to upload."
   },
   "profile": {
     "title": "Edit Profile",
@@ -610,6 +620,13 @@
     "saving": "Saving…",
     "saved": "Saved",
     "error": "Failed to save. Please try again.",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "bio": "Self Introduction",
+    "bioPlaceholder": "A short intro about yourself…",
+    "website": "Personal Website",
+    "showPublicProfile": "Show my profile on the People page",
+    "showPublicProfileHint": "Visitors can click your card to view your name, email, intro, and website.",
+    "department": "Department / Institution",
+    "departmentPlaceholder": "e.g. Dept. of Physics, NTHU"
   }
 }

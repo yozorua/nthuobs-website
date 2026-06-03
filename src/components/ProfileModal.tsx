@@ -21,6 +21,10 @@ export default function ProfileModal({ open, onClose }: Props) {
     firstNameEn: '', lastNameEn: '',
     contactEmail: '', phone: '',
     receiveEventEmails: true,
+    bio: '',
+    website: '',
+    department: '',
+    showPublicProfile: false,
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'saving' | 'error' | 'saved'>('idle');
 
@@ -47,6 +51,10 @@ export default function ProfileModal({ open, onClose }: Props) {
           contactEmail: data.contactEmail ?? '',
           phone: data.phone ?? '',
           receiveEventEmails: data.receiveEventEmails !== false,
+          bio: data.bio ?? '',
+          website: data.website ?? '',
+          department: data.department ?? '',
+          showPublicProfile: data.showPublicProfile === true,
         });
         setAvatarUrl(session?.user?.image ?? null);
         setStatus('idle');
@@ -109,8 +117,8 @@ export default function ProfileModal({ open, onClose }: Props) {
       onClick={() => { if (!cropSrc) onClose(); }}
     >
       <div
-        className="w-full max-w-sm p-8"
-        style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
+        className="w-full max-w-2xl p-8 overflow-y-auto"
+        style={{ background: 'var(--bg)', border: '1px solid var(--line)', maxHeight: '90vh' }}
         onClick={e => e.stopPropagation()}
       >
         {cropSrc ? (
@@ -129,16 +137,10 @@ export default function ProfileModal({ open, onClose }: Props) {
             {status === 'loading' ? (
               <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>{t('loading')}</p>
             ) : (
-              <form onSubmit={handleSave} className="space-y-4">
-                {/* Avatar */}
+              <form onSubmit={handleSave} className="space-y-5">
+                {/* Avatar row */}
                 <div className="flex items-center gap-4 pb-4" style={{ borderBottom: '1px solid var(--line)' }}>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png"
-                    className="hidden"
-                    onChange={handleFileChange}
-                  />
+                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleFileChange} />
                   <div
                     className="relative w-14 h-14 rounded-full overflow-hidden flex-shrink-0 group"
                     style={{ background: 'var(--line)', cursor: uploadingAvatar ? 'default' : 'pointer' }}
@@ -146,12 +148,7 @@ export default function ProfileModal({ open, onClose }: Props) {
                   >
                     {currentAvatar ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        key={currentAvatar}
-                        src={currentAvatar}
-                        alt="Avatar"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
+                      <img key={currentAvatar} src={currentAvatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-lg font-medium" style={{ color: 'var(--ink-faint)' }}>
                         {form.firstNameEn?.[0]?.toUpperCase() ?? '?'}
@@ -171,13 +168,7 @@ export default function ProfileModal({ open, onClose }: Props) {
                     )}
                   </div>
                   <div>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingAvatar}
-                      className="text-xs tracking-ultra uppercase"
-                      style={{ color: 'var(--ink-secondary)' }}
-                    >
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingAvatar} className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>
                       {t('changePhoto')}
                     </button>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>{t('avatarHint')}</p>
@@ -185,45 +176,74 @@ export default function ProfileModal({ open, onClose }: Props) {
                   </div>
                 </div>
 
-                {/* Name fields */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('lastNameZh')}</label>
-                    <input className="input" value={form.lastNameZh} onChange={e => setForm(f => ({ ...f, lastNameZh: e.target.value }))} />
+                {/* Two-column body */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Left — identity & contact */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('lastNameZh')}</label>
+                        <input className="input" value={form.lastNameZh} onChange={e => setForm(f => ({ ...f, lastNameZh: e.target.value }))} />
+                      </div>
+                      <div>
+                        <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('firstNameZh')}</label>
+                        <input className="input" value={form.firstNameZh} onChange={e => setForm(f => ({ ...f, firstNameZh: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('firstNameEn')}</label>
+                        <input className="input" value={form.firstNameEn} onChange={e => setForm(f => ({ ...f, firstNameEn: e.target.value }))} required />
+                      </div>
+                      <div>
+                        <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('lastNameEn')}</label>
+                        <input className="input" value={form.lastNameEn} onChange={e => setForm(f => ({ ...f, lastNameEn: e.target.value }))} required />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('contactEmail')}</label>
+                      <input type="email" className="input" value={form.contactEmail} onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))} required />
+                    </div>
+                    <div>
+                      <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('phone')}</label>
+                      <input type="tel" className="input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))} inputMode="numeric" pattern="[0-9]*" required />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('firstNameZh')}</label>
-                    <input className="input" value={form.firstNameZh} onChange={e => setForm(f => ({ ...f, firstNameZh: e.target.value }))} />
+
+                  {/* Right — public profile */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('bio')}</label>
+                      <textarea
+                        className="input resize-none"
+                        rows={4}
+                        maxLength={200}
+                        value={form.bio}
+                        onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
+                      />
+                      <p className="text-xs mt-1 text-right" style={{ color: 'var(--ink-faint)' }}>{form.bio.length}/200</p>
+                    </div>
+                    <div>
+                      <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('department')}</label>
+                      <input className="input" value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} placeholder={t('departmentPlaceholder')} />
+                    </div>
+                    <div>
+                      <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('website')}</label>
+                      <input type="url" className="input" value={form.website} onChange={e => setForm(f => ({ ...f, website: e.target.value }))} placeholder="https://" />
+                    </div>
+                    <div className="space-y-3 pt-1">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.showPublicProfile} onChange={e => setForm(f => ({ ...f, showPublicProfile: e.target.checked }))} />
+                        <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('showPublicProfile')}</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.receiveEventEmails} onChange={e => setForm(f => ({ ...f, receiveEventEmails: e.target.checked }))} />
+                        <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('receiveEventEmails')}</span>
+                      </label>
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('firstNameEn')}</label>
-                    <input className="input" value={form.firstNameEn} onChange={e => setForm(f => ({ ...f, firstNameEn: e.target.value }))} required />
-                  </div>
-                  <div>
-                    <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('lastNameEn')}</label>
-                    <input className="input" value={form.lastNameEn} onChange={e => setForm(f => ({ ...f, lastNameEn: e.target.value }))} required />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('contactEmail')}</label>
-                  <input type="email" className="input" value={form.contactEmail} onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))} required />
-                </div>
-                <div>
-                  <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('phone')}</label>
-                  <input type="tel" className="input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))} inputMode="numeric" pattern="[0-9]*" required />
-                </div>
-                <div className="pt-2" style={{ borderTop: '1px solid var(--line)' }}>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={form.receiveEventEmails}
-                      onChange={e => setForm(f => ({ ...f, receiveEventEmails: e.target.checked }))}
-                    />
-                    <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('receiveEventEmails')}</span>
-                  </label>
-                </div>
+
                 {status === 'error' && <p className="text-xs" style={{ color: '#cc4444' }}>{t('error')}</p>}
                 {status === 'saved' && <p className="text-xs" style={{ color: '#44aa66' }}>{t('saved')}</p>}
                 <div className="flex gap-3 pt-1">
