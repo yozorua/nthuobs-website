@@ -32,7 +32,7 @@ export default function ActivatePage() {
     const res = await fetch('/api/auth/activate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passkey }),
+      body: JSON.stringify({ passkey: passkey.trim() }),
     });
     if (res.ok) {
       setForm(f => ({ ...f, contactEmail: session?.user?.email ?? '' }));

@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const { passkey } = await request.json();
   const expected = process.env.REGISTER_PASSKEY;
 
-  if (!expected || passkey !== expected) {
+  if (!expected || passkey.trim() !== expected.trim()) {
     return NextResponse.json({ error: 'Invalid access code' }, { status: 403 });
   }
 
