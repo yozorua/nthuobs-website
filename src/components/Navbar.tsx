@@ -38,7 +38,6 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const navLinks = [
-    { href: `/${locale}`, label: t('home') },
     { href: `/${locale}/about`, label: t('about') },
     { href: `/${locale}/people`, label: t('people') },
     { href: `/${locale}/calendar`, label: t('calendar') },

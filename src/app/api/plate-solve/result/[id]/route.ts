@@ -13,7 +13,6 @@ export async function GET(
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-
   const dbUser = await db.user.findUnique({
     where: { id: session.user.id },
     select: { role: true },
@@ -21,29 +20,15 @@ export async function GET(
   if (!dbUser || !MEMBER_ROLES.includes(dbUser.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-
   const { id } = await params;
   if (!/^[0-9a-f-]+$/.test(id)) {
     return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
   }
-
-  let res: Response;
   try {
-    res = await fetch(`${PLATE_SOLVE_URL}/result/${id}/wcs`);
+    const res = await fetch(`${PLATE_SOLVE_URL}/result/${id}`);
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
   } catch {
     return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
   }
-
-  if (!res.ok) {
-    return NextResponse.json({ error: 'WCS file not found or expired' }, { status: res.status });
-  }
-
-  const blob = await res.blob();
-  return new NextResponse(blob, {
-    headers: {
-      'Content-Type': 'application/fits',
-      'Content-Disposition': `attachment; filename="solution_${id.slice(0, 8)}_wcs.fits"`,
-      'Cache-Control': 'private, max-age=3600',
-    },
-  });
 }
