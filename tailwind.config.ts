@@ -31,7 +31,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'var(--font-noto-tc)', 'sans-serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'var(--font-inter)', 'var(--font-noto-tc)', 'sans-serif'],
       },
       letterSpacing: {
         wider: "-0.003em",
