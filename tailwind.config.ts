@@ -31,10 +31,7 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: [
-          "-apple-system", "BlinkMacSystemFont", "SF Pro Display", "SF Pro Text",
-          "Helvetica Neue", "Arial", "sans-serif",
-        ],
+        sans: ['var(--font-inter)', 'var(--font-noto-tc)', 'sans-serif'],
       },
       letterSpacing: {
         wider: "-0.003em",
