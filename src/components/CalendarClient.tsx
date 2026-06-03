@@ -165,7 +165,7 @@ export default function CalendarClient({ entries }: { entries: Entry[] }) {
                         <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>{entry.location}</p>
                       )}
                       {entry.description && (
-                        <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--ink-secondary)' }}>{entry.description}</p>
+                        <p className="text-xs mt-1 leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--ink-secondary)' }}>{entry.description}</p>
                       )}
                     </div>
                   ))}

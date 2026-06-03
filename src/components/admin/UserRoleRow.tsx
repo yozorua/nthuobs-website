@@ -1,17 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 
-const ROLES = ['PENDING', 'MEMBER', 'OPERATOR', 'MANAGER', 'ADMIN'] as const;
-type Role = typeof ROLES[number];
+const PRIMARY_ROLES = ['PENDING', 'MEMBER', 'OPERATOR', 'MANAGER', 'ADMIN'] as const;
+const EXTRA_ROLES = ['WEB_MANAGER'] as const;
+type PrimaryRole = typeof PRIMARY_ROLES[number];
+type ExtraRole = typeof EXTRA_ROLES[number];
 
-const ROLE_LABEL_KEY: Record<Role, string> = {
+const ROLE_LABEL_KEY: Record<PrimaryRole | ExtraRole, string> = {
   PENDING: 'rolePending',
   MEMBER: 'roleMember',
   OPERATOR: 'roleOperator',
   MANAGER: 'roleManager',
   ADMIN: 'roleAdmin',
+  WEB_MANAGER: 'roleWebManager',
 };
 
 interface User {
@@ -20,6 +23,7 @@ interface User {
   name: string | null;
   image: string | null;
   role: string;
+  extraRoles: string[];
   createdAt: Date;
   firstNameEn: string | null;
   lastNameEn: string | null;
@@ -35,11 +39,24 @@ interface Props {
 export default function UserRoleRow({ user, currentUserId }: Props) {
   const t = useTranslations('admin');
   const locale = useLocale();
-  const [role, setRole] = useState<Role>(user.role as Role);
+  const [role, setRole] = useState<PrimaryRole>(user.role as PrimaryRole);
+  const [extraRoles, setExtraRoles] = useState<ExtraRole[]>(user.extraRoles as ExtraRole[]);
   const [saving, setSaving] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const isSelf = user.id === currentUserId;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const displayName = () => {
     if (locale === 'tw' && (user.lastNameZh || user.firstNameZh)) {
@@ -51,19 +68,30 @@ export default function UserRoleRow({ user, currentUserId }: Props) {
     return user.name ?? '—';
   };
 
-  const handleRoleChange = async (newRole: Role) => {
-    if (newRole === role) return;
+  const saveRoles = async (newRole: PrimaryRole, newExtra: ExtraRole[]) => {
     setSaving(true);
     try {
-      const res = await fetch(`/api/admin/users/${user.id}`, {
+      await fetch(`/api/admin/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ role: newRole, extraRoles: newExtra }),
       });
-      if (res.ok) setRole(newRole);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handlePrimaryChange = (r: PrimaryRole) => {
+    if (isSelf) return;
+    setRole(r);
+    saveRoles(r, extraRoles);
+  };
+
+  const handleExtraToggle = (r: ExtraRole) => {
+    if (isSelf) return;
+    const next = extraRoles.includes(r) ? extraRoles.filter(x => x !== r) : [...extraRoles, r];
+    setExtraRoles(next);
+    saveRoles(role, next);
   };
 
   const handleDelete = async () => {
@@ -79,7 +107,7 @@ export default function UserRoleRow({ user, currentUserId }: Props) {
 
   if (deleted) return null;
 
-  const roleColor: Record<Role, string> = {
+  const roleColor: Record<PrimaryRole, string> = {
     PENDING: 'var(--ink-faint)',
     MEMBER: 'var(--ink-secondary)',
     OPERATOR: 'var(--ink)',
@@ -89,8 +117,15 @@ export default function UserRoleRow({ user, currentUserId }: Props) {
 
   const dateLocale = locale === 'tw' ? 'zh-TW' : 'en-GB';
 
+  const roleLabel = (r: PrimaryRole | ExtraRole) => t(ROLE_LABEL_KEY[r]);
+
+  const badgeText = [
+    t(ROLE_LABEL_KEY[role]),
+    ...extraRoles.map(r => t(ROLE_LABEL_KEY[r as ExtraRole])),
+  ].join(', ');
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_160px_120px_60px] gap-2 md:gap-4 px-5 py-4 items-center" style={{ background: 'var(--bg)' }}>
+    <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_160px_150px_60px] gap-2 md:gap-4 px-5 py-4 items-center" style={{ background: 'var(--bg)' }}>
       {/* Name */}
       <div className="flex items-center gap-2.5">
         {user.image ? (
@@ -115,24 +150,62 @@ export default function UserRoleRow({ user, currentUserId }: Props) {
         {new Date(user.createdAt).toLocaleDateString(dateLocale, { day: 'numeric', month: 'short', year: 'numeric' })}
       </span>
 
-      {/* Role select */}
-      <select
-        value={role}
-        onChange={e => handleRoleChange(e.target.value as Role)}
-        disabled={saving || isSelf}
-        className="text-xs tracking-ultra uppercase px-2 py-1.5 transition-opacity"
-        style={{
-          background: 'var(--bg)',
-          border: '1px solid var(--line)',
-          color: roleColor[role],
-          opacity: saving ? 0.5 : 1,
-          cursor: isSelf ? 'not-allowed' : 'pointer',
-        }}
-      >
-        {ROLES.map(r => (
-          <option key={r} value={r}>{t(ROLE_LABEL_KEY[r])}</option>
-        ))}
-      </select>
+      {/* Role multi-checkbox dropdown */}
+      <div className="relative" ref={dropdownRef}>
+        <button
+          onClick={() => !isSelf && setOpen(o => !o)}
+          disabled={saving}
+          className="text-xs tracking-ultra uppercase px-2 py-1.5 w-full text-left transition-opacity flex items-center justify-between gap-1"
+          style={{
+            background: 'var(--bg)',
+            border: '1px solid var(--line)',
+            color: roleColor[role],
+            opacity: saving ? 0.5 : 1,
+            cursor: isSelf ? 'not-allowed' : 'pointer',
+          }}
+        >
+          <span className="truncate">{badgeText}</span>
+          {!isSelf && <span style={{ color: 'var(--ink-faint)', flexShrink: 0 }}>▾</span>}
+        </button>
+
+        {open && (
+          <div
+            className="absolute z-20 right-0 mt-1 py-2 min-w-[160px]"
+            style={{ background: 'var(--bg)', border: '1px solid var(--line)', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+          >
+            {/* Primary roles */}
+            <p className="px-3 pb-1 text-xs" style={{ color: 'var(--ink-faint)' }}>{t('rolePrimarySection')}</p>
+            {PRIMARY_ROLES.map(r => (
+              <label key={r} className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover-bg">
+                <input
+                  type="radio"
+                  name={`role-${user.id}`}
+                  checked={role === r}
+                  onChange={() => handlePrimaryChange(r)}
+                  style={{ accentColor: 'var(--ink)' }}
+                />
+                <span className="text-xs tracking-ultra uppercase" style={{ color: roleColor[r] }}>{roleLabel(r)}</span>
+              </label>
+            ))}
+
+            {/* Extra roles */}
+            <div className="mt-1 pt-1" style={{ borderTop: '1px solid var(--line)' }}>
+              <p className="px-3 pb-1 text-xs" style={{ color: 'var(--ink-faint)' }}>{t('roleExtraSection')}</p>
+              {EXTRA_ROLES.map(r => (
+                <label key={r} className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover-bg">
+                  <input
+                    type="checkbox"
+                    checked={extraRoles.includes(r)}
+                    onChange={() => handleExtraToggle(r)}
+                    style={{ accentColor: 'var(--ink)' }}
+                  />
+                  <span className="text-xs tracking-ultra uppercase" style={{ color: 'var(--ink-secondary)' }}>{roleLabel(r)}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Delete */}
       <div className="flex justify-end">

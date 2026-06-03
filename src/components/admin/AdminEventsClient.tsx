@@ -71,6 +71,7 @@ export default function AdminEventsClient({ initialEvents, locale }: Props) {
     OPERATOR: t('roleOperator'),
     MANAGER: t('roleManager'),
     ADMIN: t('roleAdmin'),
+    WEB_MANAGER: t('roleWebManager'),
   };
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setSendAnnouncement(true); setShowModal(true); };
@@ -178,7 +179,6 @@ export default function AdminEventsClient({ initialEvents, locale }: Props) {
               <div key={ev.id} className="grid grid-cols-1 md:grid-cols-[1fr_160px_140px_80px_100px_80px] gap-2 md:gap-4 px-5 py-4 items-center" style={{ background: 'var(--bg)' }}>
                 <div>
                   <p className="text-sm" style={{ color: 'var(--ink)' }}>{ev.title}</p>
-                  {ev.description && <p className="text-xs mt-0.5 truncate" style={{ color: 'var(--ink-faint)' }}>{ev.description}</p>}
                   {ev.estimatedVisitors != null && (
                     <p className="text-xs mt-0.5" style={{ color: 'var(--ink-faint)' }}>{t('estVisitorsRow', { n: ev.estimatedVisitors })}</p>
                   )}

@@ -114,16 +114,18 @@ export default async function PeoplePage({
     updatedAt: true,
   };
 
-  const [managers, operators, members] = await Promise.all([
+  const [managers, operators, members, webManagers] = await Promise.all([
     db.user.findMany({ where: { role: 'MANAGER' }, select, orderBy: { createdAt: 'asc' } }),
     db.user.findMany({ where: { role: 'OPERATOR' }, select, orderBy: { createdAt: 'asc' } }),
     db.user.findMany({ where: { role: 'MEMBER' }, select, orderBy: { createdAt: 'asc' } }),
+    db.user.findMany({ where: { extraRoles: { has: 'WEB_MANAGER' } }, select, orderBy: { createdAt: 'asc' } }),
   ]);
 
   const sections = [
     { label: t('managersLabel'), users: managers },
     { label: t('operatorsLabel'), users: operators },
     { label: t('membersLabel'), users: members },
+    { label: t('webManagersLabel'), users: webManagers },
   ];
 
   return (

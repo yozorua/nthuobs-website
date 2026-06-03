@@ -145,9 +145,6 @@ export default function EventsClient({ upcoming: initialUpcoming, history, local
               {timeStr && <span> · {timeStr}</span>}
               {ev.location && <span> · {ev.location}</span>}
             </p>
-            {ev.description && !expanded && (
-              <p className="text-xs mt-1.5 line-clamp-1" style={{ color: 'var(--ink-secondary)' }}>{ev.description}</p>
-            )}
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <span className="text-xs" style={{ color: isFull(ev) ? '#cc4444' : ev.participating ? 'var(--ink-secondary)' : 'var(--ink-faint)' }}>

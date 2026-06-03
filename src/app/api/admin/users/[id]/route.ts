@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-const VALID_ROLES = ['PENDING', 'MEMBER', 'OPERATOR', 'MANAGER', 'ADMIN'];
+const PRIMARY_ROLES = ['PENDING', 'MEMBER', 'OPERATOR', 'MANAGER', 'ADMIN'];
+const EXTRA_ROLES = ['WEB_MANAGER'];
+const ALL_VALID_ROLES = [...PRIMARY_ROLES, ...EXTRA_ROLES];
 const isAdmin = (session: { user?: { role?: string } } | null) =>
   (session?.user as { role?: string })?.role === 'ADMIN';
 
@@ -11,16 +13,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!isAdmin(session)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
   const { id } = await params;
-  const { role } = await request.json();
+  const { role, extraRoles } = await request.json();
 
-  if (!VALID_ROLES.includes(role)) {
+  if (!PRIMARY_ROLES.includes(role)) {
     return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
+  }
+  if (extraRoles !== undefined) {
+    if (!Array.isArray(extraRoles) || extraRoles.some((r: string) => !EXTRA_ROLES.includes(r))) {
+      return NextResponse.json({ error: 'Invalid extraRoles' }, { status: 400 });
+    }
   }
 
   const updated = await db.user.update({
     where: { id },
-    data: { role },
-    select: { id: true, role: true },
+    data: { role, ...(extraRoles !== undefined && { extraRoles }) },
+    select: { id: true, role: true, extraRoles: true },
   });
 
   return NextResponse.json(updated);

@@ -80,24 +80,33 @@ export default function Navbar({ session, locale }: NavbarProps) {
     >
       <nav className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
         {/* Logo */}
-        <Link href={`/${locale}`} className="flex items-center gap-2.5 group">
-          <Image
-            src="/logo_icon_light.png"
-            alt="NTHU Observatory"
-            width={22}
-            height={22}
-            className="block dark:hidden opacity-75 group-hover:opacity-100 transition-opacity"
-          />
-          <Image
-            src="/logo_icon_dark.png"
-            alt="NTHU Observatory"
-            width={22}
-            height={22}
-            className="hidden dark:block opacity-75 group-hover:opacity-100 transition-opacity"
-          />
-          <span className="text-sm font-medium tracking-wider" style={{ color: 'var(--ink)' }}>
-            {locale === 'tw' ? '國立清華大學天文台' : 'NTHU Observatory'}
-          </span>
+        <Link href={`/${locale}`} className="flex items-center group">
+          {pathname.includes('/weather') ? (
+            <Image
+              src="/banner_light.png"
+              alt="NTHU Observatory"
+              width={7217}
+              height={1134}
+              className="h-6 md:h-7 w-auto opacity-75 group-hover:opacity-100 transition-opacity"
+            />
+          ) : (
+            <>
+              <Image
+                src="/banner_light.png"
+                alt="NTHU Observatory"
+                width={7217}
+                height={1134}
+                className="hidden dark:block h-6 md:h-7 w-auto opacity-75 group-hover:opacity-100 transition-opacity"
+              />
+              <Image
+                src="/banner_dark.png"
+                alt="NTHU Observatory"
+                width={7217}
+                height={1134}
+                className="block dark:hidden h-6 md:h-7 w-auto opacity-75 group-hover:opacity-100 transition-opacity"
+              />
+            </>
+          )}
         </Link>
 
         {/* Desktop links + Right controls */}

@@ -26,6 +26,7 @@ export default async function AdminPage({
       name: true,
       image: true,
       role: true,
+      extraRoles: true,
       createdAt: true,
       firstNameEn: true,
       lastNameEn: true,
@@ -83,7 +84,7 @@ export default async function AdminPage({
 
         <div style={{ border: '1px solid var(--line)' }}>
           <div
-            className="hidden md:grid grid-cols-[1fr_1fr_160px_120px_60px] gap-4 px-5 py-3 text-xs tracking-ultra uppercase"
+            className="hidden md:grid grid-cols-[1fr_1fr_160px_150px_60px] gap-4 px-5 py-3 text-xs tracking-ultra uppercase"
             style={{ color: 'var(--ink-faint)', borderBottom: '1px solid var(--line)', background: 'var(--bg-warm)' }}
           >
             <span>{t('colName')}</span>

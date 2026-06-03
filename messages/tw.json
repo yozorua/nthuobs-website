@@ -169,7 +169,8 @@
     "noMembers": "尚無成員資料。",
     "joinLabel": "加入團隊",
     "joinDesc": "有興趣加入清大天文台團隊嗎？歡迎對天文與科普推廣有熱忱的學生，透過電子郵件與我們聯絡，了解目前的申請資訊。",
-    "contactUs": "聯絡我們"
+    "contactUs": "聯絡我們",
+    "webManagersLabel": "網站管理員"
   },
   "calendar": {
     "label": "活動與觀測",
@@ -310,7 +311,10 @@
     "upcomingEventsLabel": "即將參與的導覽活動",
     "noEvents": "尚未報名任何導覽活動。",
     "quickLinks": "快速連結",
-    "manageEventsLink": { "label": "活動管理", "desc": "管理與編輯導覽活動" },
+    "manageEventsLink": {
+      "label": "活動管理",
+      "desc": "管理與編輯導覽活動"
+    },
     "links": [
       {
         "label": "觀測排程管理",
@@ -408,7 +412,10 @@
     "roleMember": "解說員",
     "roleOperator": "觀測員",
     "roleManager": "管理員",
-    "roleAdmin": "系統管理員"
+    "roleAdmin": "系統管理員",
+    "roleWebManager": "網站管理員",
+    "rolePrimarySection": "主要身份",
+    "roleExtraSection": "附加身份"
   },
   "activate": {
     "label": "帳號啟用",

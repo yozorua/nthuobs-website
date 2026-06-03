@@ -169,7 +169,8 @@
     "noMembers": "No members listed.",
     "joinLabel": "Join the Team",
     "joinDesc": "Interested in joining the observatory management team? We welcome NTHU students with a passion for astronomy and public outreach. Reach out via email to learn about current openings.",
-    "contactUs": "Contact Us"
+    "contactUs": "Contact Us",
+    "webManagersLabel": "Web Managers"
   },
   "calendar": {
     "label": "Events & Schedule",
@@ -264,7 +265,10 @@
     "upcomingEventsLabel": "Upcoming Events",
     "noEvents": "No registered events.",
     "quickLinks": "Quick Links",
-    "manageEventsLink": { "label": "Manage Events", "desc": "Manage and edit guided tour events" },
+    "manageEventsLink": {
+      "label": "Manage Events",
+      "desc": "Manage and edit guided tour events"
+    },
     "links": [
       {
         "label": "Schedule Management",
@@ -408,7 +412,10 @@
     "roleMember": "Member",
     "roleOperator": "Operator",
     "roleManager": "Manager",
-    "roleAdmin": "Admin"
+    "roleAdmin": "Admin",
+    "roleWebManager": "Web Manager",
+    "rolePrimarySection": "Primary Role",
+    "roleExtraSection": "Additional Roles"
   },
   "activate": {
     "label": "Account Activation",
