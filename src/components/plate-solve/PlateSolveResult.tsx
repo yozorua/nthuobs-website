@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { signIn } from 'next-auth/react';
 import type { SolveResultData } from '@/app/[locale]/services/plate-solve/[id]/page';
+import AnnotationCanvas from './AnnotationCanvas';
 
 const AladinMap = dynamic(() => import('./AladinMap'), { ssr: false });
 
@@ -40,10 +41,8 @@ const LOCALE_MAP: Record<string, string> = { tw: 'zh-TW', en: 'en-US' };
 
 function formatFov(wDeg: number, hDeg: number): string {
   const larger = Math.max(wDeg, hDeg);
-  if (larger >= 1)
-    return `${wDeg.toFixed(2)}° × ${hDeg.toFixed(2)}°`;
-  if (larger >= 1 / 60)
-    return `${(wDeg * 60).toFixed(1)}′ × ${(hDeg * 60).toFixed(1)}′`;
+  if (larger >= 1)    return `${wDeg.toFixed(2)}° × ${hDeg.toFixed(2)}°`;
+  if (larger >= 1/60) return `${(wDeg * 60).toFixed(1)}′ × ${(hDeg * 60).toFixed(1)}′`;
   return `${(wDeg * 3600).toFixed(0)}″ × ${(hDeg * 3600).toFixed(0)}″`;
 }
 
@@ -117,7 +116,9 @@ export default function PlateSolveResult({ result, expired, isSignedIn, isMember
   ];
 
   return (
-    <div className="page-enter max-w-5xl mx-auto px-6 pt-8 pb-16">
+    <div className="page-enter max-w-6xl mx-auto px-6 pt-8 pb-16">
+
+      {/* Header */}
       <div className="mb-8 pb-6" style={{ borderBottom: '1px solid var(--line)' }}>
         <p className="label mb-3">{t('serviceLabel')}</p>
         <div className="flex items-baseline justify-between gap-4 flex-wrap mb-3">
@@ -141,29 +142,44 @@ export default function PlateSolveResult({ result, expired, isSignedIn, isMember
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-8 items-start">
-        {/* Image */}
-        <div>
-          {result.has_image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={`/api/plate-solve/image/${result.result_id}`}
-              alt="Solved field"
-              className="w-full"
-              style={{ border: '1px solid var(--line)', display: 'block' }}
-            />
-          ) : (
-            <div
-              className="flex items-center justify-center text-sm"
-              style={{ minHeight: 200, border: '1px solid var(--line)', color: 'var(--ink-faint)' }}
-            >
-              FITS — no preview
-            </div>
-          )}
-        </div>
+      {/* ── Top row: image (left) + sky map (right, same height) ── */}
+      <div className="grid md:grid-cols-2 gap-6" style={{ alignItems: 'stretch' }}>
 
-        {/* Metrics + actions */}
-        <div className="flex flex-col gap-5">
+        {/* Image with hover annotation overlay */}
+        <AnnotationCanvas
+          resultId={result.result_id}
+          hasImage={result.has_image}
+          hasAnnotations={result.has_annotations}
+          noPreviewLabel="FITS — no preview"
+        />
+
+        {/* Sky map — aspect-ratio matches the image so it's the same size */}
+        <div style={{
+          width: '100%',
+          aspectRatio: `${result.width_deg} / ${result.height_deg}`,
+          minHeight: 280,
+        }}>
+          <AladinMap
+            ra={result.ra}
+            dec={result.dec}
+            fovDeg={Math.max(result.width_deg, result.height_deg) * 5}
+            widthDeg={result.width_deg}
+            heightDeg={result.height_deg}
+            orientDeg={result.orientation}
+            parity={result.parity}
+            loadingLabel={t('skyMapLoading')}
+            unavailableLabel={t('skyMapUnavailable')}
+            height="100%"
+          />
+        </div>
+      </div>
+
+      {/* ── Bottom row: metrics (left) + actions (right) ── */}
+      <div className="grid md:grid-cols-2 gap-6 mt-6">
+
+        {/* Metrics table */}
+        <div>
+          <p className="label mb-2">{t('solutionLabel')}</p>
           <div className="grid grid-cols-2 gap-px" style={{ background: 'var(--line)' }}>
             {metrics.map(({ label, value }) => (
               <div key={label} className="p-4" style={{ background: 'var(--bg)' }}>
@@ -172,45 +188,27 @@ export default function PlateSolveResult({ result, expired, isSignedIn, isMember
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex flex-col gap-3">
-            <button onClick={copyLink} className="btn w-full">
-              {copied ? t('linkCopied') : t('copyLink')}
-            </button>
-
-            {result.has_wcs && (
-              <a
-                href={`/api/plate-solve/wcs/${result.result_id}`}
-                download
-                className="btn-outline w-full text-center"
-              >
-                {t('downloadWcs')}
-              </a>
-            )}
-          </div>
-
-          {/* Expiry */}
+        {/* Actions */}
+        <div className="flex flex-col justify-end gap-2">
+          <button onClick={copyLink} className="btn w-full">
+            {copied ? t('linkCopied') : t('copyLink')}
+          </button>
+          {result.has_wcs && (
+            <a
+              href={`/api/plate-solve/wcs/${result.result_id}`}
+              download
+              className="btn-outline w-full text-center"
+            >
+              {t('downloadWcs')}
+            </a>
+          )}
           <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
             {t('resultExpires')}: {fmtDate(result.expires_at, locale)}
           </p>
         </div>
-      </div>
 
-      {/* ── Sky Map ── */}
-      <div className="mt-12 pt-8" style={{ borderTop: '1px solid var(--line)' }}>
-        <p className="label mb-4">{t('skyMapLabel')}</p>
-        <AladinMap
-          ra={result.ra}
-          dec={result.dec}
-          fovDeg={Math.max(result.width_deg, result.height_deg) * 2}
-          widthDeg={result.width_deg}
-          heightDeg={result.height_deg}
-          orientDeg={result.orientation}
-          parity={result.parity}
-          loadingLabel={t('skyMapLoading')}
-          unavailableLabel={t('skyMapUnavailable')}
-        />
       </div>
     </div>
   );

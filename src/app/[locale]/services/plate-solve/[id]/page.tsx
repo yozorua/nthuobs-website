@@ -26,6 +26,7 @@ export interface SolveResultData {
   has_image: boolean;
   is_fits: boolean;
   has_wcs: boolean;
+  has_annotations: boolean;
   downsample: number;
   objs: number;
 }

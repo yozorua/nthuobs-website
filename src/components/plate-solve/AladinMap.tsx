@@ -86,12 +86,14 @@ interface Props {
   parity: string;
   loadingLabel: string;
   unavailableLabel: string;
+  height?: number | string;
 }
 
 export default function AladinMap({
   ra, dec, fovDeg,
   widthDeg, heightDeg, orientDeg, parity,
   loadingLabel, unavailableLabel,
+  height = 360,
 }: Props) {
   const divRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -108,7 +110,7 @@ export default function AladinMap({
         if (cancelled) return;
 
         const aladin = A.aladin(div, {
-          survey: 'P/DSS2/color',
+          survey: 'https://alaskybis.cds.unistra.fr/DSS/DSSColor',
           fov: fovDeg,
           target: `${ra} ${dec}`,
           showZoomControl: false,
@@ -129,6 +131,11 @@ export default function AladinMap({
           overlay.addFootprints([A.polygon(corners)]);
         } catch { /* overlay is cosmetic; silently ignore */ }
 
+        // addFootprints can trigger an auto-zoom that overrides the constructor fov;
+        // re-apply explicitly. Try both method names — v3 API is inconsistent.
+        try { aladin.setFoV(fovDeg); } catch { /* best-effort */ }
+        try { aladin.setFov(fovDeg); } catch { /* best-effort */ }
+
         if (!cancelled) setStatus('ready');
       } catch {
         if (!cancelled) setStatus('error');
@@ -139,7 +146,7 @@ export default function AladinMap({
   }, [ra, dec, fovDeg, widthDeg, heightDeg, orientDeg, parity]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: 360 }}>
+    <div style={{ position: 'relative', width: '100%', height }}>
       <div ref={divRef} style={{ width: '100%', height: '100%' }} />
       {status !== 'ready' && (
         <div style={{
