@@ -40,6 +40,6 @@ export async function GET(
 
   const data = await res.json();
   return NextResponse.json(data, {
-    headers: { 'Cache-Control': 'private, max-age=3600' },
+    headers: { 'Cache-Control': 'no-store' },
   });
 }

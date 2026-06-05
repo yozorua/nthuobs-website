@@ -180,7 +180,14 @@ export default function AnnotationCanvas({
     }
   }, [ann]);
 
-  useEffect(() => { redraw(); }, [redraw]);
+  useEffect(() => {
+    // Defer one animation frame so the browser has finished layout before we
+    // read clientWidth/clientHeight. This fixes the cached-image race where
+    // the image loads instantly (from cache), onLoad fires before ann arrives,
+    // and the later ann-triggered redraw sees H=0 because layout isn't done.
+    const id = requestAnimationFrame(redraw);
+    return () => cancelAnimationFrame(id);
+  }, [redraw]);
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
