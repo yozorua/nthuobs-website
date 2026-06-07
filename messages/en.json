@@ -598,7 +598,20 @@
     "draftFound": "You have an unsaved draft.",
     "draftRestore": "Restore",
     "draftDiscard": "Discard",
-    "fileRequired": "Please select a file to upload."
+    "fileRequired": "Please select a file to upload.",
+    "astrometry": "Astrometry",
+    "plateSolveAuto": "Plate solving deep sky image…",
+    "plateSolving": "Plate solving in progress…",
+    "plateSolveSkip": "Skip",
+    "plateSolveContinue": "Continue without plate solve",
+    "showAnnotations": "Show annotations",
+    "hideAnnotations": "Hide annotations",
+    "skyMapLoading": "Loading sky map…",
+    "skyMapUnavailable": "Sky map unavailable",
+    "raResult": "R.A.",
+    "decResult": "Dec.",
+    "fovResult": "FOV",
+    "pixscaleResult": "Scale"
   },
   "plateSolve": {
     "serviceLabel": "Services",

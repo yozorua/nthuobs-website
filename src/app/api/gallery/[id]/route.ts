@@ -10,6 +10,20 @@ async function canModify(sessionUserId: string, role: string, itemUserId: string
   return itemUserId === sessionUserId || MANAGE_ROLES.includes(role);
 }
 
+// Public — returns full plateSolve data (including annotations) for a given gallery item
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+  const item = await db.galleryItem.findUnique({
+    where: { id, isPublic: true },
+    select: { plateSolve: true },
+  });
+  if (!item) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json({ plateSolve: item.plateSolve ?? null });
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -42,9 +56,18 @@ export async function PATCH(
       lat: body.lat !== undefined ? (body.lat ?? null) : item.lat,
       lng: body.lng !== undefined ? (body.lng ?? null) : item.lng,
       links: body.links !== undefined ? (body.links ?? undefined) : undefined,
+      plateSolve: body.plateSolve !== undefined ? (body.plateSolve ?? undefined) : undefined,
       showOnHome: (canToggleHome && body.showOnHome !== undefined) ? Boolean(body.showOnHome) : item.showOnHome,
     },
   });
+
+  // Return plateSolve metadata (strip annotations to keep response small)
+  const psRaw = updated.plateSolve as Record<string, unknown> | null;
+  const plateSolveMeta = psRaw ? {
+    ra: psRaw.ra, dec: psRaw.dec, orientation: psRaw.orientation,
+    pixscale: psRaw.pixscale, parity: psRaw.parity,
+    width_deg: psRaw.width_deg, height_deg: psRaw.height_deg,
+  } : null;
 
   return NextResponse.json({
     id: updated.id,
@@ -56,6 +79,7 @@ export async function PATCH(
     lat: updated.lat ?? null,
     lng: updated.lng ?? null,
     links: updated.links ?? null,
+    plateSolve: plateSolveMeta,
     showOnHome: updated.showOnHome,
   });
 }

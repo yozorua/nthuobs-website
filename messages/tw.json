@@ -598,7 +598,20 @@
     "draftFound": "您有未儲存的草稿。",
     "draftRestore": "還原",
     "draftDiscard": "捨棄",
-    "fileRequired": "請選擇要上傳的檔案。"
+    "fileRequired": "請選擇要上傳的檔案。",
+    "astrometry": "天文定位",
+    "plateSolveAuto": "上傳後將會進行天文解星",
+    "plateSolving": "正在進行天文解星",
+    "plateSolveSkip": "略過",
+    "plateSolveContinue": "不使用定位結果",
+    "showAnnotations": "顯示標註",
+    "hideAnnotations": "隱藏標註",
+    "skyMapLoading": "載入星圖中…",
+    "skyMapUnavailable": "星圖無法顯示",
+    "raResult": "赤經",
+    "decResult": "赤緯",
+    "fovResult": "視野",
+    "pixscaleResult": "像素比例"
   },
   "plateSolve": {
     "serviceLabel": "服務",

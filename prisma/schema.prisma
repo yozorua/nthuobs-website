@@ -218,6 +218,7 @@ model GalleryItem {
   lat         Float?
   lng         Float?
   links       Json?
+  plateSolve  Json?
   isPublic    Boolean   @default(true)
   showOnHome  Boolean   @default(true)
   createdAt   DateTime  @default(now())

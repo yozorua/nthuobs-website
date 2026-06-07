@@ -40,34 +40,46 @@ export default async function GalleryPage({
     },
   });
 
-  const serialized: GalleryItemData[] = items.map((item) => ({
-    id: item.id,
-    title: item.title,
-    description: item.description,
-    category: item.category,
-    type: item.type as 'IMAGE' | 'VIDEO',
-    filename: item.filename,
-    thumbname: item.thumbname,
-    heroname: item.heroname ?? null,
-    webname: item.webname ?? null,
-    width: item.width,
-    height: item.height,
-    takenAt: item.takenAt?.toISOString() ?? null,
-    createdAt: item.createdAt.toISOString(),
-    userId: item.userId,
-    equipment: (item.equipment as GalleryItemData['equipment']) ?? null,
-    lat: item.lat ?? null,
-    lng: item.lng ?? null,
-    links: (item.links as GalleryItemData['links']) ?? null,
-    showOnHome: item.showOnHome,
-    uploaderEn:
-      [item.user.firstNameEn, item.user.lastNameEn].filter(Boolean).join(' ') ||
-      item.user.name || '',
-    uploaderZh:
-      item.user.lastNameZh && item.user.firstNameZh
-        ? `${item.user.lastNameZh}${item.user.firstNameZh}`
-        : null,
-  }));
+  const serialized: GalleryItemData[] = items.map((item) => {
+    const psRaw = item.plateSolve as Record<string, unknown> | null;
+    return {
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      category: item.category,
+      type: item.type as 'IMAGE' | 'VIDEO',
+      filename: item.filename,
+      thumbname: item.thumbname,
+      heroname: item.heroname ?? null,
+      webname: item.webname ?? null,
+      width: item.width,
+      height: item.height,
+      takenAt: item.takenAt?.toISOString() ?? null,
+      createdAt: item.createdAt.toISOString(),
+      userId: item.userId,
+      equipment: (item.equipment as GalleryItemData['equipment']) ?? null,
+      lat: item.lat ?? null,
+      lng: item.lng ?? null,
+      links: (item.links as GalleryItemData['links']) ?? null,
+      plateSolve: psRaw ? {
+        ra: psRaw.ra as number,
+        dec: psRaw.dec as number,
+        orientation: psRaw.orientation as number,
+        pixscale: psRaw.pixscale as number,
+        parity: psRaw.parity as string,
+        width_deg: psRaw.width_deg as number,
+        height_deg: psRaw.height_deg as number,
+      } : null,
+      showOnHome: item.showOnHome,
+      uploaderEn:
+        [item.user.firstNameEn, item.user.lastNameEn].filter(Boolean).join(' ') ||
+        item.user.name || '',
+      uploaderZh:
+        item.user.lastNameZh && item.user.firstNameZh
+          ? `${item.user.lastNameZh}${item.user.firstNameZh}`
+          : null,
+    };
+  });
 
   const sessionUserId = session?.user?.id ?? null;
 

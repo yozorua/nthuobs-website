@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 
 const MapPicker = dynamic(() => import('./MapPickerInner'), { ssr: false });
+const AladinMap = dynamic(() => import('@/components/plate-solve/AladinMap'), { ssr: false });
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -28,6 +29,28 @@ export type EquipmentData = {
 
 export type GalleryLink = { title: string; url: string };
 
+export type PlateSolveMeta = {
+  ra: number;
+  dec: number;
+  orientation: number;
+  pixscale: number;
+  parity: string;
+  width_deg: number;
+  height_deg: number;
+};
+
+type AnnotationData = {
+  width: number;
+  height: number;
+  wcs: { crpix1: number; crpix2: number; crval1: number; crval2: number; cd11: number; cd12: number; cd21: number; cd22: number };
+  fov_width_deg: number;
+  fov_height_deg: number;
+  pixscale: number;
+  grid_lines: [number, number][][];
+  objects: { name: string; x: number; y: number; r: number; type: string }[];
+  stars: { name: string | null; x: number; y: number; vmag: number }[];
+};
+
 export type GalleryItemData = {
   id: string;
   title: string;
@@ -49,6 +72,7 @@ export type GalleryItemData = {
   lat: number | null;
   lng: number | null;
   links: GalleryLink[] | null;
+  plateSolve: PlateSolveMeta | null;
   showOnHome: boolean;
 };
 
@@ -77,6 +101,90 @@ function formatDuration(sec: number): string {
 
 function blankRow(): IntegrationRow {
   return { filter: '', frames: 1, exposureSec: 60, gain: '', binning: '1x1', date: '' };
+}
+
+function raToHMS(deg: number): string {
+  const d = ((deg % 360) + 360) % 360;
+  const h = d / 15;
+  const hh = Math.floor(h);
+  const m = (h - hh) * 60;
+  const mm = Math.floor(m);
+  const s = (m - mm) * 60;
+  return `${String(hh).padStart(2, '0')}h ${String(mm).padStart(2, '0')}m ${s.toFixed(1).padStart(4, '0')}s`;
+}
+
+function decToDMS(deg: number): string {
+  const sign = deg >= 0 ? '+' : '−';
+  const abs = Math.abs(deg);
+  const d = Math.floor(abs);
+  const m = Math.floor((abs - d) * 60);
+  const s = Math.round(((abs - d) * 60 - m) * 60);
+  return `${sign}${String(d).padStart(2, '0')}° ${String(m).padStart(2, '0')}′ ${String(s).padStart(2, '0')}″`;
+}
+
+function formatFovPS(wDeg: number, hDeg: number): string {
+  const larger = Math.max(wDeg, hDeg);
+  if (larger >= 1)    return `${wDeg.toFixed(2)}° × ${hDeg.toFixed(2)}°`;
+  if (larger >= 1/60) return `${(wDeg * 60).toFixed(1)}′ × ${(hDeg * 60).toFixed(1)}′`;
+  return `${(wDeg * 3600).toFixed(0)}″ × ${(hDeg * 3600).toFixed(0)}″`;
+}
+
+function drawAnnotationsOnCanvas(
+  canvas: HTMLCanvasElement,
+  W: number,
+  H: number,
+  ann: AnnotationData,
+) {
+  canvas.width = Math.round(W);
+  canvas.height = Math.round(H);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const sx = canvas.width / ann.width;
+  const sy = canvas.height / ann.height;
+
+  // RA/Dec grid
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+  ctx.lineWidth = 0.8;
+  ctx.setLineDash([4, 5]);
+  for (const line of ann.grid_lines) {
+    if (line.length < 2) continue;
+    ctx.beginPath();
+    ctx.moveTo(line[0][0] * sx, line[0][1] * sy);
+    for (let i = 1; i < line.length; i++) ctx.lineTo(line[i][0] * sx, line[i][1] * sy);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // DSO circles
+  for (const obj of ann.objects) {
+    const cx = obj.x * sx, cy = obj.y * sy, r = Math.max(obj.r * sx, 5);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,215,0,0.85)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = '#FFD700';
+    ctx.font = `${Math.max(9, Math.round(10 * Math.min(sx, sy)))}px monospace`;
+    ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 4;
+    ctx.fillText(obj.name, cx + r + 4, cy + 4);
+    ctx.restore();
+  }
+
+  // Stars
+  for (const star of ann.stars) {
+    const x = star.x * sx, y = star.y * sy;
+    ctx.save();
+    ctx.fillStyle = 'rgba(80,210,255,0.9)';
+    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    if (star.name) {
+      ctx.fillStyle = '#50D2FF';
+      ctx.font = `${Math.max(8, Math.round(9 * Math.min(sx, sy)))}px monospace`;
+      ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 4;
+      ctx.fillText(star.name, x + 5, y - 3);
+    }
+    ctx.restore();
+  }
 }
 
 // ─── EquipmentForm (shared between upload and edit) ──────────────────────────
@@ -175,7 +283,6 @@ function EquipmentForm({
               <tbody>
                 {value.integration.map((row, i) => (
                   <tr key={i}>
-                    {/* Filter */}
                     <td className="pr-2 pb-1.5">
                       <input
                         className="input text-xs"
@@ -185,7 +292,6 @@ function EquipmentForm({
                         placeholder="L"
                       />
                     </td>
-                    {/* Frames */}
                     <td className="pr-2 pb-1.5">
                       <input
                         type="number"
@@ -196,7 +302,6 @@ function EquipmentForm({
                         onChange={(e) => updateRow(i, 'frames', parseInt(e.target.value) || 0)}
                       />
                     </td>
-                    {/* Exposure (s) */}
                     <td className="pr-2 pb-1.5">
                       <input
                         type="number"
@@ -207,7 +312,6 @@ function EquipmentForm({
                         onChange={(e) => updateRow(i, 'exposureSec', parseInt(e.target.value) || 0)}
                       />
                     </td>
-                    {/* Gain/ISO */}
                     <td className="pr-2 pb-1.5">
                       <input
                         className="input text-xs"
@@ -217,7 +321,6 @@ function EquipmentForm({
                         placeholder="100"
                       />
                     </td>
-                    {/* Binning */}
                     <td className="pr-2 pb-1.5">
                       <select
                         className="input text-xs"
@@ -230,7 +333,6 @@ function EquipmentForm({
                         ))}
                       </select>
                     </td>
-                    {/* Date */}
                     <td className="pr-2 pb-1.5">
                       <input
                         type="date"
@@ -240,7 +342,6 @@ function EquipmentForm({
                         onChange={(e) => updateRow(i, 'date', e.target.value)}
                       />
                     </td>
-                    {/* Remove */}
                     <td className="pb-1.5">
                       <button
                         type="button"
@@ -296,8 +397,10 @@ function UploadModal({
   onUploaded: (item: GalleryItemData) => void;
 }) {
   const t = useTranslations('gallery');
+  const tPS = useTranslations('plateSolve');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Form state
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -317,6 +420,35 @@ function UploadModal({
   const [fileRequired, setFileRequired] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+
+  // Plate-solve state (active after deepsky upload)
+  const [uploadedItem, setUploadedItem] = useState<GalleryItemData | null>(null);
+  const uploadedItemRef = useRef<GalleryItemData | null>(null);
+  const [solvePhase, setSolvePhase] = useState<'idle' | 'solving' | 'failed'>('idle');
+  const [solveStages, setSolveStages] = useState<{ id: string; label: string }[]>([]);
+  const [activeSolveStage, setActiveSolveStage] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const [solveError, setSolveError] = useState('');
+  const solveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const solveStartRef = useRef(0);
+  const solveAbortRef = useRef<AbortController | null>(null);
+
+  const clearSolveTimer = () => {
+    if (solveTimerRef.current) { clearInterval(solveTimerRef.current); solveTimerRef.current = null; }
+  };
+
+  // handleClose: always safe to call — aborts any in-progress solve
+  const handleClose = useCallback(() => {
+    solveAbortRef.current?.abort();
+    clearSolveTimer();
+    if (uploadedItemRef.current) {
+      // Item was already uploaded — add to gallery without plateSolve
+      onUploaded(uploadedItemRef.current);
+    } else {
+      onClose();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onUploaded, onClose]);
 
   // Check for saved draft on mount
   useEffect(() => {
@@ -376,10 +508,10 @@ function UploadModal({
   };
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose(); };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [handleClose]);
 
   const handleFile = (f: File) => {
     setError(null);
@@ -401,6 +533,152 @@ function UploadModal({
   };
 
   const hasEquipment = EQUIP_FIELDS.some((f) => eq[f]) || eq.integration.length > 0;
+
+  // ── Plate-solve flow ───────────────────────────────────────────────────────
+
+  const skipSolve = () => {
+    solveAbortRef.current?.abort();
+    clearSolveTimer();
+    if (uploadedItemRef.current) onUploaded(uploadedItemRef.current);
+  };
+
+  const startPlateSolve = async (galleryItemId: string, solveFile: File) => {
+    setSolveStages([]);
+    setActiveSolveStage(null);
+    setSolveError('');
+    solveStartRef.current = Date.now();
+    setElapsed(0);
+    solveTimerRef.current = setInterval(
+      () => setElapsed(Math.floor((Date.now() - solveStartRef.current) / 1000)),
+      500,
+    );
+
+    const form = new FormData();
+    form.append('file', solveFile);
+
+    solveAbortRef.current = new AbortController();
+    let response: Response;
+    try {
+      response = await fetch('/api/plate-solve/stream', {
+        method: 'POST',
+        body: form,
+        signal: solveAbortRef.current.signal,
+      });
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      clearSolveTimer();
+      setSolveError(tPS('errorGeneric'));
+      setSolvePhase('failed');
+      return;
+    }
+
+    if (!response.ok || !response.body) {
+      clearSolveTimer();
+      setSolveError(tPS('errorBusy'));
+      setSolvePhase('failed');
+      return;
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    const pushStage = (id: string, label: string) =>
+      setSolveStages((prev) => prev.some((s) => s.id === id) ? prev : [...prev, { id, label }]);
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          let data: Record<string, unknown>;
+          try { data = JSON.parse(line.slice(6)); } catch { continue; }
+          const stage = data.stage as string;
+
+          if (stage === 'started') continue;
+
+          const stageMap: Partial<Record<string, [string, string]>> = {
+            received:      ['received',      tPS('stageReceived')],
+            preprocessing: ['preprocessing', tPS('stagePreprocessing')],
+            downsampling:  ['downsampling',  tPS('stageDownsampling', { factor: Number(data.factor ?? 2) })],
+            solving:       ['solving',       tPS('stageSolving')],
+            extracting:    ['extracting',    tPS('stageExtracting')],
+            matching:      ['matching',      tPS('stageMatching')],
+          };
+
+          if (stageMap[stage]) {
+            const [id, label] = stageMap[stage]!;
+            pushStage(id, label);
+            setActiveSolveStage(id);
+          } else if (stage === 'done') {
+            clearSolveTimer();
+            pushStage('done', tPS('stageDone'));
+            setActiveSolveStage('done');
+
+            const rid = data.result_id as string;
+            const plateSolveMeta: PlateSolveMeta = {
+              ra:          data.ra as number,
+              dec:         data.dec as number,
+              orientation: data.orientation as number,
+              pixscale:    data.pixscale as number,
+              parity:      data.parity as string,
+              width_deg:   data.width_deg as number,
+              height_deg:  data.height_deg as number,
+            };
+
+            // Fetch annotation data
+            let ann: AnnotationData | null = null;
+            try {
+              const annRes = await fetch(`/api/plate-solve/annotations/${rid}`);
+              if (annRes.ok) ann = await annRes.json();
+            } catch { /* non-fatal */ }
+
+            // Persist plateSolve to DB
+            try {
+              await fetch(`/api/gallery/${galleryItemId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ plateSolve: { ...plateSolveMeta, annotations: ann } }),
+              });
+            } catch { /* non-fatal */ }
+
+            // Add item to gallery with plateSolve metadata (annotations stripped for state)
+            const updatedItem: GalleryItemData = { ...uploadedItemRef.current!, plateSolve: plateSolveMeta };
+            setTimeout(() => onUploaded(updatedItem), 500);
+            return;
+          } else if (stage === 'failed') {
+            clearSolveTimer();
+            setSolveError(tPS('errorNone'));
+            setSolvePhase('failed');
+            return;
+          } else if (stage === 'timeout') {
+            clearSolveTimer();
+            setSolveError(tPS('errorTimeout'));
+            setSolvePhase('failed');
+            return;
+          } else if (stage === 'error') {
+            clearSolveTimer();
+            const msg = data.error as string;
+            setSolveError(msg === 'Server busy, try again later' ? tPS('errorBusy') : tPS('errorGeneric'));
+            setSolvePhase('failed');
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      clearSolveTimer();
+      setSolveError(tPS('errorGeneric'));
+      setSolvePhase('failed');
+    }
+  };
+
+  // ── Submit ─────────────────────────────────────────────────────────────────
 
   const submit = async () => {
     if (!file) { setFileRequired(true); return; }
@@ -439,8 +717,20 @@ function UploadModal({
         xhr.open('POST', '/api/gallery');
         xhr.send(fd);
       });
+
       clearDraft();
-      onUploaded(result);
+
+      const shouldSolve = category === 'deepsky' && file.type.startsWith('image/');
+      if (!shouldSolve) {
+        onUploaded(result);
+        return;
+      }
+
+      // Switch to plate-solve phase
+      uploadedItemRef.current = result;
+      setUploadedItem(result);
+      setSolvePhase('solving');
+      startPlateSolve(result.id, file); // fire and forget
     } catch (err) {
       setError(`${t('uploadError')} (${err instanceof Error ? err.message : 'unknown'})`);
     } finally {
@@ -449,11 +739,13 @@ function UploadModal({
     }
   };
 
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-8 px-4 pb-8 overflow-y-auto"
       style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
-      onClick={onClose}
+      onClick={solvePhase === 'idle' ? handleClose : undefined}
     >
       <div
         className="w-full max-w-4xl"
@@ -465,12 +757,14 @@ function UploadModal({
           className="px-6 py-4 flex items-center justify-between sticky top-0"
           style={{ borderBottom: '1px solid var(--line)', background: 'var(--bg)', zIndex: 1 }}
         >
-          <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>{t('uploadTitle')}</p>
-          <button onClick={onClose} className="text-xl leading-none" style={{ color: 'var(--ink-faint)' }}>×</button>
+          <p className="text-sm font-medium" style={{ color: 'var(--ink)' }}>
+            {solvePhase !== 'idle' ? t('plateSolving') : t('uploadTitle')}
+          </p>
+          <button onClick={handleClose} className="text-xl leading-none" style={{ color: 'var(--ink-faint)' }}>×</button>
         </div>
 
-        {/* Draft restore banner */}
-        {hasDraft && (
+        {/* Draft restore banner (only in form phase) */}
+        {solvePhase === 'idle' && hasDraft && (
           <div className="px-6 py-2.5 flex items-center justify-between" style={{ background: 'rgba(202,138,4,0.1)', borderBottom: '1px solid rgba(202,138,4,0.3)' }}>
             <p className="text-xs" style={{ color: 'rgba(161,110,0,1)' }}>
               {t('draftFound')}
@@ -497,172 +791,228 @@ function UploadModal({
           </div>
         )}
 
-        <div className="px-6 py-5 flex flex-col gap-5">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/tiff,video/mp4"
-            className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-          />
-
-          {/* Two-column body */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left — drop zone + basic info */}
-            <div className="flex flex-col gap-4">
-              {/* Drop zone */}
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={onDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className="cursor-pointer flex flex-col items-center justify-center gap-2 py-8 text-sm transition-colors duration-150"
-                style={{
-                  border: `1px dashed ${fileRequired ? '#c0392b' : dragOver ? 'var(--ink)' : 'var(--line)'}`,
-                  background: dragOver ? 'var(--bg-warm)' : fileRequired ? 'rgba(192,57,43,0.04)' : 'transparent',
-                  color: 'var(--ink-faint)',
-                }}
-              >
-                {file ? (
-                  <>
-                    <span className="text-lg" style={{ color: 'var(--ink-secondary)' }}>
-                      {file.type.startsWith('video/') ? '▶' : '◈'}
+        {/* ── Plate-solve progress phase ── */}
+        {solvePhase !== 'idle' && (
+          <div className="px-6 py-12 flex flex-col items-center gap-5">
+            <div className="flex flex-col items-start gap-3">
+              {solveStages.map((s) => {
+                const isActive = s.id === activeSolveStage && solvePhase === 'solving';
+                return (
+                  <div key={s.id} className="flex items-center gap-3">
+                    <div style={{ width: 18, height: 18, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {isActive ? (
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ animation: 'spin 1s linear infinite' }}>
+                          <circle cx="8" cy="8" r="6" stroke="var(--line-dark)" strokeWidth="2" />
+                          <path d="M8 2a6 6 0 0 1 6 6" stroke="var(--ink)" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                          <circle cx="7" cy="7" r="6" stroke="var(--ink-faint)" strokeWidth="1.5" />
+                          <path d="M4 7l2 2 4-4" stroke="var(--ink)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className="text-sm" style={{ color: isActive ? 'var(--ink)' : 'var(--ink-secondary)' }}>
+                      {s.label}
                     </span>
-                    <span style={{ color: 'var(--ink-secondary)' }}>{file.name}</span>
-                    <span className="text-xs">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="text-2xl opacity-30">+</span>
-                    <span>{t('dropHere')}</span>
-                    <span className="text-xs">{t('orClick')}</span>
-                    <span className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>{t('fileHintImage')}</span>
-                    <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>{t('fileHintVideo')}</span>
-                    {fileRequired && (
-                      <span className="text-xs mt-1" style={{ color: '#c0392b' }}>{t('fileRequired')}</span>
-                    )}
-                  </>
-                )}
-              </div>
-              <div>
-                <label className="label block mb-1.5">{t('titleField')}</label>
-                <input
-                  className="input"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder={t('titlePlaceholder')}
-                  maxLength={120}
-                />
-              </div>
-              <div>
-                <label className="label block mb-1.5">{t('descField')}</label>
-                <textarea
-                  className="input resize-none"
-                  rows={4}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder={t('descPlaceholder')}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label block mb-1.5">{t('categoryField')}</label>
-                  <select className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
-                    {CATEGORIES.filter((c) => c !== 'all').map((c) => (
-                      <option key={c} value={c}>{t((`categories.${c}`) as Parameters<typeof t>[0])}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label block mb-1.5">{t('dateField')}</label>
-                  <input type="date" className="input" value={takenAt} onChange={(e) => setTakenAt(e.target.value)} />
-                </div>
-              </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Right — equipment, location, links */}
-            <div className="flex flex-col gap-4">
-              <EquipmentForm value={eq} onChange={setEq} />
+            {solvePhase === 'solving' && (
+              <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                {tPS('elapsed', { s: elapsed })}
+              </p>
+            )}
+            {solvePhase === 'failed' && (
+              <p className="text-sm" style={{ color: 'var(--ink-secondary)' }}>{solveError}</p>
+            )}
 
-              <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
-                {showMap ? (
-                  <>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="label">{t('locationField')}</label>
+            <div className="flex gap-3 mt-2">
+              <button onClick={skipSolve} className="btn-outline text-sm">
+                {solvePhase === 'failed' ? t('plateSolveContinue') : t('plateSolveSkip')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Upload form phase ── */}
+        {solvePhase === 'idle' && (
+          <div className="px-6 py-5 flex flex-col gap-5">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/tiff,video/mp4"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+            />
+
+            {/* Two-column body */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left — drop zone + basic info */}
+              <div className="flex flex-col gap-4">
+                {/* Drop zone */}
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={onDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="cursor-pointer flex flex-col items-center justify-center gap-2 py-8 text-sm transition-colors duration-150"
+                  style={{
+                    border: `1px dashed ${fileRequired ? '#c0392b' : dragOver ? 'var(--ink)' : 'var(--line)'}`,
+                    background: dragOver ? 'var(--bg-warm)' : fileRequired ? 'rgba(192,57,43,0.04)' : 'transparent',
+                    color: 'var(--ink-faint)',
+                  }}
+                >
+                  {file ? (
+                    <>
+                      <span className="text-lg" style={{ color: 'var(--ink-secondary)' }}>
+                        {file.type.startsWith('video/') ? '▶' : '◈'}
+                      </span>
+                      <span style={{ color: 'var(--ink-secondary)' }}>{file.name}</span>
+                      <span className="text-xs">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-2xl opacity-30">+</span>
+                      <span>{t('dropHere')}</span>
+                      <span className="text-xs">{t('orClick')}</span>
+                      <span className="text-xs mt-1" style={{ color: 'var(--ink-muted)' }}>{t('fileHintImage')}</span>
+                      <span className="text-xs" style={{ color: 'var(--ink-muted)' }}>{t('fileHintVideo')}</span>
+                      {fileRequired && (
+                        <span className="text-xs mt-1" style={{ color: '#c0392b' }}>{t('fileRequired')}</span>
+                      )}
+                    </>
+                  )}
+                </div>
+                <div>
+                  <label className="label block mb-1.5">{t('titleField')}</label>
+                  <input
+                    className="input"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder={t('titlePlaceholder')}
+                    maxLength={120}
+                  />
+                </div>
+                <div>
+                  <label className="label block mb-1.5">{t('descField')}</label>
+                  <textarea
+                    className="input resize-none"
+                    rows={4}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={t('descPlaceholder')}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label block mb-1.5">{t('categoryField')}</label>
+                    <select className="input" value={category} onChange={(e) => setCategory(e.target.value)}>
+                      {CATEGORIES.filter((c) => c !== 'all').map((c) => (
+                        <option key={c} value={c}>{t((`categories.${c}`) as Parameters<typeof t>[0])}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label block mb-1.5">{t('dateField')}</label>
+                    <input type="date" className="input" value={takenAt} onChange={(e) => setTakenAt(e.target.value)} />
+                  </div>
+                </div>
+                {/* Deepsky note */}
+                {category === 'deepsky' && file?.type.startsWith('image/') && (
+                  <p className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                    ✦ {t('plateSolveAuto')}
+                  </p>
+                )}
+              </div>
+
+              {/* Right — equipment, location, links */}
+              <div className="flex flex-col gap-4">
+                <EquipmentForm value={eq} onChange={setEq} />
+
+                <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
+                  {showMap ? (
+                    <>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="label">{t('locationField')}</label>
+                        <div className="flex items-center gap-3">
+                          {lat !== null && (
+                            <button type="button" onClick={() => { setLat(null); setLng(null); }} className="text-xs tracking-ultra uppercase" style={{ color: '#c0392b' }}>
+                              {t('removeLocation')}
+                            </button>
+                          )}
+                          <button type="button" onClick={() => setShowMap(false)} className="text-xs" style={{ color: 'var(--ink-faint)' }}>×</button>
+                        </div>
+                      </div>
+                      <div style={{ border: '1px solid var(--line)', overflow: 'hidden' }}>
+                        <MapPicker lat={lat} lng={lng} onChange={(la, lo) => { setLat(la); setLng(lo); }} />
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
+                          {lat !== null ? `${lat.toFixed(5)}, ${lng!.toFixed(5)}` : t('clickToPin')}
+                        </span>
+                        <button type="button" onClick={() => { if (!navigator.geolocation) return; navigator.geolocation.getCurrentPosition((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); }); }} className="btn-outline text-xs">
+                          {t('useMyLocation')}
+                        </button>
+                      </div>
+                    </>
+                  ) : lat !== null ? (
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="label mb-0.5 block">{t('locationField')}</label>
+                        <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>{lat.toFixed(5)}, {lng!.toFixed(5)}</span>
+                      </div>
                       <div className="flex items-center gap-3">
-                        {lat !== null && (
-                          <button type="button" onClick={() => { setLat(null); setLng(null); }} className="text-xs tracking-ultra uppercase" style={{ color: '#c0392b' }}>
-                            {t('removeLocation')}
-                          </button>
-                        )}
-                        <button type="button" onClick={() => setShowMap(false)} className="text-xs" style={{ color: 'var(--ink-faint)' }}>×</button>
+                        <button type="button" onClick={() => setShowMap(true)} className="btn-outline text-xs">{t('edit')}</button>
+                        <button type="button" onClick={() => { setLat(null); setLng(null); }} className="text-xs tracking-ultra uppercase" style={{ color: '#c0392b' }}>{t('removeLocation')}</button>
                       </div>
                     </div>
-                    <div style={{ border: '1px solid var(--line)', overflow: 'hidden' }}>
-                      <MapPicker lat={lat} lng={lng} onChange={(la, lo) => { setLat(la); setLng(lo); }} />
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <label className="label">{t('locationField')}</label>
+                      <button type="button" onClick={() => setShowMap(true)} className="btn-outline text-xs">{t('addLocation')}</button>
                     </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>
-                        {lat !== null ? `${lat.toFixed(5)}, ${lng!.toFixed(5)}` : t('clickToPin')}
-                      </span>
-                      <button type="button" onClick={() => { if (!navigator.geolocation) return; navigator.geolocation.getCurrentPosition((pos) => { setLat(pos.coords.latitude); setLng(pos.coords.longitude); }); }} className="btn-outline text-xs">
-                        {t('useMyLocation')}
-                      </button>
-                    </div>
-                  </>
-                ) : lat !== null ? (
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <label className="label mb-0.5 block">{t('locationField')}</label>
-                      <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>{lat.toFixed(5)}, {lng!.toFixed(5)}</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button type="button" onClick={() => setShowMap(true)} className="btn-outline text-xs">{t('edit')}</button>
-                      <button type="button" onClick={() => { setLat(null); setLng(null); }} className="text-xs tracking-ultra uppercase" style={{ color: '#c0392b' }}>{t('removeLocation')}</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <label className="label">{t('locationField')}</label>
-                    <button type="button" onClick={() => setShowMap(true)} className="btn-outline text-xs">{t('addLocation')}</button>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="label">{t('linksField')}</label>
-                  <button type="button" onClick={() => setLinks(l => [...l, { title: '', url: '' }])} className="btn-outline text-xs">{t('addLink')}</button>
+                  )}
                 </div>
-                {links.map((link, i) => (
-                  <div key={i} className="flex gap-2 mb-2">
-                    <input className="input text-sm" style={{ flex: '0 0 36%' }} placeholder={t('linkTitle')} value={link.title} onChange={(e) => setLinks(l => l.map((lk, j) => j === i ? { ...lk, title: e.target.value } : lk))} />
-                    <input className="input text-sm flex-1" placeholder="https://..." value={link.url} onChange={(e) => setLinks(l => l.map((lk, j) => j === i ? { ...lk, url: e.target.value } : lk))} />
-                    <button type="button" onClick={() => setLinks(l => l.filter((_, j) => j !== i))} className="flex items-center justify-center w-8 h-8 text-lg leading-none flex-shrink-0 transition-colors duration-150" style={{ color: 'var(--ink-faint)' }} onMouseEnter={(e) => (e.currentTarget.style.color = '#c0392b')} onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}>×</button>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="label">{t('linksField')}</label>
+                    <button type="button" onClick={() => setLinks(l => [...l, { title: '', url: '' }])} className="btn-outline text-xs">{t('addLink')}</button>
                   </div>
-                ))}
+                  {links.map((link, i) => (
+                    <div key={i} className="flex gap-2 mb-2">
+                      <input className="input text-sm" style={{ flex: '0 0 36%' }} placeholder={t('linkTitle')} value={link.title} onChange={(e) => setLinks(l => l.map((lk, j) => j === i ? { ...lk, title: e.target.value } : lk))} />
+                      <input className="input text-sm flex-1" placeholder="https://..." value={link.url} onChange={(e) => setLinks(l => l.map((lk, j) => j === i ? { ...lk, url: e.target.value } : lk))} />
+                      <button type="button" onClick={() => setLinks(l => l.filter((_, j) => j !== i))} className="flex items-center justify-center w-8 h-8 text-lg leading-none flex-shrink-0 transition-colors duration-150" style={{ color: 'var(--ink-faint)' }} onMouseEnter={(e) => (e.currentTarget.style.color = '#c0392b')} onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--ink-faint)')}>×</button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Progress */}
-          {uploading && progress > 0 && (
-            <div className="h-px w-full" style={{ background: 'var(--line)' }}>
-              <div className="h-full transition-all duration-300" style={{ width: `${progress}%`, background: 'var(--ink)' }} />
+            {/* Progress bar */}
+            {uploading && progress > 0 && (
+              <div className="h-px w-full" style={{ background: 'var(--line)' }}>
+                <div className="h-full transition-all duration-300" style={{ width: `${progress}%`, background: 'var(--ink)' }} />
+              </div>
+            )}
+
+            {error && <p className="text-xs" style={{ color: '#c0392b' }}>{error}</p>}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-1">
+              <button onClick={handleClose} className="btn-outline" disabled={uploading}>{t('cancel')}</button>
+              <button onClick={submit} className="btn" disabled={uploading || !title.trim()}>
+                {uploading ? `${t('uploading')}${progress > 0 ? ` ${progress}%` : ''}` : t('submit')}
+              </button>
             </div>
-          )}
-
-          {error && <p className="text-xs" style={{ color: '#c0392b' }}>{error}</p>}
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-1">
-            <button onClick={onClose} className="btn-outline" disabled={uploading}>{t('cancel')}</button>
-            <button onClick={submit} className="btn" disabled={uploading || !title.trim()}>
-              {uploading ? `${t('uploading')}${progress > 0 ? ` ${progress}%` : ''}` : t('submit')}
-            </button>
           </div>
-        </div>
+        )}
       </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
@@ -689,7 +1039,6 @@ function EquipmentDisplay({
         gap: '1.5rem',
       }}
     >
-      {/* Equipment table */}
       {hasGear && (
         <div style={{ minWidth: 0 }}>
           <p className="label mb-2">
@@ -719,7 +1068,6 @@ function EquipmentDisplay({
         </div>
       )}
 
-      {/* Integration table */}
       {rows.length > 0 && (
         <div style={{ minWidth: 0 }}>
           <p className="label mb-2">
@@ -811,6 +1159,8 @@ function Lightbox({
   const videoRef = useRef<HTMLVideoElement>(null);
   const lightboxRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const imageAreaRef = useRef<HTMLDivElement>(null);
+  const annCanvasRef = useRef<HTMLCanvasElement>(null);
   const scaleRef = useRef(1);
 
   const [editMode, setEditMode] = useState(false);
@@ -819,6 +1169,10 @@ function Lightbox({
   const [deleting, setDeleting] = useState(false);
   const [showOnHome, setShowOnHome] = useState(item.showOnHome);
   const [togglingHome, setTogglingHome] = useState(false);
+
+  // Annotation overlay
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [annotations, setAnnotations] = useState<AnnotationData | null>(null);
 
   // Zoom state
   const [zoomMode, setZoomMode] = useState(false);
@@ -854,20 +1208,65 @@ function Lightbox({
   const [editShowMap, setEditShowMap] = useState(false);
   const [editLinks, setEditLinks] = useState<GalleryLink[]>(item.links ?? []);
 
-  // Keep scaleRef in sync so the wheel handler (a stale closure) reads the latest value
   scaleRef.current = scale;
 
-  // Clamp pan so the image edges never leave the viewport
+  // Fetch annotations when item has plateSolve
+  useEffect(() => {
+    if (!item.plateSolve) { setAnnotations(null); return; }
+    fetch(`/api/gallery/${item.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((d: { plateSolve: (PlateSolveMeta & { annotations?: AnnotationData }) | null } | null) => {
+        setAnnotations(d?.plateSolve?.annotations ?? null);
+      })
+      .catch(() => null);
+  }, [item.id, item.plateSolve]);
+
+  // Draw annotation overlay on canvas
+  const drawAnnotationOverlay = useCallback(() => {
+    const canvas = annCanvasRef.current;
+    const img = imgRef.current;
+    const area = imageAreaRef.current;
+    if (!canvas || !img || !area || !annotations) return;
+
+    const imgRect = img.getBoundingClientRect();
+    const areaRect = area.getBoundingClientRect();
+    const left = imgRect.left - areaRect.left;
+    const top = imgRect.top - areaRect.top;
+    const W = imgRect.width;
+    const H = imgRect.height;
+    if (W <= 0 || H <= 0) return;
+
+    canvas.style.left = left + 'px';
+    canvas.style.top = top + 'px';
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    drawAnnotationsOnCanvas(canvas, W, H, annotations);
+  }, [annotations]);
+
+  useEffect(() => {
+    if (!showOverlay || !annotations) return;
+    const id = requestAnimationFrame(drawAnnotationOverlay);
+    return () => cancelAnimationFrame(id);
+  }, [showOverlay, annotations, pan, scale, drawAnnotationOverlay]);
+
+  useEffect(() => {
+    if (!showOverlay || !annotations) return;
+    const img = imgRef.current;
+    if (!img) return;
+    const ro = new ResizeObserver(drawAnnotationOverlay);
+    ro.observe(img);
+    return () => ro.disconnect();
+  }, [showOverlay, annotations, drawAnnotationOverlay]);
+
   function clampPan(x: number, y: number, sc: number): { x: number; y: number } {
     const container = lightboxRef.current;
     const img = imgRef.current;
     if (!container || !img || !img.naturalWidth) return { x, y };
     const { width: cW, height: cH } = container.getBoundingClientRect();
     const nat = img.naturalWidth / img.naturalHeight;
-    // Rendered image dimensions under objectFit: contain
     let rW: number, rH: number;
     if (cW / cH > nat) { rH = cH; rW = cH * nat; }
-    else                { rW = cW; rH = cW / nat; }
+    else               { rW = cW; rH = cW / nat; }
     const maxX = Math.max(0, (rW * sc - cW) / 2);
     const maxY = Math.max(0, (rH * sc - cH) / 2);
     return {
@@ -884,6 +1283,8 @@ function Lightbox({
     setScale(1);
     setPan({ x: 0, y: 0 });
     setHiResReady(false);
+    setShowOverlay(false);
+    setAnnotations(null);
     setEditTitle(item.title);
     setEditDesc(item.description ?? '');
     setEditCategory(item.category);
@@ -920,7 +1321,6 @@ function Lightbox({
     return () => window.removeEventListener('keydown', handler);
   }, [zoomMode, editMode, deleteConfirm, hasPrev, hasNext, onClose, onPrev, onNext]);
 
-  // Hint: show on zoom entry, fade out after 3 s (opacity transitions 1→0 over 1 s starting at 2 s)
   useEffect(() => {
     if (!zoomMode) { setShowHint(false); return; }
     setShowHint(true);
@@ -928,7 +1328,6 @@ function Lightbox({
     return () => clearTimeout(timer);
   }, [zoomMode]);
 
-  // When zoom mode is entered, preload the full-res original in the background
   const fullSrc = item.webname
     ? `/api/gallery/file/thumbs/${item.webname}`
     : `/api/gallery/file/${item.filename}`;
@@ -939,7 +1338,6 @@ function Lightbox({
     img.src = fullSrc;
   }, [zoomMode, fullSrc, hiResReady, item.type]);
 
-  // Viewport detection for responsive panel width
   useEffect(() => {
     const check = () => setIsMdPlus(window.innerWidth >= 768);
     check();
@@ -947,7 +1345,6 @@ function Lightbox({
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Panel resize mouse events
   useEffect(() => {
     const onMove = (e: MouseEvent) => {
       if (!isResizingRef.current) return;
@@ -967,7 +1364,6 @@ function Lightbox({
     };
   }, []);
 
-  // Mouse-wheel zoom (only when in zoom mode)
   useEffect(() => {
     if (!zoomMode) return;
     const el = lightboxRef.current;
@@ -1057,7 +1453,11 @@ function Lightbox({
       onMouseLeave={() => setDragging(false)}
     >
       {/* Image + nav */}
-      <div className="flex-1 relative flex items-center justify-center overflow-hidden min-h-0" style={{ background: '#000' }}>
+      <div
+        ref={imageAreaRef}
+        className="flex-1 relative flex items-center justify-center overflow-hidden min-h-0"
+        style={{ background: '#000' }}
+      >
         {/* Floating close / exit-zoom button */}
         <button
           onClick={() => {
@@ -1071,6 +1471,23 @@ function Lightbox({
         >
           ×
         </button>
+        {/* Annotation overlay toggle — top-right corner of image, same size as × */}
+        {item.type === 'IMAGE' && item.plateSolve && (
+          <button
+            onClick={() => setShowOverlay(v => !v)}
+            aria-label={showOverlay ? t('hideAnnotations') : t('showAnnotations')}
+            title={showOverlay ? t('hideAnnotations') : t('showAnnotations')}
+            className="absolute top-3 right-3 z-20 w-12 h-12 flex items-center justify-center transition-colors duration-150"
+            style={{ color: showOverlay ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)' }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = 'rgba(255,255,255,0.9)')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = showOverlay ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)')}
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <circle cx="10" cy="10" r="6"/>
+              <path d="M10 1v3.5M10 15.5V19M1 10h3.5M15.5 10H19"/>
+            </svg>
+          </button>
+        )}
         {hasPrev && !zoomMode && (
           <button
             onClick={onPrev}
@@ -1113,6 +1530,7 @@ function Lightbox({
                 setDragging(true);
                 setDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
               }}
+              onLoad={() => { if (showOverlay && annotations) drawAnnotationOverlay(); }}
               style={{
                 maxWidth: zoomMode ? undefined : '100%',
                 maxHeight: zoomMode ? undefined : '100%',
@@ -1121,7 +1539,7 @@ function Lightbox({
                 objectFit: zoomMode ? 'contain' : undefined,
                 transform: zoomMode ? `translate(${pan.x}px, ${pan.y}px) scale(${scale})` : undefined,
                 transformOrigin: 'center center',
-                transition: dragging ? 'none' : 'transform 0.1s ease-out',
+                transition: (dragging || (showOverlay && !!annotations)) ? 'none' : 'transform 0.1s ease-out',
                 cursor: zoomMode ? (dragging ? 'grabbing' : 'grab') : 'zoom-in',
                 display: 'block',
               }}
@@ -1136,6 +1554,14 @@ function Lightbox({
             />
           )}
         </div>
+
+        {/* Annotation overlay canvas — positioned absolute to match the image */}
+        {item.type === 'IMAGE' && showOverlay && annotations && (
+          <canvas
+            ref={annCanvasRef}
+            style={{ position: 'absolute', pointerEvents: 'none' }}
+          />
+        )}
 
         {hasNext && !zoomMode && (
           <button
@@ -1154,7 +1580,7 @@ function Lightbox({
           </button>
         )}
 
-        {/* Zoom hint — fades out after 3 s */}
+        {/* Zoom hint */}
         {zoomMode && (
           <div
             className="absolute bottom-3 left-1/2 -translate-x-1/2 text-xs px-3 py-1 pointer-events-none"
@@ -1171,7 +1597,7 @@ function Lightbox({
         )}
       </div>
 
-      {/* Info / Edit panel — hidden in zoom mode, right panel on desktop */}
+      {/* Info / Edit panel */}
       <div
         className="flex-shrink-0 overflow-y-auto max-h-[40vh] md:max-h-none border-t md:border-t-0 md:border-l relative"
         style={{
@@ -1522,6 +1948,7 @@ function Lightbox({
                 )}
               </div>
             </div>
+
             {/* Delete confirm — inline */}
             {deleteConfirm && (
               <div className="flex items-center gap-2 pt-1">
@@ -1543,6 +1970,45 @@ function Lightbox({
                 </button>
               </div>
             )}
+
+            {/* ── Plate-solve section ── */}
+            {item.plateSolve && (
+              <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
+                <p className="label mb-2">{t('astrometry')}</p>
+
+                {/* Aladin sky map */}
+                <div style={{ marginBottom: 10 }}>
+                  <AladinMap
+                    ra={item.plateSolve.ra}
+                    dec={item.plateSolve.dec}
+                    fovDeg={Math.max(item.plateSolve.width_deg, item.plateSolve.height_deg) * 5}
+                    widthDeg={item.plateSolve.width_deg}
+                    heightDeg={item.plateSolve.height_deg}
+                    orientDeg={item.plateSolve.orientation}
+                    parity={item.plateSolve.parity}
+                    loadingLabel={t('skyMapLoading')}
+                    unavailableLabel={t('skyMapUnavailable')}
+                    height={180}
+                  />
+                </div>
+
+                {/* Key metrics */}
+                <div className="grid grid-cols-2 gap-px" style={{ background: 'var(--line)' }}>
+                  {([
+                    { label: t('raResult'),       value: raToHMS(item.plateSolve.ra) },
+                    { label: t('decResult'),      value: decToDMS(item.plateSolve.dec) },
+                    { label: t('fovResult'),      value: formatFovPS(item.plateSolve.width_deg, item.plateSolve.height_deg) },
+                    { label: t('pixscaleResult'), value: `${item.plateSolve.pixscale.toFixed(2)}″/px` },
+                  ] as { label: string; value: string }[]).map(({ label, value }) => (
+                    <div key={label} className="px-3 py-2" style={{ background: 'var(--bg)' }}>
+                      <p className="label text-xs mb-0.5">{label}</p>
+                      <p className="text-xs font-mono" style={{ color: 'var(--ink)' }}>{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {hasEquipData && <EquipmentDisplay equipment={item.equipment!} />}
             {(item.lat !== null && item.lng !== null || !!(item.links?.length)) && (
               <div className="mt-2 flex gap-3">
