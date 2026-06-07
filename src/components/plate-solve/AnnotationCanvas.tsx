@@ -38,10 +38,8 @@ function pixelToSky(
   // cd matrix already accounts for preview scale and y-flip.
   const dx = px_pil - w.crpix1;
   const dy = py_pil - w.crpix2;
-  // Intermediate world coords (degrees) via CD matrix
   const xi  = w.cd11 * dx + w.cd12 * dy;
   const eta = w.cd21 * dx + w.cd22 * dy;
-  // TAN deprojection (Calabretta & Greisen 2002)
   const D = Math.PI / 180;
   const xi_r = xi * D, eta_r = eta * D;
   const ra0 = w.crval1 * D, dec0 = w.crval2 * D;
@@ -98,8 +96,6 @@ const BOX: React.CSSProperties = {
 };
 
 const DIM: React.CSSProperties = { color: 'rgba(255,255,255,0.45)' };
-// Two-column grid inside each info box: label column auto-sizes to widest label,
-// value column takes the rest. This avoids any HTML whitespace-collapsing issues.
 const INFO_GRID: React.CSSProperties = { display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 8 };
 
 // ── component ────────────────────────────────────────────────────────────────
@@ -107,11 +103,16 @@ const INFO_GRID: React.CSSProperties = { display: 'grid', gridTemplateColumns: '
 export default function AnnotationCanvas({
   resultId, hasImage, hasAnnotations, noPreviewLabel,
 }: Props) {
-  const [hovered, setHovered] = useState(false);
-  const [ann, setAnn]         = useState<AnnotationData | null>(null);
-  const [cursor, setCursor]   = useState<{ ra: number; dec: number } | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef    = useRef<HTMLCanvasElement>(null);
+  const [hovered, setHovered]       = useState(false);
+  const [zoomed, setZoomed]         = useState(false);
+  const [ann, setAnn]               = useState<AnnotationData | null>(null);
+  const [cursor, setCursor]         = useState<{ ra: number; dec: number } | null>(null);
+  const [zoomCursor, setZoomCursor] = useState<{ ra: number; dec: number } | null>(null);
+
+  const containerRef     = useRef<HTMLDivElement>(null);
+  const canvasRef        = useRef<HTMLCanvasElement>(null);
+  const zoomContainerRef = useRef<HTMLDivElement>(null);
+  const zoomCanvasRef    = useRef<HTMLCanvasElement>(null);
 
   // Fetch annotations once
   useEffect(() => {
@@ -122,10 +123,11 @@ export default function AnnotationCanvas({
       .catch(() => null);
   }, [resultId, hasAnnotations]);
 
-  // Canvas draw
-  const redraw = useCallback(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
+  // Shared canvas drawing — works for both inline and zoom canvases
+  const drawOnCanvas = useCallback((
+    container: HTMLDivElement | null,
+    canvas: HTMLCanvasElement | null,
+  ) => {
     if (!canvas || !container || !ann) return;
     const W = container.clientWidth, H = container.clientHeight;
     if (!W || !H) return;
@@ -179,14 +181,14 @@ export default function AnnotationCanvas({
     }
   }, [ann]);
 
+  const redraw     = useCallback(() => drawOnCanvas(containerRef.current, canvasRef.current), [drawOnCanvas]);
+  const redrawZoom = useCallback(() => drawOnCanvas(zoomContainerRef.current, zoomCanvasRef.current), [drawOnCanvas]);
+
   useEffect(() => {
-    // Defer one animation frame so the browser has finished layout before we
-    // read clientWidth/clientHeight. This fixes the cached-image race where
-    // the image loads instantly (from cache), onLoad fires before ann arrives,
-    // and the later ann-triggered redraw sees H=0 because layout isn't done.
     const id = requestAnimationFrame(redraw);
     return () => cancelAnimationFrame(id);
   }, [redraw]);
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -195,20 +197,38 @@ export default function AnnotationCanvas({
     return () => ro.disconnect();
   }, [redraw]);
 
+  // Trigger zoom canvas redraw after modal opens and on ann changes
+  useEffect(() => {
+    if (!zoomed) return;
+    const id = requestAnimationFrame(redrawZoom);
+    return () => cancelAnimationFrame(id);
+  }, [redrawZoom, zoomed]);
+
+  useEffect(() => {
+    if (!zoomed) return;
+    const el = zoomContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(redrawZoom);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [redrawZoom, zoomed]);
+
+  // Esc to close zoom
+  useEffect(() => {
+    if (!zoomed) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setZoomed(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [zoomed]);
+
   // Mouse handlers
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!ann?.wcs) return;
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const px = mx / rect.width  * ann.width;
-    const py = my / rect.height * ann.height;
-    try {
-      setCursor(pixelToSky(px, py, ann.wcs));
-    } catch {
-      setCursor(null);
-    }
+    const px = (e.clientX - rect.left) / rect.width  * ann.width;
+    const py = (e.clientY - rect.top)  / rect.height * ann.height;
+    try { setCursor(pixelToSky(px, py, ann.wcs)); } catch { setCursor(null); }
   }, [ann]);
 
   const handleMouseLeave = useCallback(() => {
@@ -216,62 +236,149 @@ export default function AnnotationCanvas({
     setCursor(null);
   }, []);
 
+  const handleZoomMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ann?.wcs) return;
+    const rect = zoomContainerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const px = (e.clientX - rect.left) / rect.width  * ann.width;
+    const py = (e.clientY - rect.top)  / rect.height * ann.height;
+    try { setZoomCursor(pixelToSky(px, py, ann.wcs)); } catch { setZoomCursor(null); }
+  }, [ann]);
+
   const overlayOpacity = hovered ? 1 : 0;
+  const imgSrc = `/api/plate-solve/image/${resultId}`;
 
   return (
-    <div
-      ref={containerRef}
-      style={{ position: 'relative', cursor: 'crosshair' }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={handleMouseLeave}
-      onMouseMove={handleMouseMove}
-    >
-      {/* Image */}
-      {hasImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={`/api/plate-solve/image/${resultId}`}
-          alt="Solved field"
-          className="w-full block"
-          style={{ border: '1px solid var(--line)', display: 'block' }}
-          onLoad={redraw}
-        />
-      ) : (
-        <div className="flex items-center justify-center text-sm"
-          style={{ minHeight: 200, border: '1px solid var(--line)', color: 'var(--ink-faint)' }}>
-          {noPreviewLabel}
+    <>
+      {/* ── inline view ─────────────────────────────────────────────────── */}
+      <div
+        ref={containerRef}
+        style={{ position: 'relative', cursor: hasImage ? 'zoom-in' : 'default' }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={handleMouseLeave}
+        onMouseMove={handleMouseMove}
+        onClick={() => hasImage && setZoomed(true)}
+      >
+        {hasImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imgSrc}
+            alt="Solved field"
+            className="w-full block"
+            style={{ border: '1px solid var(--line)', display: 'block' }}
+            onLoad={redraw}
+          />
+        ) : (
+          <div className="flex items-center justify-center text-sm"
+            style={{ minHeight: 200, border: '1px solid var(--line)', color: 'var(--ink-faint)' }}>
+            {noPreviewLabel}
+          </div>
+        )}
+
+        <canvas ref={canvasRef} style={{
+          position: 'absolute', top: 0, left: 0,
+          width: '100%', height: '100%',
+          pointerEvents: 'none',
+          opacity: overlayOpacity,
+          transition: 'opacity 0.15s ease',
+        }} />
+
+        {ann?.wcs && (
+          <div style={{ ...BOX, top: 8, left: 8, opacity: overlayOpacity, ...INFO_GRID }}>
+            <span style={DIM}>RA (J2000)</span>
+            <span>{cursor ? ' ' + raToHMS(cursor.ra)  : '—'}</span>
+            <span style={DIM}>Dec (J2000)</span>
+            <span>{cursor ? decToDMS(cursor.dec) : '—'}</span>
+          </div>
+        )}
+
+        {ann && (
+          <div style={{ ...BOX, bottom: 8, left: 8, opacity: overlayOpacity, ...INFO_GRID }}>
+            <span style={DIM}>FOV</span>
+            <span>{fmtFov(ann.fov_width_deg, ann.fov_height_deg)}</span>
+            <span style={DIM}>Scale</span>
+            <span>{ann.pixscale.toFixed(2)}″/px</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── zoom modal ───────────────────────────────────────────────────── */}
+      {zoomed && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            background: 'rgba(0,0,0,0.92)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+          onClick={() => setZoomed(false)}
+        >
+          {/* Close button — fixed to top-left of viewport */}
+          <button
+            onClick={(e) => { e.stopPropagation(); setZoomed(false); }}
+            style={{
+              position: 'fixed', top: 16, left: 16,
+              zIndex: 10000,
+              background: 'rgba(0,0,0,0.7)',
+              border: '1px solid rgba(255,255,255,0.3)',
+              color: 'rgba(255,255,255,0.9)',
+              width: 32, height: 32,
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 18, lineHeight: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+            aria-label="Close zoom"
+          >
+            ×
+          </button>
+
+          {/* Image + canvas container */}
+          <div
+            ref={zoomContainerRef}
+            style={{ position: 'relative', lineHeight: 0, cursor: 'crosshair' }}
+            onClick={(e) => e.stopPropagation()}
+            onMouseMove={handleZoomMouseMove}
+            onMouseLeave={() => setZoomCursor(null)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imgSrc}
+              alt="Solved field (zoom)"
+              style={{
+                display: 'block',
+                maxWidth: '90vw',
+                maxHeight: '90vh',
+                objectFit: 'contain',
+              }}
+              onLoad={redrawZoom}
+            />
+
+            <canvas ref={zoomCanvasRef} style={{
+              position: 'absolute', top: 0, left: 0,
+              width: '100%', height: '100%',
+              pointerEvents: 'none',
+            }} />
+
+            {ann?.wcs && (
+              <div style={{ ...BOX, top: 8, left: 8, ...INFO_GRID }}>
+                <span style={DIM}>RA (J2000)</span>
+                <span>{zoomCursor ? ' ' + raToHMS(zoomCursor.ra)  : '—'}</span>
+                <span style={DIM}>Dec (J2000)</span>
+                <span>{zoomCursor ? decToDMS(zoomCursor.dec) : '—'}</span>
+              </div>
+            )}
+
+            {ann && (
+              <div style={{ ...BOX, bottom: 8, left: 8, ...INFO_GRID }}>
+                <span style={DIM}>FOV</span>
+                <span>{fmtFov(ann.fov_width_deg, ann.fov_height_deg)}</span>
+                <span style={DIM}>Scale</span>
+                <span>{ann.pixscale.toFixed(2)}″/px</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
-
-      {/* Annotation canvas */}
-      <canvas ref={canvasRef} style={{
-        position: 'absolute', top: 0, left: 0,
-        width: '100%', height: '100%',
-        pointerEvents: 'none',
-        opacity: overlayOpacity,
-        transition: 'opacity 0.15s ease',
-      }} />
-
-      {/* Top-left: cursor RA / Dec */}
-      {ann?.wcs && (
-        <div style={{ ...BOX, top: 8, left: 8, opacity: overlayOpacity, ...INFO_GRID }}>
-          <span style={DIM}>RA (J2000)</span>
-          {/* leading non-breaking space compensates for the +/− sign in Dec */}
-          <span>{cursor ? ' ' + raToHMS(cursor.ra)  : '—'}</span>
-          <span style={DIM}>Dec (J2000)</span>
-          <span>{cursor ? decToDMS(cursor.dec) : '—'}</span>
-        </div>
-      )}
-
-      {/* Bottom-left: FOV info */}
-      {ann && (
-        <div style={{ ...BOX, bottom: 8, left: 8, opacity: overlayOpacity, ...INFO_GRID }}>
-          <span style={DIM}>FOV</span>
-          <span>{fmtFov(ann.fov_width_deg, ann.fov_height_deg)}</span>
-          <span style={DIM}>Scale</span>
-          <span>{ann.pixscale.toFixed(2)}″/px</span>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
