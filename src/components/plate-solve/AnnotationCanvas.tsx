@@ -32,13 +32,12 @@ interface Props {
 
 function pixelToSky(
   px_pil: number, py_pil: number,
-  w: WcsParams, img_h: number,
+  w: WcsParams,
 ): { ra: number; dec: number } {
-  // PIL (0-indexed, y↓) → FITS (1-indexed, y↑)
-  const fits_x = px_pil + 1;
-  const fits_y = img_h - py_pil;
-  const dx = fits_x - w.crpix1;
-  const dy = fits_y - w.crpix2;
+  // crpix1/2 are already in 0-indexed preview PIL space (x right, y down).
+  // cd matrix already accounts for preview scale and y-flip.
+  const dx = px_pil - w.crpix1;
+  const dy = py_pil - w.crpix2;
   // Intermediate world coords (degrees) via CD matrix
   const xi  = w.cd11 * dx + w.cd12 * dy;
   const eta = w.cd21 * dx + w.cd22 * dy;
@@ -206,7 +205,7 @@ export default function AnnotationCanvas({
     const px = mx / rect.width  * ann.width;
     const py = my / rect.height * ann.height;
     try {
-      setCursor(pixelToSky(px, py, ann.wcs, ann.height));
+      setCursor(pixelToSky(px, py, ann.wcs));
     } catch {
       setCursor(null);
     }
