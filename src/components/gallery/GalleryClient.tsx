@@ -1834,19 +1834,6 @@ function Lightbox({
                     ].filter(Boolean).join(' · ')}
                   </p>
                 )}
-                {item.description && (
-                  <p
-                    className="text-sm leading-relaxed mt-2"
-                    style={{
-                      color: 'var(--ink-secondary)',
-                      whiteSpace: 'pre-wrap',
-                      overflowWrap: 'break-word',
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {item.description}
-                  </p>
-                )}
               </div>
               <div className="flex items-center gap-0.5 flex-shrink-0">
                 {/* Show on home toggle */}
@@ -1948,6 +1935,19 @@ function Lightbox({
                 )}
               </div>
             </div>
+            {item.description && (
+              <p
+                className="text-sm leading-relaxed"
+                style={{
+                  color: 'var(--ink-secondary)',
+                  whiteSpace: 'pre-wrap',
+                  overflowWrap: 'break-word',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {item.description}
+              </p>
+            )}
 
             {/* Delete confirm — inline */}
             {deleteConfirm && (
@@ -1968,44 +1968,6 @@ function Lightbox({
                 >
                   {t('cancelEdit')}
                 </button>
-              </div>
-            )}
-
-            {/* ── Plate-solve section ── */}
-            {item.plateSolve && (
-              <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
-                <p className="label mb-2">{t('astrometry')}</p>
-
-                {/* Aladin sky map */}
-                <div style={{ marginBottom: 10 }}>
-                  <AladinMap
-                    ra={item.plateSolve.ra}
-                    dec={item.plateSolve.dec}
-                    fovDeg={Math.max(item.plateSolve.width_deg, item.plateSolve.height_deg) * 5}
-                    widthDeg={item.plateSolve.width_deg}
-                    heightDeg={item.plateSolve.height_deg}
-                    orientDeg={item.plateSolve.orientation}
-                    parity={item.plateSolve.parity}
-                    loadingLabel={t('skyMapLoading')}
-                    unavailableLabel={t('skyMapUnavailable')}
-                    height={180}
-                  />
-                </div>
-
-                {/* Key metrics */}
-                <div className="grid grid-cols-2 gap-px" style={{ background: 'var(--line)' }}>
-                  {([
-                    { label: t('raResult'),       value: raToHMS(item.plateSolve.ra) },
-                    { label: t('decResult'),      value: decToDMS(item.plateSolve.dec) },
-                    { label: t('fovResult'),      value: formatFovPS(item.plateSolve.width_deg, item.plateSolve.height_deg) },
-                    { label: t('pixscaleResult'), value: `${item.plateSolve.pixscale.toFixed(2)}″/px` },
-                  ] as { label: string; value: string }[]).map(({ label, value }) => (
-                    <div key={label} className="px-3 py-2" style={{ background: 'var(--bg)' }}>
-                      <p className="label text-xs mb-0.5">{label}</p>
-                      <p className="text-xs font-mono" style={{ color: 'var(--ink)' }}>{value}</p>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
 
@@ -2039,6 +2001,44 @@ function Lightbox({
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ── Plate-solve section ── */}
+            {item.plateSolve && (
+              <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--line)' }}>
+                <p className="label mb-2">{t('astrometry')}</p>
+
+                {/* Aladin sky map */}
+                <div style={{ marginBottom: 10 }}>
+                  <AladinMap
+                    ra={item.plateSolve.ra}
+                    dec={item.plateSolve.dec}
+                    fovDeg={Math.max(item.plateSolve.width_deg, item.plateSolve.height_deg) * 5}
+                    widthDeg={item.plateSolve.width_deg}
+                    heightDeg={item.plateSolve.height_deg}
+                    orientDeg={item.plateSolve.orientation}
+                    parity={item.plateSolve.parity}
+                    loadingLabel={t('skyMapLoading')}
+                    unavailableLabel={t('skyMapUnavailable')}
+                    height={320}
+                  />
+                </div>
+
+                {/* Key metrics */}
+                <div className="grid grid-cols-2 gap-px" style={{ background: 'var(--line)' }}>
+                  {([
+                    { label: t('raResult'),       value: raToHMS(item.plateSolve.ra) },
+                    { label: t('decResult'),      value: decToDMS(item.plateSolve.dec) },
+                    { label: t('fovResult'),      value: formatFovPS(item.plateSolve.width_deg, item.plateSolve.height_deg) },
+                    { label: t('pixscaleResult'), value: `${item.plateSolve.pixscale.toFixed(2)}″/px` },
+                  ] as { label: string; value: string }[]).map(({ label, value }) => (
+                    <div key={label} className="px-3 py-2" style={{ background: 'var(--bg)' }}>
+                      <p className="label text-xs mb-0.5">{label}</p>
+                      <p className="text-xs font-mono" style={{ color: 'var(--ink)' }}>{value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

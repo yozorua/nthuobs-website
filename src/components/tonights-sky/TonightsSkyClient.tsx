@@ -453,6 +453,7 @@ export default function TonightsSkyClient({ locale }: TonightsSkyClientProps) {
                 <SortTh label={t('colPeak')}    sortKey="peakAlt"    current={sortKey} dir={sortDir} onSort={handleSort} />
                 <SortTh label={t('colBest')}    sortKey="bestTime"   current={sortKey} dir={sortDir} onSort={handleSort} />
                 <SortTh label={t('colMag')}     sortKey="mag"        current={sortKey} dir={sortDir} onSort={handleSort} />
+                <th className="pb-3 w-8" />
               </tr>
             </thead>
             <tbody>
@@ -491,12 +492,27 @@ export default function TonightsSkyClient({ locale }: TonightsSkyClientProps) {
                         {obj.mag.toFixed(1)}
                       </span>
                     </td>
+                    <td className="py-2.5">
+                      <a
+                        href={`/${locale}/services/planetarium?object=${encodeURIComponent(obj.id)}`}
+                        title={`View ${obj.id} in planetarium`}
+                        style={{ color: 'var(--ink-faint)', display: 'inline-flex', transition: 'color 0.15s' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-faint)')}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                          <polyline points="15 3 21 3 21 9" />
+                          <line x1="10" y1="14" x2="21" y2="3" />
+                        </svg>
+                      </a>
+                    </td>
                   </tr>
                 );
               })}
               {sorted.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-sm" style={{ color: 'var(--ink-faint)' }}>
+                  <td colSpan={8} className="py-12 text-center text-sm" style={{ color: 'var(--ink-faint)' }}>
                     {t('noneVisible')}
                   </td>
                 </tr>

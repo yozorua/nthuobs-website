@@ -106,10 +106,10 @@ function ProfilePopup({ user, locale, onClose }: { user: PublicUser; locale: str
           <div className="min-w-0">
             <p className="text-lg font-medium leading-tight" style={{ color: 'var(--ink)' }}>{primary}</p>
             {secondary && <p className="text-sm mt-0.5" style={{ color: 'var(--ink-faint)' }}>{secondary}</p>}
-            <p className="text-sm mt-1" style={{ color: 'var(--ink-secondary)' }}>{roleLabel(user.role, t)}</p>
-            {user.department && (
-              <p className="text-sm mt-0.5" style={{ color: 'var(--ink-faint)' }}>{user.department}</p>
-            )}
+            <p className="text-sm mt-1" style={{ color: 'var(--ink-secondary)' }}>
+              {roleLabel(user.role, t)}
+              {user.department && <span style={{ color: 'var(--ink-faint)' }}> · {user.department}</span>}
+            </p>
           </div>
         </div>
 
@@ -136,8 +136,10 @@ function ProfilePopup({ user, locale, onClose }: { user: PublicUser; locale: str
                 href={user.website}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover-link truncate block"
+                className="hover-link truncate block transition-colors duration-150"
                 style={{ color: 'var(--ink-secondary)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--ink)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-secondary)')}
               >
                 {user.website.replace(/^https?:\/\//, '')}
               </a>
@@ -151,20 +153,12 @@ function ProfilePopup({ user, locale, onClose }: { user: PublicUser; locale: str
 
 function MemberCard({ user, locale }: { user: PublicUser; locale: string }) {
   const [open, setOpen] = useState(false);
-  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [hovered, setHovered] = useState(false);
   const { primary, secondary } = displayName(user, locale);
   const initials = primary.charAt(0).toUpperCase();
   const sep = user.image?.includes('?') ? '&' : '?';
   const imageUrl = user.image ? `${user.image}${sep}t=${new Date(user.updatedAt).getTime()}` : null;
   const clickable = user.showPublicProfile;
-
-  const handleMouseEnter = () => {
-    if (!clickable) return;
-    hoverTimer.current = setTimeout(() => setOpen(true), 300);
-  };
-  const handleMouseLeave = () => {
-    if (hoverTimer.current) clearTimeout(hoverTimer.current);
-  };
 
   return (
     <>
@@ -177,8 +171,8 @@ function MemberCard({ user, locale }: { user: PublicUser; locale: string }) {
           cursor: clickable ? 'pointer' : 'default',
         }}
         onClick={() => clickable && setOpen(true)}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
       >
         <Avatar image={imageUrl} initials={initials} size={64} />
         <div>
@@ -188,7 +182,10 @@ function MemberCard({ user, locale }: { user: PublicUser; locale: string }) {
 
         {/* Arrow indicator at bottom-right of card */}
         {clickable && (
-          <div className="absolute bottom-2 right-2" style={{ color: 'var(--ink-faint)', opacity: 0.5 }}>
+          <div
+            className="absolute bottom-2 right-2 transition-all duration-150"
+            style={{ color: hovered ? 'var(--ink-secondary)' : 'var(--ink-faint)', opacity: hovered ? 1 : 0.5 }}
+          >
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 11 L11 2" />
               <path d="M5 2 L11 2 L11 8" />
