@@ -107,7 +107,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
               alt="NTHU Observatory"
               width={7217}
               height={1134}
-              className="h-6 md:h-7 w-auto opacity-75 group-hover:opacity-100 transition-opacity"
+              className="h-7 md:h-8 w-auto opacity-75 group-hover:opacity-100 transition-opacity"
             />
           ) : (
             <>
@@ -116,14 +116,14 @@ export default function Navbar({ session, locale }: NavbarProps) {
                 alt="NTHU Observatory"
                 width={7217}
                 height={1134}
-                className="hidden dark:block h-6 md:h-7 w-auto opacity-75 group-hover:opacity-100 transition-opacity"
+                className="hidden dark:block h-7 md:h-8 w-auto opacity-75 group-hover:opacity-100 transition-opacity"
               />
               <Image
                 src="/banner_dark.png"
                 alt="NTHU Observatory"
                 width={7217}
                 height={1134}
-                className="block dark:hidden h-6 md:h-7 w-auto opacity-75 group-hover:opacity-100 transition-opacity"
+                className="block dark:hidden h-7 md:h-8 w-auto opacity-75 group-hover:opacity-100 transition-opacity"
               />
             </>
           )}
