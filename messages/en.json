@@ -776,6 +776,7 @@
     "planetJupiter": "Jupiter",
     "planetSaturn": "Saturn",
     "planetUranus": "Uranus",
-    "planetNeptune": "Neptune"
+    "planetNeptune": "Neptune",
+    "mag": "mag"
   }
 }

@@ -776,6 +776,7 @@
     "planetJupiter": "木星",
     "planetSaturn": "土星",
     "planetUranus": "天王星",
-    "planetNeptune": "海王星"
+    "planetNeptune": "海王星",
+    "mag": "視星等"
   }
 }
