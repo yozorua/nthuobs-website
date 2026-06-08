@@ -33,8 +33,8 @@ export default function Navbar({ session, locale }: NavbarProps) {
   };
   const { theme, setTheme } = useTheme();
   const { data: clientSession } = useSession();
-  // Prefer server session image (layout reads DB) — updates on router.refresh()
-  const avatarImage = session?.user?.image ?? clientSession?.user?.image;
+  // Prefer live client session so avatar updates immediately after upload without a full reload
+  const avatarImage = clientSession?.user?.image ?? session?.user?.image;
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const navLinks = [
