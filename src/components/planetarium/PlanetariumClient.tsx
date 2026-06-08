@@ -7,7 +7,7 @@ interface PlanetariumClientProps {
   locale: string;
 }
 
-const STELLARIUM_URL = 'https://stellarium-web.org/';
+const STELLARIUM_URL = '/stellarium/';
 
 export default function PlanetariumClient({ locale: _locale }: PlanetariumClientProps) {
   const t = useTranslations('planetarium');
@@ -57,7 +57,6 @@ export default function PlanetariumClient({ locale: _locale }: PlanetariumClient
           onLoad={() => setLoaded(true)}
           onError={() => setIframeError(true)}
           allow="fullscreen"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-fullscreen"
         />
       )}
     </div>
