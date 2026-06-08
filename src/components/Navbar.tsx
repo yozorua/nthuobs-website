@@ -48,6 +48,8 @@ export default function Navbar({ session, locale }: NavbarProps) {
 
   const serviceLinks = [
     { href: `/${locale}/services/plate-solve`, label: t('plateSolve') },
+    { href: `/${locale}/services/planetarium`, label: t('planetarium') },
+    { href: `/${locale}/services/tonights-sky`, label: t('tonightsSky') },
   ];
   const isServicesActive = serviceLinks.some(l => pathname === l.href);
 
