@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Sans_TC } from 'next/font/google';
+import { Saira, Orbitron, Noto_Sans_TC } from 'next/font/google';
 import "./globals.css";
 
-const inter = Inter({
+const saira = Saira({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-saira',
+  display: 'swap',
+});
+
+const orbitron = Orbitron({
+  subsets: ['latin'],
+  variable: '--font-orbitron',
   display: 'swap',
 });
 
@@ -35,7 +41,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html className={`${inter.variable} ${notoSansTC.variable}`} suppressHydrationWarning>
+    <html className={`${saira.variable} ${orbitron.variable} ${notoSansTC.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
         {children}
       </body>

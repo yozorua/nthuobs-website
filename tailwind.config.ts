@@ -31,7 +31,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'var(--font-inter)', 'var(--font-noto-tc)', 'sans-serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'var(--font-saira)', 'var(--font-noto-tc)', 'sans-serif'],
+        display: ['var(--font-orbitron)', 'var(--font-saira)', 'sans-serif'],
       },
       letterSpacing: {
         wider: "-0.003em",
