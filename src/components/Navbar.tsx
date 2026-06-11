@@ -208,10 +208,22 @@ export default function Navbar({ session, locale }: NavbarProps) {
                 style={{
                   top: 'calc(100% + 10px)',
                   minWidth: 200,
-                  background: 'var(--bg)',
-                  border: '1px solid var(--line)',
                   boxShadow: '0 8px 32px rgba(0,0,0,0.10)',
                   animation: 'navDropdownIn 0.15s ease-out',
+                  ...(pathname.includes('/weather') ? {
+                    background: '#111111',
+                    border: '1px solid #2a2a2a',
+                    ['--bg' as string]: '#111111',
+                    ['--bg-warm' as string]: '#181818',
+                    ['--ink' as string]: '#e8e8e6',
+                    ['--ink-secondary' as string]: '#aaaaaa',
+                    ['--ink-faint' as string]: '#555555',
+                    ['--line' as string]: '#2a2a2a',
+                    ['--line-dark' as string]: '#444444',
+                  } : {
+                    background: 'var(--bg)',
+                    border: '1px solid var(--line)',
+                  }),
                 }}
                 onMouseEnter={openServices}
                 onMouseLeave={closeServices}
