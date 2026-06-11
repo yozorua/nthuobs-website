@@ -21,6 +21,8 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
+  const [servicesExpanded, setServicesExpanded] = useState(false);
+  const [accountExpanded, setAccountExpanded] = useState(false);
   const servicesRef = useRef<HTMLDivElement>(null);
   const servicesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -30,6 +32,11 @@ export default function Navbar({ session, locale }: NavbarProps) {
   };
   const closeServices = () => {
     servicesTimerRef.current = setTimeout(() => setServicesOpen(false), 180);
+  };
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setServicesExpanded(false);
+    setAccountExpanded(false);
   };
   const { theme, setTheme } = useTheme();
   const { data: clientSession } = useSession();
@@ -74,6 +81,15 @@ export default function Navbar({ session, locale }: NavbarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [menuOpen]);
+
   const role = (session?.user as { role?: string })?.role;
   const isAdmin = role === 'ADMIN';
   const isManager = role === 'MANAGER';
@@ -89,6 +105,7 @@ export default function Navbar({ session, locale }: NavbarProps) {
   const roleLabel = role ? t(roleDisplayKey[role] ?? 'roleVisitor') : null;
 
   return (
+    <>
     <header
       className="sticky top-0 z-50"
       style={{
@@ -399,78 +416,183 @@ export default function Navbar({ session, locale }: NavbarProps) {
         </button>
       </nav>
 
-      {/* Mobile menu */}
+    </header>
+
+      {/* Mobile full-screen overlay */}
       {menuOpen && (
         <div
-          className="md:hidden px-6 py-5 flex flex-col gap-4"
-          style={{
-            borderTop: '1px solid var(--nav-border)',
-            background: 'var(--nav-bg)',
-            backdropFilter: 'blur(24px) saturate(200%)',
-            WebkitBackdropFilter: 'blur(24px) saturate(200%)',
-          }}
+          className="md:hidden fixed inset-0 z-[200] flex flex-col"
+          style={{ background: 'var(--bg)', animation: 'mobileOverlayIn 0.22s ease-out' }}
         >
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              className="text-sm tracking-wide"
-              style={{ color: 'var(--ink-secondary)' }}
-            >
-              {link.label}
+          {/* Header row */}
+          <div
+            className="flex items-center justify-between px-6 flex-shrink-0"
+            style={{ height: 56, borderBottom: '1px solid var(--line)' }}
+          >
+            <Link href={`/${locale}`} onClick={closeMenu} className="flex items-center group">
+              {pathname.includes('/weather') ? (
+                <Image src="/banner_light.png" alt="NTHU Observatory" width={7217} height={1134} className="h-7 w-auto opacity-75" />
+              ) : (
+                <>
+                  <Image src="/banner_light.png" alt="NTHU Observatory" width={7217} height={1134} className="hidden dark:block h-7 w-auto opacity-75" />
+                  <Image src="/banner_dark.png" alt="NTHU Observatory" width={7217} height={1134} className="block dark:hidden h-7 w-auto opacity-75" />
+                </>
+              )}
             </Link>
-          ))}
-          <div>
-            <p className="text-xs mb-2" style={{ color: 'var(--ink-faint)' }}>{t('services')}</p>
-            {serviceLinks.map(link => (
+            <button
+              onClick={closeMenu}
+              className="flex items-center justify-center p-1"
+              aria-label="Close menu"
+              style={{ color: 'var(--ink-faint)', fontSize: '1.25rem', lineHeight: 1 }}
+            >
+              ✕
+            </button>
+          </div>
+
+          {/* Scrollable content */}
+          <div className="flex-1 overflow-y-auto">
+            {/* Nav links */}
+            {navLinks.map((link, i) => (
               <Link
                 key={link.href}
                 href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="text-sm tracking-wide pl-3 block"
-                style={{ color: 'var(--ink-secondary)' }}
+                onClick={closeMenu}
+                className="flex items-center justify-between px-6"
+                style={{
+                  height: 56,
+                  borderBottom: '1px solid var(--line)',
+                  color: isActive(link.href) ? 'var(--ink)' : 'var(--ink-secondary)',
+                  fontSize: '0.9375rem',
+                  letterSpacing: '0.04em',
+                  animation: `navItemIn 0.25s ease-out ${0.04 + i * 0.035}s both`,
+                }}
               >
                 {link.label}
+                {isActive(link.href) && (
+                  <span style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--ink)', flexShrink: 0 }} />
+                )}
               </Link>
             ))}
-          </div>
-          <div className="flex items-center gap-4 pt-2" style={{ borderTop: '1px solid var(--line)' }}>
-            <button onClick={switchLocale} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>
-              {locale === 'en' ? '中文' : 'EN'}
+
+            {/* Services accordion */}
+            <button
+              onClick={() => setServicesExpanded(!servicesExpanded)}
+              className="flex items-center justify-between w-full px-6"
+              style={{
+                height: 56,
+                borderBottom: '1px solid var(--line)',
+                color: isServicesActive ? 'var(--ink)' : 'var(--ink-secondary)',
+                fontSize: '0.9375rem',
+                letterSpacing: '0.04em',
+                animation: `navItemIn 0.25s ease-out ${0.04 + navLinks.length * 0.035}s both`,
+              }}
+            >
+              {t('services')}
+              <span style={{ fontSize: '0.5rem', opacity: 0.4, display: 'inline-block', transition: 'transform 0.2s', transform: servicesExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
             </button>
-            <button suppressHydrationWarning onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>
-              {theme === 'dark' ? 'Light' : 'Dark'}
-            </button>
-          </div>
-          <div style={{ borderTop: '1px solid var(--line)', paddingTop: '1rem' }}>
-            {session?.user ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2.5 mb-1">
-                  {avatarImage && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={avatarImage} alt={session.user.name ?? 'User'} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
-                  )}
-                  <span className="text-sm" style={{ color: 'var(--ink-secondary)' }}>{session.user.name}</span>
-                </div>
-                <Link href={`/${locale}/dashboard`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('portal')}</Link>
-                {isMember && (
-                  <Link href={`/${locale}/dashboard/events`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('events')}</Link>
-                )}
-                {isAdmin && (
-                  <Link href={`/${locale}/admin`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('admin')}</Link>
-                )}
-                {isManager && (
-                  <Link href={`/${locale}/admin/events`} onClick={() => setMenuOpen(false)} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('manageEvents')}</Link>
-                )}
-                <button onClick={() => signOut()} className="text-left text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('signOut')}</button>
+            {servicesExpanded && (
+              <div style={{ borderBottom: '1px solid var(--line)', background: 'var(--bg-warm)' }}>
+                {serviceLinks.map(link => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeMenu}
+                    className="flex items-center gap-3 px-8"
+                    style={{
+                      height: 52,
+                      borderBottom: '1px solid var(--line)',
+                      color: isActive(link.href) ? 'var(--ink)' : 'var(--ink-secondary)',
+                      fontSize: '0.875rem',
+                      letterSpacing: '0.03em',
+                    }}
+                  >
+                    <span style={{ width: 4, height: 4, borderRadius: '50%', background: isActive(link.href) ? 'var(--ink)' : 'var(--line-dark)', flexShrink: 0 }} />
+                    {link.label}
+                  </Link>
+                ))}
               </div>
+            )}
+
+            {/* Language + theme toggles */}
+            <div
+              className="flex items-center gap-3 px-6"
+              style={{ height: 60, borderBottom: '1px solid var(--line)' }}
+            >
+              <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
+                <button
+                  onClick={() => locale !== 'en' && switchLocale()}
+                  className="text-xs tracking-wider"
+                  style={{ padding: '0.375rem 0.75rem', background: locale === 'en' ? 'var(--ink)' : 'transparent', color: locale === 'en' ? 'var(--bg)' : 'var(--ink-faint)', transition: 'all 0.15s' }}
+                >EN</button>
+                <button
+                  onClick={() => locale !== 'tw' && switchLocale()}
+                  className="text-xs tracking-wider"
+                  style={{ padding: '0.375rem 0.75rem', background: locale === 'tw' ? 'var(--ink)' : 'transparent', color: locale === 'tw' ? 'var(--bg)' : 'var(--ink-faint)', transition: 'all 0.15s' }}
+                >中文</button>
+              </div>
+              <div suppressHydrationWarning style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 3, overflow: 'hidden', flexShrink: 0 }}>
+                <button
+                  onClick={() => theme !== 'light' && setTheme('light')}
+                  className="text-xs tracking-wider"
+                  style={{ padding: '0.375rem 0.75rem', background: theme === 'light' ? 'var(--ink)' : 'transparent', color: theme === 'light' ? 'var(--bg)' : 'var(--ink-faint)', transition: 'all 0.15s' }}
+                >Light</button>
+                <button
+                  onClick={() => theme !== 'dark' && setTheme('dark')}
+                  className="text-xs tracking-wider"
+                  style={{ padding: '0.375rem 0.75rem', background: theme === 'dark' ? 'var(--ink)' : 'transparent', color: theme === 'dark' ? 'var(--bg)' : 'var(--ink-faint)', transition: 'all 0.15s' }}
+                >Dark</button>
+              </div>
+            </div>
+
+            {/* Account section */}
+            {session?.user ? (
+              <>
+                <button
+                  onClick={() => setAccountExpanded(!accountExpanded)}
+                  className="flex items-center justify-between w-full px-6"
+                  style={{ height: 56, borderBottom: '1px solid var(--line)', color: 'var(--ink-secondary)', fontSize: '0.9375rem', letterSpacing: '0.04em' }}
+                >
+                  <span className="flex items-center gap-2.5">
+                    {avatarImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={avatarImage} alt={session.user.name ?? 'User'} style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                      <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs" style={{ background: 'var(--ink-faint)', color: 'var(--bg)' }}>
+                        {session.user.name?.[0]?.toUpperCase() ?? '?'}
+                      </span>
+                    )}
+                    {session.user.name}
+                  </span>
+                  <span style={{ fontSize: '0.5rem', opacity: 0.4, display: 'inline-block', transition: 'transform 0.2s', transform: accountExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                </button>
+                {accountExpanded && (
+                  <div style={{ borderBottom: '1px solid var(--line)', background: 'var(--bg-warm)' }}>
+                    <Link href={`/${locale}/dashboard`} onClick={closeMenu} className="flex items-center px-8 text-sm tracking-wide" style={{ height: 52, borderBottom: '1px solid var(--line)', color: 'var(--ink-secondary)' }}>{t('portal')}</Link>
+                    {isMember && (
+                      <Link href={`/${locale}/dashboard/events`} onClick={closeMenu} className="flex items-center px-8 text-sm tracking-wide" style={{ height: 52, borderBottom: '1px solid var(--line)', color: 'var(--ink-secondary)' }}>{t('events')}</Link>
+                    )}
+                    {isAdmin && (
+                      <Link href={`/${locale}/admin`} onClick={closeMenu} className="flex items-center px-8 text-sm tracking-wide" style={{ height: 52, borderBottom: '1px solid var(--line)', color: 'var(--ink-secondary)' }}>{t('admin')}</Link>
+                    )}
+                    {isManager && (
+                      <Link href={`/${locale}/admin/events`} onClick={closeMenu} className="flex items-center px-8 text-sm tracking-wide" style={{ height: 52, borderBottom: '1px solid var(--line)', color: 'var(--ink-secondary)' }}>{t('manageEvents')}</Link>
+                    )}
+                    <button onClick={() => { closeMenu(); signOut(); }} className="flex items-center w-full px-8 text-sm tracking-wide" style={{ height: 52, color: 'var(--ink-secondary)' }}>{t('signOut')}</button>
+                  </div>
+                )}
+              </>
             ) : (
-              <button onClick={() => signIn('google', { callbackUrl: `/${locale}/dashboard` })} className="text-sm tracking-wide" style={{ color: 'var(--ink-secondary)' }}>{t('signIn')}</button>
+              <button
+                onClick={() => signIn('google', { callbackUrl: `/${locale}/dashboard` })}
+                className="flex items-center w-full px-6"
+                style={{ height: 56, borderBottom: '1px solid var(--line)', color: 'var(--ink-secondary)', fontSize: '0.9375rem', letterSpacing: '0.04em' }}
+              >
+                {t('signIn')}
+              </button>
             )}
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }

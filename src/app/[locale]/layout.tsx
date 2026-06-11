@@ -39,7 +39,7 @@ export default async function LocaleLayout({
     });
     if (dbUser) {
       (session.user as { role?: string }).role = dbUser.role;
-      if (dbUser.image) (session.user as { image?: string | null }).image = dbUser.image;
+      (session.user as { image?: string | null }).image = dbUser.image;
       const displayName = locale === 'tw'
         ? (dbUser.lastNameZh && dbUser.firstNameZh ? `${dbUser.lastNameZh}${dbUser.firstNameZh}` : null)
         : (dbUser.firstNameEn && dbUser.lastNameEn ? `${dbUser.firstNameEn} ${dbUser.lastNameEn}` : null);

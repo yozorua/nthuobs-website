@@ -442,7 +442,6 @@
     "firstNameEn": "First Name",
     "lastNameEn": "Last Name",
     "contactEmail": "Email",
-    "phone": "Phone",
     "confirm": "Confirm",
     "confirming": "Confirming…",
     "profileError": "Failed to save profile. Please try again.",
@@ -714,7 +713,6 @@
     "firstNameEn": "First Name",
     "lastNameEn": "Last Name",
     "contactEmail": "Email",
-    "phone": "Phone",
     "receiveEventEmails": "Receive event announcement and reminder emails",
     "save": "Save",
     "saving": "Saving…",
@@ -725,6 +723,7 @@
     "bioPlaceholder": "A short intro about yourself…",
     "website": "Personal Website",
     "showPublicProfile": "Show my profile on the People page",
+    "showPublicEmail": "Show my email on the People page",
     "showPublicProfileHint": "Visitors can click your card to view your name, email, intro, and website.",
     "department": "Department / Institution",
     "departmentPlaceholder": "e.g. Dept. of Physics, NTHU"

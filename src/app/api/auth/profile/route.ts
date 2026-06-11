@@ -8,7 +8,7 @@ export async function GET() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { firstNameEn: true, lastNameEn: true, firstNameZh: true, lastNameZh: true, contactEmail: true, phone: true, receiveEventEmails: true, bio: true, website: true, department: true, showPublicProfile: true },
+    select: { firstNameEn: true, lastNameEn: true, firstNameZh: true, lastNameZh: true, contactEmail: true, receiveEventEmails: true, bio: true, website: true, department: true, showPublicProfile: true, showPublicEmail: true },
   });
 
   return NextResponse.json(user);
@@ -19,9 +19,9 @@ export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { firstNameEn, lastNameEn, firstNameZh, lastNameZh, contactEmail, phone } = await request.json();
+  const { firstNameEn, lastNameEn, firstNameZh, lastNameZh, contactEmail } = await request.json();
 
-  if (!firstNameEn?.trim() || !lastNameEn?.trim() || !firstNameZh?.trim() || !lastNameZh?.trim() || !phone?.trim()) {
+  if (!firstNameEn?.trim() || !lastNameEn?.trim() || !firstNameZh?.trim() || !lastNameZh?.trim()) {
     return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });
   }
 
@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
       firstNameZh: firstNameZh.trim(),
       lastNameZh: lastNameZh.trim(),
       contactEmail: contactEmail?.trim() || session.user.email,
-      phone: phone.trim(),
       role: 'MEMBER',
     },
   });
@@ -47,9 +46,9 @@ export async function PATCH(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { firstNameEn, lastNameEn, firstNameZh, lastNameZh, contactEmail, phone, receiveEventEmails, bio, website, department, showPublicProfile } = await request.json();
+  const { firstNameEn, lastNameEn, firstNameZh, lastNameZh, contactEmail, receiveEventEmails, bio, website, department, showPublicProfile, showPublicEmail } = await request.json();
 
-  if (!firstNameEn?.trim() || !lastNameEn?.trim() || !phone?.trim()) {
+  if (!firstNameEn?.trim() || !lastNameEn?.trim()) {
     return NextResponse.json({ error: 'Required fields missing' }, { status: 400 });
   }
 
@@ -61,12 +60,12 @@ export async function PATCH(request: NextRequest) {
       firstNameZh: firstNameZh?.trim() || null,
       lastNameZh: lastNameZh?.trim() || null,
       contactEmail: contactEmail?.trim() || null,
-      phone: phone.trim(),
       receiveEventEmails: receiveEventEmails !== false,
       bio: bio?.trim() || null,
       website: website?.trim() || null,
       department: department?.trim() || null,
       showPublicProfile: showPublicProfile === true,
+      showPublicEmail: showPublicEmail === true,
     },
   });
 

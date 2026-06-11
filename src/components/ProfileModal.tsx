@@ -19,12 +19,13 @@ export default function ProfileModal({ open, onClose }: Props) {
   const [form, setForm] = useState({
     lastNameZh: '', firstNameZh: '',
     firstNameEn: '', lastNameEn: '',
-    contactEmail: '', phone: '',
+    contactEmail: '',
     receiveEventEmails: true,
     bio: '',
     website: '',
     department: '',
     showPublicProfile: false,
+    showPublicEmail: false,
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'saving' | 'error' | 'saved'>('idle');
 
@@ -49,12 +50,12 @@ export default function ProfileModal({ open, onClose }: Props) {
           firstNameEn: data.firstNameEn ?? '',
           lastNameEn: data.lastNameEn ?? '',
           contactEmail: data.contactEmail ?? '',
-          phone: data.phone ?? '',
           receiveEventEmails: data.receiveEventEmails !== false,
           bio: data.bio ?? '',
           website: data.website ?? '',
           department: data.department ?? '',
           showPublicProfile: data.showPublicProfile === true,
+          showPublicEmail: data.showPublicEmail === true,
         });
         setAvatarUrl(session?.user?.image ?? null);
         setStatus('idle');
@@ -204,10 +205,6 @@ export default function ProfileModal({ open, onClose }: Props) {
                       <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('contactEmail')}</label>
                       <input type="email" className="input" value={form.contactEmail} onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))} required />
                     </div>
-                    <div>
-                      <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('phone')}</label>
-                      <input type="tel" className="input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))} inputMode="numeric" pattern="[0-9]*" required />
-                    </div>
                   </div>
 
                   {/* Right — public profile */}
@@ -235,6 +232,10 @@ export default function ProfileModal({ open, onClose }: Props) {
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={form.showPublicProfile} onChange={e => setForm(f => ({ ...f, showPublicProfile: e.target.checked }))} />
                         <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('showPublicProfile')}</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={form.showPublicEmail} onChange={e => setForm(f => ({ ...f, showPublicEmail: e.target.checked }))} />
+                        <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('showPublicEmail')}</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" checked={form.receiveEventEmails} onChange={e => setForm(f => ({ ...f, receiveEventEmails: e.target.checked }))} />

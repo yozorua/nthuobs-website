@@ -442,7 +442,6 @@
     "firstNameEn": "First Name",
     "lastNameEn": "Last Name",
     "contactEmail": "信箱",
-    "phone": "電話",
     "confirm": "確認送出",
     "confirming": "送出中…",
     "profileError": "資料儲存失敗，請再試一次。",
@@ -714,7 +713,6 @@
     "firstNameEn": "英文名",
     "lastNameEn": "英文姓",
     "contactEmail": "信箱",
-    "phone": "電話",
     "receiveEventEmails": "接收活動公告與提醒郵件",
     "save": "儲存",
     "saving": "儲存中…",
@@ -725,6 +723,7 @@
     "bioPlaceholder": "簡短介紹一下自己…",
     "website": "個人網站",
     "showPublicProfile": "在成員頁面顯示我的個人資料",
+    "showPublicEmail": "在成員頁面顯示我的電子郵件",
     "showPublicProfileHint": "訪客點擊您的卡片後，可以看到您的姓名、信箱、自我介紹及網站。",
     "department": "系所 / 單位",
     "departmentPlaceholder": "例：清大物理系"

@@ -17,6 +17,7 @@ export type PublicUser = {
   website: string | null;
   department: string | null;
   showPublicProfile: boolean;
+  showPublicEmail: boolean;
   updatedAt: Date;
 };
 
@@ -115,7 +116,7 @@ function ProfilePopup({ user, locale, onClose }: { user: PublicUser; locale: str
 
         {/* Details */}
         <div className="space-y-4 text-sm" style={{ borderTop: '1px solid var(--line)', paddingTop: '1.25rem' }}>
-          {user.contactEmail && (
+          {user.showPublicEmail && user.contactEmail && (
             <div>
               <p className="text-xs tracking-ultra uppercase mb-1" style={{ color: 'var(--ink-faint)' }}>{t('popupEmail')}</p>
               <a href={`mailto:${user.contactEmail}`} className="hover-link" style={{ color: 'var(--ink-secondary)' }}>

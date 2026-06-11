@@ -82,7 +82,7 @@ function PlanetIcon({ name, size = 34 }: { name: string; size?: number }) {
   const ringH = size * 0.34;
 
   return (
-    <div style={{ position: 'relative', width: isSaturn ? ringW : size, height: size, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ position: 'relative', width: ringW, height: size, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       {isSaturn && (
         <div style={{
           position: 'absolute',
@@ -380,7 +380,7 @@ export default function TonightsSkyClient({ locale }: TonightsSkyClientProps) {
         <div className="mb-12">
           <p className="label mb-4">{t('planetsTonight')} · {planets.length}</p>
           <div
-            className="grid grid-cols-2 md:grid-cols-4 gap-px"
+            className="grid grid-cols-1 md:grid-cols-4 gap-px"
             style={{ background: 'var(--line)' }}
           >
             {planets.map(p => (

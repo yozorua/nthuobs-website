@@ -28,6 +28,7 @@ export default async function PeoplePage({
     website: true,
     department: true,
     showPublicProfile: true,
+    showPublicEmail: true,
     updatedAt: true,
   };
 

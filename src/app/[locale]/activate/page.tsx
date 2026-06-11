@@ -22,7 +22,6 @@ export default function ActivatePage() {
     lastNameZh: '', firstNameZh: '',
     firstNameEn: '', lastNameEn: '',
     contactEmail: session?.user?.email ?? '',
-    phone: '',
   });
   const [profileStatus, setProfileStatus] = useState<'idle' | 'submitting' | 'error'>('idle');
 
@@ -129,10 +128,6 @@ export default function ActivatePage() {
               <div>
                 <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('contactEmail')}</label>
                 <input type="email" className="input" value={form.contactEmail} onChange={e => setForm(f => ({ ...f, contactEmail: e.target.value }))} required />
-              </div>
-              <div>
-                <label className="text-xs tracking-ultra uppercase mb-1.5 block" style={{ color: 'var(--ink-faint)' }}>{t('phone')}</label>
-                <input type="tel" className="input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '') }))} inputMode="numeric" pattern="[0-9]*" />
               </div>
               {profileStatus === 'error' && (
                 <p className="text-xs" style={{ color: '#cc4444' }}>{t('profileError')}</p>

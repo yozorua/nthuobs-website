@@ -25,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (dbUser) {
           token.role = dbUser.role;
           token.id = dbUser.id;
-          if (dbUser.image) token.picture = dbUser.image;
+          token.picture = dbUser.image ?? token.picture;
         }
       }
       return token;

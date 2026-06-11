@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
     data: { image: imageUrl },
   });
 
-  // Bust the server-side route cache so /people reflects the new avatar immediately
+  // Bust any cached route entry for this specific avatar path, then the people pages
+  revalidatePath(`/avatars/${filename}`);
   revalidatePath('/en/people');
   revalidatePath('/tw/people');
 
