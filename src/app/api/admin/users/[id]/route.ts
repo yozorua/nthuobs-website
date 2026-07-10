@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
 const PRIMARY_ROLES = ['PENDING', 'MEMBER', 'OPERATOR', 'MANAGER', 'ADMIN'];
-const EXTRA_ROLES = ['WEB_MANAGER'];
+const EXTRA_ROLES = ['WEB_MANAGER', 'MASCOT'];
 const ALL_VALID_ROLES = [...PRIMARY_ROLES, ...EXTRA_ROLES];
 const isAdmin = (session: { user?: { role?: string } } | null) =>
   (session?.user as { role?: string })?.role === 'ADMIN';

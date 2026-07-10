@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 
 const PRIMARY_ROLES = ['PENDING', 'MEMBER', 'OPERATOR', 'MANAGER', 'ADMIN'] as const;
-const EXTRA_ROLES = ['WEB_MANAGER'] as const;
+const EXTRA_ROLES = ['WEB_MANAGER', 'MASCOT'] as const;
 type PrimaryRole = typeof PRIMARY_ROLES[number];
 type ExtraRole = typeof EXTRA_ROLES[number];
 
@@ -15,6 +15,7 @@ const ROLE_LABEL_KEY: Record<PrimaryRole | ExtraRole, string> = {
   MANAGER: 'roleManager',
   ADMIN: 'roleAdmin',
   WEB_MANAGER: 'roleWebManager',
+  MASCOT: 'roleMascot',
 };
 
 interface User {

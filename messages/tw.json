@@ -175,6 +175,7 @@
     "joinDesc": "有興趣加入清大天文台團隊嗎？歡迎對天文與科普推廣有熱忱的學生，透過電子郵件與我們聯絡，了解目前的申請資訊。",
     "contactUs": "聯絡我們",
     "webManagersLabel": "網站管理員",
+    "mascotsLabel": "吉祥物",
     "popupEmail": "信箱",
     "popupBio": "關於",
     "popupWebsite": "網站",
@@ -290,7 +291,8 @@
     "roleMember": "解說員",
     "roleOperator": "觀測員",
     "roleManager": "管理員",
-    "roleAdmin": "系統管理員"
+    "roleAdmin": "系統管理員",
+    "roleMascot": "吉祥物"
   },
   "footer": {
     "observatory": "天文台",
@@ -422,6 +424,7 @@
     "roleManager": "管理員",
     "roleAdmin": "系統管理員",
     "roleWebManager": "網站管理員",
+    "roleMascot": "吉祥物",
     "rolePrimarySection": "主要身份",
     "roleExtraSection": "附加身份"
   },
@@ -460,6 +463,7 @@
     "wind": "風速",
     "windBeaufort": "蒲福風級: {force} 級",
     "windGust": "陣風: {speed} m/s（{force} 級）",
+    "windSpeed24hHigh": "本日最高風力: {speed} m/s（{force} 級）",
     "windAvg1m": "1 分鐘平均: {speed} m/s",
     "windAvg10m": "10 分鐘平均: {speed} m/s",
     "windHigh10m": "10 分鐘最高: {speed} m/s",

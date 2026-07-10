@@ -72,6 +72,7 @@ export default function AdminEventsClient({ initialEvents, locale }: Props) {
     MANAGER: t('roleManager'),
     ADMIN: t('roleAdmin'),
     WEB_MANAGER: t('roleWebManager'),
+    MASCOT: t('roleMascot'),
   };
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setSendAnnouncement(true); setShowModal(true); };

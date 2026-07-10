@@ -12,6 +12,7 @@ export type PublicUser = {
   firstNameZh: string | null;
   lastNameZh: string | null;
   role: string;
+  extraRoles: string[];
   contactEmail: string | null;
   bio: string | null;
   website: string | null;
@@ -28,7 +29,8 @@ function displayName(user: PublicUser, locale: string) {
   return { primary: en, secondary: zh };
 }
 
-function roleLabel(role: string, t: ReturnType<typeof useTranslations>) {
+function roleLabel(role: string, t: ReturnType<typeof useTranslations>, extraRoles: string[] = []) {
+  if (extraRoles.includes('MASCOT')) return t('mascotsLabel');
   const map: Record<string, string> = {
     MANAGER: t('managersLabel'),
     OPERATOR: t('operatorsLabel'),
@@ -108,7 +110,7 @@ function ProfilePopup({ user, locale, onClose }: { user: PublicUser; locale: str
             <p className="text-lg font-medium leading-tight" style={{ color: 'var(--ink)' }}>{primary}</p>
             {secondary && <p className="text-sm mt-0.5" style={{ color: 'var(--ink-faint)' }}>{secondary}</p>}
             <p className="text-sm mt-1" style={{ color: 'var(--ink-secondary)' }}>
-              {roleLabel(user.role, t)}
+              {roleLabel(user.role, t, user.extraRoles)}
               {user.department && <span style={{ color: 'var(--ink-faint)' }}> · {user.department}</span>}
             </p>
           </div>

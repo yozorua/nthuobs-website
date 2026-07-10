@@ -19,6 +19,7 @@ export default async function PeoplePage({
     name: true,
     image: true,
     role: true,
+    extraRoles: true,
     firstNameEn: true,
     lastNameEn: true,
     firstNameZh: true,
@@ -32,10 +33,11 @@ export default async function PeoplePage({
     updatedAt: true,
   };
 
-  const [managers, operators, members, webManagers] = await Promise.all([
+  const [managers, operators, members, mascots, webManagers] = await Promise.all([
     db.user.findMany({ where: { role: 'MANAGER' }, select, orderBy: { createdAt: 'asc' } }),
     db.user.findMany({ where: { role: 'OPERATOR' }, select, orderBy: { createdAt: 'asc' } }),
-    db.user.findMany({ where: { role: 'MEMBER' }, select, orderBy: { createdAt: 'asc' } }),
+    db.user.findMany({ where: { role: 'MEMBER', NOT: { extraRoles: { has: 'MASCOT' } } }, select, orderBy: { createdAt: 'asc' } }),
+    db.user.findMany({ where: { role: 'MEMBER', extraRoles: { has: 'MASCOT' } }, select, orderBy: { createdAt: 'asc' } }),
     db.user.findMany({ where: { extraRoles: { has: 'WEB_MANAGER' } }, select, orderBy: { createdAt: 'asc' } }),
   ]);
 
@@ -43,6 +45,7 @@ export default async function PeoplePage({
     { label: t('managersLabel'), users: managers },
     { label: t('operatorsLabel'), users: operators },
     { label: t('membersLabel'), users: members },
+    { label: t('mascotsLabel'), users: mascots },
     { label: t('webManagersLabel'), users: webManagers },
   ];
 

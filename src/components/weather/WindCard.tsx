@@ -54,6 +54,9 @@ export default function WindCard({ reading }: { reading: WeatherReading | null }
         {reading?.windGustMs != null && (
           <p>{t('windGust', { speed: fmt(reading.windGustMs), force: beaufort(reading.windGustMs) })}</p>
         )}
+        {reading?.windSpeed24hHighMs != null && (
+          <p>{t('windSpeed24hHigh', { speed: fmt(reading.windSpeed24hHighMs), force: beaufort(reading.windSpeed24hHighMs) })}</p>
+        )}
         {reading?.avgWind1MinMs != null && (
           <p>{t('windAvg1m', { speed: fmt(reading.avgWind1MinMs) })}</p>
         )}

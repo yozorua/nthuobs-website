@@ -25,12 +25,21 @@ export async function GET() {
       },
     });
 
+    // Highest wind speed in the trailing 24 hours (rolling window, not calendar day).
+    // Uses windSpeedMs — the same field the Data Trend chart bars are maxed from —
+    // so this stat is always consistent with what the chart shows.
+    const windStats = await db.weatherReading.aggregate({
+      where: { consoleTime: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
+      _max: { windSpeedMs: true },
+    });
+
     return NextResponse.json({
       ...reading,
       outsideHumidityDayHigh: humidStats._max.outsideHumidityPercent,
       outsideHumidityDayLow:  humidStats._min.outsideHumidityPercent,
       insideHumidityDayHigh:  humidStats._max.insideHumidityPercent,
       insideHumidityDayLow:   humidStats._min.insideHumidityPercent,
+      windSpeed24hHighMs:      windStats._max.windSpeedMs,
     });
   } catch {
     return NextResponse.json({ error: "Failed to fetch latest reading" }, { status: 500 });

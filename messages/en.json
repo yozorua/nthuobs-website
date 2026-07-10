@@ -175,6 +175,7 @@
     "joinDesc": "Interested in joining the observatory management team? We welcome NTHU students with a passion for astronomy and public outreach. Reach out via email to learn about current openings.",
     "contactUs": "Contact Us",
     "webManagersLabel": "Web Managers",
+    "mascotsLabel": "Mascots",
     "popupEmail": "Email",
     "popupBio": "About",
     "popupWebsite": "Website",
@@ -395,7 +396,8 @@
     "roleMember": "Member",
     "roleOperator": "Operator",
     "roleManager": "Manager",
-    "roleAdmin": "Admin"
+    "roleAdmin": "Admin",
+    "roleMascot": "Mascot"
   },
   "admin": {
     "label": "Administration",
@@ -422,6 +424,7 @@
     "roleManager": "Manager",
     "roleAdmin": "Admin",
     "roleWebManager": "Web Manager",
+    "roleMascot": "Mascot",
     "rolePrimarySection": "Primary Role",
     "roleExtraSection": "Additional Roles"
   },
@@ -460,6 +463,7 @@
     "wind": "Wind",
     "windBeaufort": "Beaufort: force {force}",
     "windGust": "Gust: {speed} m/s (force {force})",
+    "windSpeed24hHigh": "High (24 hr): {speed} m/s (force {force})",
     "windAvg1m": "Avg. (1 min): {speed} m/s",
     "windAvg10m": "Avg. (10 min): {speed} m/s",
     "windHigh10m": "High (10 min): {speed} m/s",

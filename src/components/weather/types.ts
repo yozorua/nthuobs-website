@@ -19,6 +19,7 @@ export interface WeatherReading {
   windDirectionText: string | null;
   windGustMs: number | null;
   windGustDirDeg: number | null;
+  windSpeed24hHighMs: number | null;
   rainRateMmHr: number | null;
   dailyRainMm: number | null;
   stormRainMm: number | null;
