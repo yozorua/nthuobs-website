@@ -166,7 +166,7 @@ async function sendAnnouncementEmails(event: {
   });
 
   const activeUsers = await db.user.findMany({
-    where: { role: { not: 'PENDING' }, receiveEventEmails: true },
+    where: { role: { notIn: ['PENDING', 'ART'] }, receiveEventEmails: true },
     select: {
       name: true,
       firstNameEn: true,

@@ -33,10 +33,11 @@ export default async function PeoplePage({
     updatedAt: true,
   };
 
-  const [managers, operators, members, mascots, webManagers] = await Promise.all([
+  const [managers, operators, members, arts, mascots, webManagers] = await Promise.all([
     db.user.findMany({ where: { role: 'MANAGER' }, select, orderBy: { createdAt: 'asc' } }),
     db.user.findMany({ where: { role: 'OPERATOR' }, select, orderBy: { createdAt: 'asc' } }),
     db.user.findMany({ where: { role: 'MEMBER', NOT: { extraRoles: { has: 'MASCOT' } } }, select, orderBy: { createdAt: 'asc' } }),
+    db.user.findMany({ where: { role: 'ART' }, select, orderBy: { createdAt: 'asc' } }),
     db.user.findMany({ where: { role: 'MEMBER', extraRoles: { has: 'MASCOT' } }, select, orderBy: { createdAt: 'asc' } }),
     db.user.findMany({ where: { extraRoles: { has: 'WEB_MANAGER' } }, select, orderBy: { createdAt: 'asc' } }),
   ]);
@@ -45,6 +46,7 @@ export default async function PeoplePage({
     { label: t('managersLabel'), users: managers },
     { label: t('operatorsLabel'), users: operators },
     { label: t('membersLabel'), users: members },
+    { label: t('artsLabel'), users: arts },
     { label: t('mascotsLabel'), users: mascots },
     { label: t('webManagersLabel'), users: webManagers },
   ];

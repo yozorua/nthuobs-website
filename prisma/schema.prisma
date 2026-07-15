@@ -193,6 +193,7 @@ enum Role {
   ADMIN
   WEB_MANAGER
   MASCOT
+  ART
 }
 
 enum MediaType {

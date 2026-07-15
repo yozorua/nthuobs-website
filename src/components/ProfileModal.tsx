@@ -237,10 +237,12 @@ export default function ProfileModal({ open, onClose }: Props) {
                         <input type="checkbox" checked={form.showPublicEmail} onChange={e => setForm(f => ({ ...f, showPublicEmail: e.target.checked }))} />
                         <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('showPublicEmail')}</span>
                       </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={form.receiveEventEmails} onChange={e => setForm(f => ({ ...f, receiveEventEmails: e.target.checked }))} />
-                        <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('receiveEventEmails')}</span>
-                      </label>
+                      {session?.user?.role !== 'ART' && (
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input type="checkbox" checked={form.receiveEventEmails} onChange={e => setForm(f => ({ ...f, receiveEventEmails: e.target.checked }))} />
+                          <span className="text-xs" style={{ color: 'var(--ink-secondary)' }}>{t('receiveEventEmails')}</span>
+                        </label>
+                      )}
                     </div>
                   </div>
                 </div>

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 
-const PRIMARY_ROLES = ['PENDING', 'MEMBER', 'OPERATOR', 'MANAGER', 'ADMIN'] as const;
+const PRIMARY_ROLES = ['PENDING', 'MEMBER', 'ART', 'OPERATOR', 'MANAGER', 'ADMIN'] as const;
 const EXTRA_ROLES = ['WEB_MANAGER', 'MASCOT'] as const;
 type PrimaryRole = typeof PRIMARY_ROLES[number];
 type ExtraRole = typeof EXTRA_ROLES[number];
@@ -11,6 +11,7 @@ type ExtraRole = typeof EXTRA_ROLES[number];
 const ROLE_LABEL_KEY: Record<PrimaryRole | ExtraRole, string> = {
   PENDING: 'rolePending',
   MEMBER: 'roleMember',
+  ART: 'roleArt',
   OPERATOR: 'roleOperator',
   MANAGER: 'roleManager',
   ADMIN: 'roleAdmin',
@@ -111,6 +112,7 @@ export default function UserRoleRow({ user, currentUserId }: Props) {
   const roleColor: Record<PrimaryRole, string> = {
     PENDING: 'var(--ink-faint)',
     MEMBER: 'var(--ink-secondary)',
+    ART: 'var(--ink-secondary)',
     OPERATOR: 'var(--ink)',
     MANAGER: 'var(--ink)',
     ADMIN: 'var(--ink)',

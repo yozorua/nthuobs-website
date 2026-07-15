@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-const PRIMARY_ROLES = ['PENDING', 'MEMBER', 'OPERATOR', 'MANAGER', 'ADMIN'];
+const PRIMARY_ROLES = ['PENDING', 'MEMBER', 'ART', 'OPERATOR', 'MANAGER', 'ADMIN'];
 const EXTRA_ROLES = ['WEB_MANAGER', 'MASCOT'];
 const ALL_VALID_ROLES = [...PRIMARY_ROLES, ...EXTRA_ROLES];
 const isAdmin = (session: { user?: { role?: string } } | null) =>

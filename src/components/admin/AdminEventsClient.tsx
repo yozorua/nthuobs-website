@@ -68,6 +68,7 @@ export default function AdminEventsClient({ initialEvents, locale }: Props) {
   const roleLabels: Record<string, string> = {
     PENDING: t('rolePending'),
     MEMBER: t('roleMember'),
+    ART: t('roleArt'),
     OPERATOR: t('roleOperator'),
     MANAGER: t('roleManager'),
     ADMIN: t('roleAdmin'),

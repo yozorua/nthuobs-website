@@ -35,6 +35,7 @@ function roleLabel(role: string, t: ReturnType<typeof useTranslations>, extraRol
     MANAGER: t('managersLabel'),
     OPERATOR: t('operatorsLabel'),
     MEMBER: t('membersLabel'),
+    ART: t('artsLabel'),
     ADMIN: t('managersLabel'),
   };
   return map[role] ?? role;
